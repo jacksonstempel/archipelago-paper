@@ -197,7 +197,7 @@ def figure(n):
         ax.text((xl + xr) / 2 + shift, Y_SRC + 0.07, f'{n[key]:,}', ha='center', va='bottom', fontsize=fs(6.6), color=GREY)
         ax.text((xl + xr) / 2 + shift, Y_SRC + 0.2, name, ha='center', va='bottom', fontsize=fs(6.8), color=INK,
                 linespacing=1.2)
-    node(ax, left, right, Y_REF, C['hq'], 'Reference', f"{n['reference']:,}")
+    node(ax, left, right, Y_REF, C['hq'], 'Collected', f"{n['reference']:,}")
     # The trunk is one polygon: it steps in on the right under the Reference bar, where the benchmark leaves into its box,
     # and on the left at Y_REL, where the relatives leave; then straight on into ArchipelaGO, at the same scale.
     right1, left1 = right - wa['dev'] - wa['test'], left + wa['reference_related']

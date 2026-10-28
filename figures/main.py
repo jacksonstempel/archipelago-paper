@@ -97,9 +97,18 @@ def figures(results, out):
     sets = [('original', 'Original data'), ('hq', 'HQ'), ('archipelago', 'ArchipelaGO')]
     groups = [['finch'] + comparators, ['embedding_knn', 'diamond_knn', 'naive']]
 
-    def cell(m, s, k):
+    def text(m, s, k):
         r = metric.get((m, s, k))
-        return '--' if r is None else (f"{float(r['value']):.2f}" if k == 'smin' else half_up(r['value']))
+        return None if r is None else (f"{float(r['value']):.2f}" if k == 'smin' else half_up(r['value']))
+
+    # the best value of each metric in the whole table, as printed, is set in bold (lowest Smin, highest AUPRC and Fmax)
+    shown = {k: [float(t) for m in sum(groups, []) for s, _ in sets if (t := text(m, s, k)) is not None]
+             for k in ('auprc', 'fmax', 'smin')}
+    best = {k: min(v) if k == 'smin' else max(v) for k, v in shown.items()}
+
+    def cell(m, s, k):
+        t = text(m, s, k)
+        return '--' if t is None else (rf'\textbf{{{t}}}' if float(t) == best[k] else t)
 
     lines = [r'\begin{tabular*}{\textwidth}{@{}l@{\extracolsep{\fill}}' + 'ccc' * len(sets) + '@{}}', r'\toprule',
              ' & ' + ' & '.join(rf'\multicolumn{{3}}{{c}}{{\bfseries {t}}}' for _, t in sets) + r' \\',
