@@ -1,0 +1,37 @@
+{
+  "description": "Finch: two readouts trained on ArchipelaGO and their weighted mean (manuscript Methods, Finch). Settings under 'training' are shared by every readout; each readout lists its encoder and recipe.",
+  "weights": {
+    "esm2_15b_l48": 0.6,
+    "prott5_l21": 0.4
+  },
+  "seeds": [9301, 9302, 9303],
+  "training": {
+    "batch": 256,
+    "warmup": 1000,
+    "check_interval": 1000,
+    "patience": 20,
+    "weight_decay": 0.0,
+    "adam_eps": 1e-08,
+    "max_grad_norm": 1.0,
+    "gamma_pos": 1.0,
+    "gamma_neg": 4.0,
+    "clip": 0.05,
+    "asam_eta": 0.01
+  },
+  "readouts": {
+    "esm2_15b_l48": {
+      "encoder": "ESM2-15B (facebook/esm2_t48_15B_UR50D), layer 48, 5,120 dimensions",
+      "width": 8192,
+      "dropout": 0.7,
+      "lr": 3e-05,
+      "asam_rho": 8.0
+    },
+    "prott5_l21": {
+      "encoder": "ProtT5-XL-U50 (Rostlab/prot_t5_xl_half_uniref50-enc), layer 21, first 1,024 tokens, 1,024 dimensions",
+      "width": 4096,
+      "dropout": 0.7,
+      "lr": 0.0001,
+      "asam_rho": 4.0
+    }
+  }
+}

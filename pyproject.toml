@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "archipelago-paper"
+version = "0.1.0"
+description = "Reproduction of the ArchipelaGO paper: training sets, retraining of every model, scoring and figures"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Jackson C. Stempel", email = "jstempel@vols.utk.edu" }, { name = "Jason Andrew Amburn" },
+           { name = "Jeremy C. Smith" }]
+requires-python = ">=3.10"
+dependencies = ["archipelago[predict,score] @ git+https://github.com/jacksonstempel/archipelago",
+                "scipy>=1.11", "pandas>=2.0", "pyarrow>=14", "requests"]
+
+[project.optional-dependencies]
+embed = ["transformers>=4.39", "sentencepiece"]
+# per published method (versions the paper's runs used where they were recorded)
+deepgose = ["fair-esm==2.0.0", "triton"]
+transfew = ["transformers==4.39.3", "torch_geometric==2.5.3", "sentence-transformers==2.7.0", "obonet", "networkx"]
+dpfunc = ["fair-esm==2.0.0", "dgl"]
+figures = ["matplotlib>=3.8"]
+test = ["pytest", "scikit-learn", "safetensors", "matplotlib>=3.8"]
+
+[tool.setuptools.packages.find]
+include = ["retrain*", "figures*"]
+
+[tool.setuptools.package-data]
+figures = ["sankey_counts.json"]
+retrain = ["deepgose/axioms/*", "*/LICENSE-*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

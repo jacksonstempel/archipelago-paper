@@ -1,0 +1,41 @@
+{
+  "description": "Protein counts of Fig. 2 (where the benchmark and ArchipelaGO's proteins come from), as recorded when the datasets were built. Each balance reads node = sum(parts); figures/fig2.py checks every one.",
+  "counts": {
+    "goa_experimental": {"count": 77309, "definition": "Reference proteins with a GOA molecular-function assertion carrying an experimental code (EXP, IDA, IPI, IMP, IGI, IEP, HTP, HDA, HMP, HGI, HEP)."},
+    "goa_tas_ic": {"count": 2291, "definition": "Reference proteins with a GOA TAS or IC assertion but no GOA experimental code."},
+    "specialist": {"count": 20424, "definition": "Reference proteins with no GOA experimental, TAS or IC support, supported only by specialist databases or UniProt catalytic activities mapped to GO (the 664 reconstructed GPCRdb receptor variants included; the figure draws them as never having entered)."},
+    "excluded_before_reference": {"count": 10949, "definition": "Experimentally supported sequences excluded before the reference: engineered variants, designs and constructs, and proteins supported only by a source that was not used."},
+    "reference": {"count": 100024, "definition": "Every protein with an eligible molecular-function assertion from a GOA experimental code, GOA TAS or IC, a specialist database or a UniProt catalytic activity."},
+    "dev": {"count": 2500, "definition": "Development proteins."},
+    "test": {"count": 5000, "definition": "Test proteins."},
+    "reference_related": {"count": 4063, "definition": "Reference proteins with a very-sensitive DIAMOND hit at E <= 1e-3 to a development or test protein, either direction."},
+    "reference_retained": {"count": 88461, "definition": "Reference proteins kept for training."},
+    "gpcrdb_variants": {"count": 664, "definition": "Variant sequences reconstructed from GPCRdb records without independent exact-sequence support; removed."},
+    "hq": {"count": 87797, "definition": "HQ: the retained reference proteins without the GPCRdb variants."},
+    "trembl": {"count": 143444086, "definition": "Distinct sequences of TrEMBL (2026_02); context only."},
+    "computational_pool": {"count": 77896027, "definition": "TrEMBL sequences with a molecular-function annotation and no experimental or TAS/IC support."},
+    "groups": {"count": 9931694, "definition": "DIAMOND DeepClust groups at 50% identity and 80% mutual coverage (E <= 1e-3); one random member of each is its representative."},
+    "other_members": {"count": 67964333, "definition": "Group members other than the representatives (not used)."},
+    "comp_related": {"count": 978964, "definition": "Representatives with a very-sensitive DIAMOND hit at E <= 1e-3 to a development or test protein, either direction."},
+    "screened": {"count": 8952730, "definition": "Representatives without such a hit."},
+    "out_of_vocabulary": {"count": 102, "definition": "Screened representatives with labels outside the 8,739 GO terms."},
+    "candidates": {"count": 8952628, "definition": "Candidates of the coverage ranking."},
+    "filter_removed": {"count": 3664965, "definition": "Candidates none of whose propagated GO terms is carried by fewer than 1,000 HQ proteins."},
+    "filter_kept": {"count": 5287663, "definition": "Candidates passing the rare-function filter."},
+    "selected": {"count": 150000, "definition": "The first 150,000 picks of the coverage ranking."},
+    "not_selected": {"count": 5137663, "definition": "Filtered candidates not selected."},
+    "archipelago": {"count": 237797, "definition": "ArchipelaGO: HQ plus the selected proteins."},
+    "vocabulary": {"count": 8739, "definition": "GO terms of the output vocabulary."}
+  },
+  "balances": [
+    ["reference", ["goa_experimental", "goa_tas_ic", "specialist"]],
+    ["reference", ["dev", "test", "reference_related", "reference_retained"]],
+    ["reference_retained", ["gpcrdb_variants", "hq"]],
+    ["computational_pool", ["groups", "other_members"]],
+    ["groups", ["comp_related", "screened"]],
+    ["screened", ["out_of_vocabulary", "candidates"]],
+    ["candidates", ["filter_removed", "filter_kept"]],
+    ["filter_kept", ["selected", "not_selected"]],
+    ["archipelago", ["hq", "selected"]]
+  ]
+}

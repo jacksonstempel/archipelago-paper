@@ -1,0 +1,22 @@
+# Data, embeddings, checkpoints, predictions and results live under the data root ($ARCHIPELAGO_DATA), outside the
+# repository (data/README.md); none of them belong here.
+data/*
+!data/README.md
+*.npy
+*.npz
+*.pt
+*.safetensors
+*.parquet
+*.pdf
+*.png
+*.svg
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.venv/
