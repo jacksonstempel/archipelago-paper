@@ -67,7 +67,7 @@ def train(train_x, train_y, dev_x, dev_y, recipe, seed, device="cpu", max_update
         return asymmetric_loss(logits, by, r["gamma_pos"], r["gamma_neg"], r["clip"])
 
     best, best_step, best_state, best_scores, stale, step, history = -1.0, 0, None, None, 0, 0, []
-    started = time.monotonic()
+    started = time.perf_counter()
     while stale < r["patience"] and (max_updates is None or step < max_updates):
         if step % r["check_interval"] == 0:
             drawn = np.searchsorted(cdf, rng.random(r["check_interval"] * r["batch"]), side="right")
@@ -107,7 +107,7 @@ def train(train_x, train_y, dev_x, dev_y, recipe, seed, device="cpu", max_update
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
         else:
             stale += 1
-        elapsed = time.monotonic() - started
+        elapsed = time.perf_counter() - started
         log(f"step {step}: dev raw micro-AUPRC {auprc:.4f} (best {best:.4f} at {best_step}, {stale} stale checks), "
-            f"{step / elapsed:.0f} updates/s")
+            f"{step / max(elapsed, 1e-9):.0f} updates/s")
     return dict(state=best_state, dev_scores=best_scores, best_step=best_step, steps=step, history=history)
