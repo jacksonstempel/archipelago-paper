@@ -39,6 +39,13 @@ def figures(results, out):
     a.set_xticks(range(4), ['Finch'] + [NAMES[m] for m in comparators], fontsize=fs(7))
     a.set_xlim(-0.6, 3.6)
     style_bars(a)
+    # the key names the training sets, as in Fig. 2: 'Trained on:' with the swatches right after it
+    lead = a.text(0.0, 1.05, 'Trained on:', transform=a.transAxes, ha='left', va='center', fontsize=fs(6.5))
+    fig.canvas.draw()
+    right = a.transAxes.inverted().transform(lead.get_window_extent().get_points())[1, 0]
+    a.legend([plt.Rectangle((0, 0), 1, 1, color=c) for c in (FINCH, COLOURS['original'])], ['ArchipelaGO', 'Original data'],
+             loc='center left', bbox_to_anchor=(right + 0.01, 1.05), ncol=2, frameon=False, fontsize=fs(6.5),
+             handlelength=1.8, handleheight=0.45, handletextpad=0.4, columnspacing=1.3, borderaxespad=0, borderpad=0)
     pr = pr_curves(results)
     handles = []
     lines = [(('finch', 'archipelago'), FINCH, 1.5, 'Finch')] + \
