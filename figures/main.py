@@ -71,27 +71,25 @@ def figures(results, out):
         ax.text(-0.14, 1.02, letter, transform=ax.transAxes, fontsize=fs(8), fontweight='bold', va='bottom', ha='left')
     save(fig, out, 'fig1_finch')
 
-    # Figure 3. Per published method, ArchipelaGO, HQ and original data side by side, beside Finch; order as Fig. 1.
+    # Retraining figure. Per published method, ArchipelaGO, HQ and original data side by side; method order as the Finch figure.
     W = 0.25  # one bar
     GAP = 0.25 * 0.85  # between the three-bar groups
     order = [('archipelago', FINCH, 'ArchipelaGO'), ('hq', COLOURS['hq'], 'HQ'),
              ('original', COLOURS['original'], 'Original data')]
     fig, ax = plt.subplots(figsize=(DOUBLE * 0.9, 2.8))
     fig.subplots_adjust(left=0.08, right=0.99, bottom=0.11, top=0.88)  # fixed, so the key can be placed against the axes
-    bar(ax, 0, auprc('finch', 'archipelago'), FINCH, W * 0.94)
-    centres = [0.0]
-    x = W / 2 + 0.25 * 0.75 + 1.5 * W  # Finch's edge, the gap to the first group (a quarter narrower), half a group
+    centres = []
+    x = 1.5 * W  # half a group from the axis
     for m in comparators:
         centres.append(x)
         for k, (s, color, _) in enumerate(order):
             bar(ax, x + (k - 1) * W, auprc(m, s), color, W * 0.94)
         x += 3 * W + GAP
-    ax.set_xticks(centres, ['Finch'] + [NAMES[m] for m in comparators], fontsize=fs(7))
-    ax.set_xlim(-0.35 * 0.8, centres[-1] + 1.5 * W + 0.15)
+    ax.set_xticks(centres, [NAMES[m] for m in comparators], fontsize=fs(7))
+    ax.set_xlim(-0.15, centres[-1] + 1.5 * W + 0.15)
     style_bars(ax)
-    # the key: 'Trained on:' starting halfway between the y axis and Finch's bar, the swatches right after it
-    x0 = (ax.get_xlim()[0] - W * 0.94 / 2) / 2
-    lead = ax.text(x0, 1.06, 'Trained on:', transform=blended_transform_factory(ax.transData, ax.transAxes), ha='left',
+    # the key: 'Trained on:' above the first group, the swatches right after it
+    lead = ax.text(0.0, 1.06, 'Trained on:', transform=blended_transform_factory(ax.transData, ax.transAxes), ha='left',
                    va='center', fontsize=fs(6.5))
     fig.canvas.draw()
     right = ax.transAxes.inverted().transform(lead.get_window_extent().get_points())[1, 0]
