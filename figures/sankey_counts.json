@@ -1,5 +1,5 @@
 {
-  "description": "Protein counts of Fig. 2 (where the benchmark and ArchipelaGO's proteins come from), as recorded when the datasets were built. Each balance reads node = sum(parts); figures/fig2.py checks every one.",
+  "description": "Protein counts of Fig. 1 (where the benchmark and ArchipelaGO's proteins come from), as recorded when the datasets were built. Each balance reads node = sum(parts); figures/fig1.py checks every one.",
   "counts": {
     "goa_experimental": {"count": 77309, "definition": "Reference proteins with a GOA molecular-function assertion carrying an experimental code (EXP, IDA, IPI, IMP, IGI, IEP, HTP, HDA, HMP, HGI, HEP)."},
     "goa_tas_ic": {"count": 2291, "definition": "Reference proteins with a GOA TAS or IC assertion but no GOA experimental code."},

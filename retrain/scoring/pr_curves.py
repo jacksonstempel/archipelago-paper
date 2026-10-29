@@ -1,4 +1,4 @@
-"""Micro-averaged precision-recall curves on the test set (Fig. 1b and the Supplementary Information), from the scored
+"""Micro-averaged precision-recall curves on the test set (Fig. 4b and the Supplementary Information), from the scored
 files of the main run.
 
     python -m retrain.scoring.pr_curves [--data DIR] [--device cuda|cpu]

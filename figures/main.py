@@ -1,13 +1,19 @@
-"""Figure 1 (Finch beside the published methods), Figure 3 (every published method retrained) and the body of Table 1, from
-the main run's results: <root>/results/main/metrics.tsv (test, seed means) and <root>/results/pr_curves/curves.tsv."""
+"""Figure 2 (every published method retrained), Figure 4 (Finch: the recipe ablation and precision-recall curves) and the
+body of Table 1, from the results: <root>/results/main/metrics.tsv (test, seed means), <root>/results/ladder/metrics.tsv
+and <root>/results/pr_curves/curves.tsv."""
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import blended_transform_factory
 
-from figures.style import COLOURS, DOUBLE, INK, NAMES, PUBLISHED, fs, half_up, pr_curves, save, seed_means
+from figures.style import COLOURS, DOUBLE, GREY, INK, NAMES, PUBLISHED, fs, half_up, pr_curves, save, seed_means
 
 FINCH = COLOURS['archipelago']
-SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, in the order of Fig. 1a
+SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on ArchipelaGO first
+# Fig. 4a: the recipe ablation's steps (configs/finch.json, 'ladder'), ending at Finch; its control (two ESM2-15B networks)
+# is not drawn
+LADDER = [('ladder_linear_esm2_3b', 'Linear readout\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
+          ('ladder_hidden', '+ Hidden\nlayer'), ('ladder_asam', '+ ASAM'), ('finch', '+ ProtT5\nnetwork (Finch)')]
+SHARE = 0.002  # published methods closer than this to the one above them share its label in Fig. 4a
 
 
 def bar(ax, x, v, color, w):
@@ -22,34 +28,58 @@ def style_bars(ax):
     ax.tick_params(axis='x', length=2.5, width=0.6)
 
 
+def waterfall(ax, auprc):
+    """Fig. 4a: test micro-AUPRC from a linear readout on ESM2-3B to Finch, one ingredient per step, each step a floating bar
+    from the level before it; the published methods trained on ArchipelaGO as dashed lines."""
+    levels = [auprc(m, 'archipelago') for m, _ in LADDER]
+    w = 0.62
+    # the start: a level, not a bar (the axis does not start at zero)
+    ax.plot([-w / 2, w / 2], [levels[0]] * 2, color=GREY, lw=2.2, solid_capstyle='butt', zorder=3)
+    ax.text(0, levels[0] - 0.003, half_up(levels[0]), ha='center', va='top', fontsize=fs(6.5), zorder=4)
+    for i in range(1, len(levels)):
+        lo, hi = levels[i - 1], levels[i]
+        ax.bar(i, hi - lo, w, bottom=lo, color=FINCH, lw=0, zorder=3)
+        ax.plot([i - 1 + w / 2, i - w / 2], [lo, lo], color=GREY, lw=0.6, ls=(0, (1.5, 1.5)), zorder=2)  # connector
+        ax.text(i, hi + 0.0015, half_up(hi - lo, sign=True), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
+    ax.text(len(levels) - 1 + w / 2 + 0.06, levels[-1], half_up(levels[-1]), ha='left', va='center', fontsize=fs(6.5),
+            fontweight='bold', zorder=4)
+    labels = []  # [value, names]: a method close to the one above it shares that one's label
+    for m in sorted(PUBLISHED, key=lambda m: -auprc(m, 'archipelago')):
+        v = auprc(m, 'archipelago')
+        ax.axhline(v, color='#8f939a', lw=0.8, ls=(0, (3, 2)), zorder=1)
+        if labels and labels[-1][0] - v < SHARE:
+            labels[-1][1].append(NAMES[m])
+        else:
+            labels.append([v, [NAMES[m]]])
+    for v, names in labels:
+        ax.text(-0.45, v + 0.0012, ', '.join(names), ha='left', va='bottom', fontsize=fs(6.5), color=GREY)
+    ax.set_xticks(range(len(LADDER)), [t for _, t in LADDER], fontsize=fs(6.5), linespacing=1.05)
+    ax.tick_params(axis='x', length=0)
+    ax.set_xlim(-0.55, len(LADDER) - 0.3)
+    ax.set_ylim(0.52, 0.64)
+    ax.set_yticks(np.arange(0.52, 0.641, 0.02))
+    ax.set_ylabel('Micro-AUPRC')
+
+
 def figures(results, out):
     metric = seed_means(results / 'main')
     auprc = lambda m, s: float(metric[m, s, 'auprc']['value'])  # noqa: E731
-    comparators = sorted(PUBLISHED, key=lambda m: -auprc(m, 'original'))
+    comparators = sorted(PUBLISHED, key=lambda m: -auprc(m, 'original'))  # Fig. 2 and Table 1 order
 
-    # Figure 1. a: Finch (ArchipelaGO) beside the published methods on their original data, ordered by score; b: the same
-    # comparison as micro-averaged precision-recall curves (averaged over runs at each recall, so each area is the bar's
-    # micro-AUPRC), each with its Fmax point.
+    # Figure 4. a: the recipe ablation as a waterfall; b: Finch and the published methods, all trained on ArchipelaGO, as
+    # micro-averaged precision-recall curves (averaged over runs at each recall, so each area is the model's micro-AUPRC),
+    # each with its Fmax point.
+    ladder = seed_means(results / 'ladder')
+    ladder_auprc = lambda m, s: float(ladder[m, s, 'auprc']['value'])  # noqa: E731
     fig = plt.figure(figsize=(DOUBLE, 3.15))
-    grid = fig.add_gridspec(1, 2, width_ratios=[1.05, 1], wspace=0.2, left=0.075, right=0.985, top=0.93, bottom=0.12)
+    grid = fig.add_gridspec(1, 2, width_ratios=[1.3, 1], wspace=0.2, left=0.06, right=0.985, top=0.93, bottom=0.14)
     a, b = fig.add_subplot(grid[0]), fig.add_subplot(grid[1])
-    bar(a, 0, auprc('finch', 'archipelago'), FINCH, 0.68)
-    for i, m in enumerate(comparators, 1):
-        bar(a, i, auprc(m, 'original'), COLOURS['original'], 0.68)
-    a.set_xticks(range(4), ['Finch'] + [NAMES[m] for m in comparators], fontsize=fs(7))
-    a.set_xlim(-0.6, 3.6)
-    style_bars(a)
-    # the key names the training sets, as in Fig. 2: 'Trained on:' with the swatches right after it
-    lead = a.text(0.0, 1.05, 'Trained on:', transform=a.transAxes, ha='left', va='center', fontsize=fs(6.5))
-    fig.canvas.draw()
-    right = a.transAxes.inverted().transform(lead.get_window_extent().get_points())[1, 0]
-    a.legend([plt.Rectangle((0, 0), 1, 1, color=c) for c in (FINCH, COLOURS['original'])], ['ArchipelaGO', 'Original data'],
-             loc='center left', bbox_to_anchor=(right + 0.01, 1.05), ncol=2, frameon=False, fontsize=fs(6.5),
-             handlelength=1.8, handleheight=0.45, handletextpad=0.4, columnspacing=1.3, borderaxespad=0, borderpad=0)
+    waterfall(a, ladder_auprc)
     pr = pr_curves(results)
     handles = []
     lines = [(('finch', 'archipelago'), FINCH, 1.5, 'Finch')] + \
-            [((m, 'original'), shade, 1.1, NAMES[m]) for m, shade in zip(comparators, SHADES)]
+            [((m, 'archipelago'), shade, 1.1, NAMES[m])
+             for m, shade in zip(sorted(PUBLISHED, key=lambda m: -auprc(m, 'archipelago')), SHADES)]
     for (m, s), color, lw, name in lines:
         recall, precision = np.array(pr[m, s]).T
         fmax = half_up(metric[m, s, 'fmax']['value'])
@@ -67,11 +97,11 @@ def figures(results, out):
     b.set_box_aspect(1)
     b.set_xlabel('Recall')
     b.set_ylabel('Precision')
-    for ax, letter in ((a, 'a'), (b, 'b')):
-        ax.text(-0.14, 1.02, letter, transform=ax.transAxes, fontsize=fs(8), fontweight='bold', va='bottom', ha='left')
-    save(fig, out, 'fig1_finch')
+    for ax, letter, x in ((a, 'a', -0.11), (b, 'b', -0.14)):
+        ax.text(x, 1.02, letter, transform=ax.transAxes, fontsize=fs(8), fontweight='bold', va='bottom', ha='left')
+    save(fig, out, 'fig4_finch')
 
-    # Retraining figure. Per published method, original data, HQ and ArchipelaGO side by side; methods by original-data score.
+    # Figure 2. Per published method, original data, HQ and ArchipelaGO side by side; methods by original-data score.
     W = 0.25  # one bar
     GAP = 0.25 * 0.85  # between the three-bar groups
     order = [('original', COLOURS['original'], 'Original data'), ('hq', COLOURS['hq'], 'HQ'),
@@ -96,7 +126,7 @@ def figures(results, out):
     ax.legend([plt.Rectangle((0, 0), 1, 1, color=c) for _, c, _ in order], [t for *_, t in order], loc='center left',
               bbox_to_anchor=(right + 0.008, 1.06), ncol=3, frameon=False, fontsize=fs(6.5), handlelength=1.8,
               handleheight=0.45, handletextpad=0.4, columnspacing=1.3, borderaxespad=0, borderpad=0)
-    save(fig, out, 'fig3_retraining')
+    save(fig, out, 'fig2_retraining')
 
     # Table 1 (the tabular that the manuscript inputs): per model, micro-AUPRC, Fmax and Smin on three training sets.
     sets = [('original', 'Original data'), ('hq', 'HQ'), ('archipelago', 'ArchipelaGO')]

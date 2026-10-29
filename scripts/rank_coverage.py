@@ -5,7 +5,7 @@
 Reads, under the data root (--data or $ARCHIPELAGO_DATA; data/README.md): datasets/hq (proteins and labels),
 datasets/candidates (the screened computational candidates and their labels) and the ESM2-15B layer-48 embeddings
 inputs/embeddings/esm2_15b_l48/{hq,candidates}. Writes selection/coverage_ranking.tsv, or with --no-filter (the
-ranking without the rare-function filter, a control in Fig. 4b) selection/coverage_ranking_unfiltered.tsv: rank
+ranking without the rare-function filter, a control in Fig. 3b) selection/coverage_ranking_unfiltered.tsv: rank
 (1 = first pick), seq_id, score (the pick's largest cosine similarity to the training set when picked).
 ArchipelaGO takes the first 150,000 picks; the dose sets take 300,000 and 600,000, the paper's run. The candidates are
 split over --devices (default: every visible GPU): the filtered pool needs about 54 GB of GPU memory, the unfiltered one
@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--picks", type=int, default=600000)
     parser.add_argument("--threshold", type=int, default=1000,
                         help="rare-function filter: keep candidates with a term held by fewer HQ proteins")
-    parser.add_argument("--no-filter", action="store_true", help="rank every candidate (the Fig. 4b control)")
+    parser.add_argument("--no-filter", action="store_true", help="rank every candidate (the Fig. 3b control)")
     parser.add_argument("--batch", type=int, default=512, help="picks considered per pass (same result as one at a time)")
     parser.add_argument("--order-seed", type=int, default=0)
     parser.add_argument("--devices", help="comma-separated torch devices (default: every visible GPU)")

@@ -1,4 +1,4 @@
-"""Figure 2: where the benchmark and ArchipelaGO's proteins come from, as a Sankey diagram drawn to scale from the counts
+"""Figure 1: where the benchmark and ArchipelaGO's proteins come from, as a Sankey diagram drawn to scale from the counts
 recorded when the datasets were built (figures/sankey_counts.json).
 
 Proteins flow down two trunks, HQ (a) and the computational candidates (b); bands leave where proteins are removed, and
@@ -264,13 +264,13 @@ def figure(n):
 
 
 def draw(out, use_tikz=False):
-    """fig2_dataset.{png,pdf,svg} in `out`; with use_tikz the PDF is written through TikZ (true gradients)."""
+    """fig1_dataset.{png,pdf,svg} in `out`; with use_tikz the PDF is written through TikZ (true gradients)."""
     fig = figure(counts())
     if not use_tikz:
-        save(fig, out, 'fig2_dataset')
+        save(fig, out, 'fig1_dataset')
         return
     out.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out / 'fig2_dataset.png')
-    fig.savefig(out / 'fig2_dataset.svg', metadata={'Date': None})
-    tikz.save_pdf(fig, out / 'fig2_dataset.pdf')
+    fig.savefig(out / 'fig1_dataset.png')
+    fig.savefig(out / 'fig1_dataset.svg', metadata={'Date': None})
+    tikz.save_pdf(fig, out / 'fig1_dataset.pdf')
     plt.close(fig)

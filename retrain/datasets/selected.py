@@ -10,7 +10,7 @@ check-archipelago  ArchipelaGO is HQ plus the first 150,000 proteins of the cove
 dose               archipelago_300k, archipelago_600k: HQ plus the first 300,000 or 600,000 proteins of the coverage ranking
                    (rows up to 237,797 are ArchipelaGO's, checked). As for ArchipelaGO, the homology screen is the one the
                    candidates already passed.
-controls           The sets of Fig. 4b that add the ranking's ingredients one at a time, 150,000 proteins each:
+controls           The sets of Fig. 3b that add the ranking's ingredients one at a time, 150,000 proteins each:
                      pool_random          a uniformly random order of all candidates: numpy default_rng(20261015)
                                           .permutation over the candidates' rows, which must be in the released pool
                                           order (8,952,628 candidates, checked)

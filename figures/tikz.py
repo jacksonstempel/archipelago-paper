@@ -1,5 +1,5 @@
 """Save a drawn matplotlib figure as a fully vector PDF through TikZ, so colour fades become true PDF gradients (matplotlib can
-only fill a shape with one colour; shade() in figures/fig2.py fakes a fade with a clipped image, which this replaces).
+only fill a shape with one colour; shade() in figures/fig1.py fakes a fade with a clipped image, which this replaces).
 
 The figure is drawn by matplotlib as usual; save_pdf() then reads the finished artists (outlines in display coordinates,
 each text line's baseline as matplotlib placed it) and writes them as TikZ, which Tectonic compiles with Arial, the font

@@ -8,14 +8,17 @@ figures, written into <out>/si/. Reads, under <root>/results/:
   no_hit/{subsets.tsv,differences.tsv}                     retrain.scoring.no_hit
   pr_curves/curves.tsv                                     retrain.scoring.pr_curves
   selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
+  ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
 
 Supplementary Table 1 (the annotation sources) is typed in the SI and the label-review prompt is released with the
-reviewed labels; neither is generated here.
+reviewed labels; neither is generated here. Nor is the SI's comparison of the two losses on the development set, which
+comes from the learning-rate and dropout search that chose the recipe (not part of this repository).
 """
 import matplotlib.pyplot as plt
 import numpy as np
 
 from figures.style import COLOURS, DOUBLE, INK, NAMES, PUBLISHED, contrasts, fs, half_up, read, save, seed_means
+from retrain.finch import config as finch_config
 
 SETS = [('original', 'Original'), ('goa', 'GOA'), ('hq', 'HQ'), ('hq_random', 'HQ + random'), ('archipelago', 'ArchipelaGO')]
 SETNAME = dict(SETS)
@@ -254,6 +257,46 @@ def tables(results, out):
     return subsets, nohit
 
 
+def recipe_table(results, out):
+    """The Finch recipe ablation (Fig. 4a), all on ArchipelaGO: test AUPRC, Fmax and Smin, development AUPRC, the step
+    from the model it builds on and the difference from DeepGO-SE (paired)."""
+    folder = results / 'ladder'
+    ladder = {split: seed_means(folder, split) for split in ('test', 'development')}
+    ladder_contrast = contrasts(folder)
+    readouts = finch_config()['readouts']
+    models = finch_config()['ladder']
+
+    def setting(model):
+        """The learning rate and dropout of a one-readout model, in LaTeX."""
+        r = readouts[next(iter(models[model]))]
+        mantissa, exponent = f"{r['lr']:.0e}".split('e')
+        lr = r'$10^{%d}$' % int(exponent) if mantissa == '1' else r'$%s\times10^{%d}$' % (mantissa, int(exponent))
+        return lr + ('' if r['dropout'] is None else f", {r['dropout']:g}")
+
+    lines = []
+    for model, name, base, where in (
+            ('ladder_linear_esm2_3b', 'Linear readout on ESM2-3B', None, None),
+            ('ladder_linear_esm2_15b', 'Linear readout on ESM2-15B', 'ladder_linear_esm2_3b', None),
+            ('ladder_hidden', '+ hidden layer', 'ladder_linear_esm2_15b', None),
+            ('ladder_asam', '+ ASAM', 'ladder_hidden', None),
+            ('finch', '+ ProtT5 network, averaged (Finch)', 'ladder_asam', 'Methods'),
+            ('ladder_two_esm2_15b', 'Control: + a second ESM2-15B network, averaged', 'ladder_asam', 'as step 4')):
+        if model == 'ladder_two_esm2_15b':
+            lines.append(r'\midrule')
+        t = lambda k: ladder['test'][model, 'archipelago', k]  # noqa: E731
+        step = DASH
+        if base:
+            d = ladder_contrast['auprc', model, 'archipelago', base, 'archipelago']
+            step = f"{r3(d['difference'], True)} {ci(d['ci_low'], d['ci_high'])}"
+        d = ladder_contrast['auprc', model, 'archipelago', 'deepgose', 'archipelago']
+        development = ladder['development'][model, 'archipelago', 'auprc']['value']
+        lines.append(f"{name} & {where or setting(model)} & {r3(t('auprc')['value'])} "
+                     f"{ci(t('auprc')['ci_low'], t('auprc')['ci_high'])} & {r3(t('fmax')['value'])} & "
+                     f"{float(t('smin')['value']):.2f} & {r3(development)} & "
+                     f"{step} & {r3(d['difference'], True)} {ci(d['ci_low'], d['ci_high'])} \\\\")
+    write(out, 'table_recipe.tex', lines)
+
+
 def figures(results, out, subsets, nohit):
     """The gain against the no-hit cutoff, and the precision-recall curves of the published methods."""
     main = seed_means(results / 'main')
@@ -313,4 +356,5 @@ def draw(results, out):
     out = out / 'si'
     out.mkdir(parents=True, exist_ok=True)
     subsets, nohit = tables(results, out)
+    recipe_table(results, out)
     figures(results, out, subsets, nohit)

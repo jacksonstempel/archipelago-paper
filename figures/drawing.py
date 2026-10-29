@@ -1,4 +1,4 @@
-"""Drawing helpers of the schematic figures (Fig. 2 and Extended Data Fig. 1): connectors with arrowheads, boxes, panel
+"""Drawing helpers of the schematic figures (Fig. 1 and Extended Data Fig. 1): connectors with arrowheads, boxes, panel
 headings, a score strip. Coordinates are inches on an axes that spans the whole figure."""
 import matplotlib.pyplot as plt
 import numpy as np

@@ -1,7 +1,7 @@
 """Extended Data Fig. 1: the Finch model, read left to right (schematic). The sequence goes to two frozen protein language
 models, ESM2-15B (layer 48 of 48) and ProtT5 (layer 21 of 24, first 1,024 tokens); each one's residue vectors are averaged
 into one vector, read by its own one-hidden-layer network (hidden width 8,192 and 4,096); the raw scores are averaged with
-weights 0.6 and 0.4 and propagated up the GO graph to scores for the 8,739 molecular-function terms."""
+weights 0.725 and 0.275 and propagated up the GO graph to scores for the 8,739 molecular-function terms."""
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle, FancyBboxPatch, Rectangle
@@ -81,7 +81,7 @@ def figure():
     fig.canvas.draw()
     seq_right = ax.transData.inverted().transform((seq.get_window_extent().x1, 0))[0]
     details = {'ESM2-15B': 'layer 48 of 48', 'ProtT5': 'layer 21 of 24\nfirst 1,024 tokens'}
-    for (name, y), weight, hidden, units in zip(ROWS.items(), (0.6, 0.4), (6, 4), ('8,192', '4,096')):
+    for (name, y), weight, hidden, units in zip(ROWS.items(), (0.725, 0.275), (6, 4), ('8,192', '4,096')):
         fork = seq_right + 0.2  # the fan bends over a short stretch, then runs straight into the box
         flow(ax, (seq_right + 0.05, MID), (fork, y), tangent='h', k=0.5, arrow=False)
         flow(ax, (fork, y), (X_ENC - ENC_W / 2 - GAP, y))
@@ -94,7 +94,7 @@ def figure():
         flow(ax, (X_NET + NET_W / 2 + 0.04 + GAP, y), (X_W - 0.19 - GAP, y))
         ax.add_patch(FancyBboxPatch((X_W - 0.19, y - 0.1), 0.38, 0.2, boxstyle='round,pad=0,rounding_size=0.1',
                                     fc='white', ec=LINE, lw=0.7, zorder=2))
-        ax.text(X_W, y, f'× {weight:.1f}', ha='center', va='center', fontsize=fs(6.5), color=INK, zorder=3)
+        ax.text(X_W, y, f'× {weight:g}', ha='center', va='center', fontsize=fs(6.5), color=INK, zorder=3)
         flow(ax, (X_W + 0.19 + GAP, y), (X_SUM, MID + np.sign(y - MID) * (0.075 + GAP)), tangent='hv', k=1.0)
     ax.add_patch(Circle((X_SUM, MID), 0.075, fc='white', ec=LINE, lw=0.7, zorder=2))
     ax.text(X_SUM, MID - 0.004, '+', ha='center', va='center', fontsize=fs(7), color=INK, zorder=3)

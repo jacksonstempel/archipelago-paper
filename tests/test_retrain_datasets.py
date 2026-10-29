@@ -188,7 +188,7 @@ def test_dose_sets_extend_archipelago(tmp_path, monkeypatch):
 
 @pytest.mark.skipif(not (os.environ.get('DIAMOND') or shutil.which('diamond')), reason='needs DIAMOND for the screen')
 def test_control_sets_add_screened_candidates_only(tmp_path, monkeypatch):
-    """Each Fig. 4b control set is HQ plus exactly KEEP candidates, none of them an HQ or benchmark protein, and a candidate
+    """Each Fig. 3b control set is HQ plus exactly KEEP candidates, none of them an HQ or benchmark protein, and a candidate
     identical to a test protein is screened out."""
     fake_release(tmp_path)
     run(release, monkeypatch, '--data', tmp_path)

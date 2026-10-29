@@ -53,8 +53,8 @@ otherwise rebuilds an equivalent (it says so in its log):
 
 | File | Used for |
 |---|---|
-| `release/candidates/{proteins,annotations}.parquet` and `inputs/embeddings/esm2_15b_l48/candidates.{npy,ids.txt}` | the coverage ranking's 8,952,628 candidates and their embeddings (the ranking itself and the Fig. 4b controls) |
-| `release/selection/coverage_ranking.tsv`, `coverage_ranking_unfiltered.tsv` (`rank`, `seq_id`, `score`) | the paper's rankings, so that exactly tied candidates come in the paper's order (dose sets, Fig. 4b control) |
+| `release/candidates/{proteins,annotations}.parquet` and `inputs/embeddings/esm2_15b_l48/candidates.{npy,ids.txt}` | the coverage ranking's 8,952,628 candidates and their embeddings (the ranking itself and the Fig. 3b controls) |
+| `release/selection/coverage_ranking.tsv`, `coverage_ranking_unfiltered.tsv` (`rank`, `seq_id`, `score`) | the paper's rankings, so that exactly tied candidates come in the paper's order (dose sets, Fig. 3b control) |
 | `release/hq_random/{proteins,annotations}.parquet` | the 150,000 random computational proteins of HQ + random |
 | `release/hq_support.tsv` (`seq_id`, `go_id`, `evidence`, `assigned_by`, `route`) | the GOA and experimental-label sets exactly (without it they are approximated from the release annotations) |
 | `inputs/structures/chosen.tsv` (`seq_id`, `source`, `entry`, `version`) | the paper's AlphaFold Database models for DPFunc |
@@ -82,7 +82,8 @@ original data `original_deepgose`, `original_transfew`, `original_dpfunc`.
 vocabulary order; raw scores, which the scorer propagates (DeepGO-SE's are already propagated, as its published inference
 does). `record.json` is written last and marks the fit complete. Further checkpoints of a fit are
 `<split>_scores_<name>.npy` (TransFew: `bcebest`, `auprcbest`). Methods: `finch`, `deepgose`, `transfew`, `dpfunc`,
-`naive`, `diamond_knn`, `diamond_knn_screen`, `embedding_knn`; the training set of the original data is `original`.
+`naive`, `diamond_knn`, `diamond_knn_screen`, `embedding_knn`, and the recipe ablation's models (`ladder_*`, listed in
+`configs/finch.json`); the training set of the original data is `original`.
 Finch's readouts are in `runs/finch/<training set>/seed<k>/<readout>/`, with `readout.pt` (`state_dict`, `readout`,
 `seed`, `recipe`, `input_dim`, `terms`, `vocabulary`, `best_step`), which `scripts/export_package.py` packages.
 
