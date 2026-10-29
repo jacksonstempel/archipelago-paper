@@ -1,10 +1,11 @@
 {
-  "description": "Finch: two readouts trained on ArchipelaGO and their weighted mean (manuscript Methods, Finch). Settings under 'training' are shared by every readout; each readout lists its encoder, the embedding it reads (inputs/embeddings/<embedding>) and its recipe. 'ladder' lists the other models of the Finch recipe ablation (Fig. 4a and its control), each the weighted mean of readouts like Finch; the ablation ends at Finch itself. A readout with width null is the linear readout (no hidden layer, no dropout); asam_rho null trains with AdamW alone; seed_offset trains the readout with the run's seed plus that offset.",
+  "description": "Finch: two readouts trained on ArchipelaGO and their weighted mean (manuscript Methods, Finch). Settings under 'training' are shared by every readout; each readout lists its encoder, the embedding it reads (inputs/embeddings/<embedding>) and its recipe. 'ladder' lists the other models of the Finch recipe ablation (Fig. 4a and its control), each the weighted mean of readouts like Finch; the ablation ends at Finch itself. A readout with width null is the linear readout (no hidden layer, no dropout); asam_rho null trains with AdamW alone; seed_offset trains the readout with the run's seed plus that offset. 'release_seeds': the runs in the released model package (scripts/export_package.py).",
   "weights": {
     "esm2_15b_l48": 0.725,
     "prott5_l21": 0.275
   },
   "seeds": [9301, 9302, 9303],
+  "release_seeds": [9301],
   "training": {
     "batch": 256,
     "warmup": 1000,

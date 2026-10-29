@@ -6,7 +6,7 @@ Reads runs/finch/<training set>/seed<k>/<readout>/{dev,test}_scores.npy (retrain
 runs/<model>/<training set>/seed<k>/{dev_scores.npy, test_scores.npy, record.json}. --model finch (the default) is Finch
 (ESM2-15B 0.725, ProtT5 0.275); the models of the recipe ablation are listed under 'ladder' in configs/finch.json
 (--model ladder_linear_esm2_3b, ...). Scores stay raw: the scorer propagates them up the GO graph and forms the seed
-ensemble (the mean of the seeds' propagated scores, the released predictor).
+ensemble (the mean of the seeds' propagated scores).
 """
 import argparse
 import json

@@ -90,7 +90,7 @@ Finch's recipe is `configs/finch.json`: an ESM2-15B readout (hidden width 8,192,
 readout (width 4,096, dropout 0.6, rho 4), each trained with binary cross-entropy, AdamW without weight decay, 1,000
 warm-up updates and a constant learning rate of 1e-5, ASAM eta 0.01 and batches of 256, with the best development
 checkpoint kept (checks every 1,000 updates, patience 20); their raw scores are averaged 0.725 / 0.275. The package is
-the seed ensemble of the three ArchipelaGO runs, with the threshold of its development micro-Fmax as the default cut.
+one ArchipelaGO run (seed 9301, `release_seeds`), with the threshold of its development micro-Fmax as the default cut.
 
 The recipe ablation (Fig. 4a) builds Finch up on ArchipelaGO: a linear readout on ESM2-3B, the same on ESM2-15B, a hidden
 layer, ASAM (Finch's ESM2-15B readout), and Finch. A control averages two ESM2-15B networks trained with different seeds.

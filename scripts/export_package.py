@@ -3,18 +3,19 @@
     python scripts/export_package.py --out finch_package [--data DIR]
 
 Inputs:
-- --config (default configs/finch.json): the readouts, their weights and the seeds.
+- --config (default configs/finch.json): the readouts, their weights and the runs to package (release_seeds; the
+  released Finch is one run, seed 9301).
 - --checkpoints: where each readout's checkpoint is, a pattern with {root}, {readout} and {seed}; default
   "{root}/runs/finch/archipelago/seed{seed}/{readout}/readout.pt", as retrain.finch writes them (state_dict, readout,
-  seed, recipe, input_dim, terms, vocabulary): one per readout and seed (6 for the paper's two readouts and three seeds).
-  Each checkpoint's vocabulary (its output columns' GO terms, in order) must equal the dataset vocabulary.
+  seed, recipe, input_dim, terms, vocabulary): one per readout and packaged seed. Each checkpoint's vocabulary (its
+  output columns' GO terms, in order) must equal the dataset vocabulary.
 - the data root (--data or $ARCHIPELAGO_DATA): datasets/ontology/{vocabulary.json, go-basic.obo} (is_a edges and term
   names), datasets/development (proteins and labels) and each readout's development embeddings,
   inputs/embeddings/<readout>/development.{npy,ids.txt}.
 
-The threshold: the packaged model (the seed ensemble, archipelago/pretrained.py) scores the development proteins from
-their embeddings, and the threshold of its development micro-Fmax (0.01 to 1.00, the first maximum) becomes the package's
-default cut, as the paper's F1 chooses its threshold. The test set is not read.
+The threshold: the packaged model (archipelago/pretrained.py) scores the development proteins from their embeddings, and
+the threshold of its development micro-Fmax (0.01 to 1.00, the first maximum) becomes the package's default cut, as the
+paper's F1 chooses its threshold. The test set is not read.
 
 Upload to the Hub afterwards, e.g. `hf upload jstempel/finch finch_package .` (huggingface_hub's command line).
 """
@@ -49,7 +50,7 @@ def main(argv=None):
     ontology = root / "datasets/ontology"
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
-    weights, seeds = config["weights"], config["seeds"]
+    weights, seeds = config["weights"], config["release_seeds"]
     vocabulary = read_vocabulary(ontology / "vocabulary.json")
     obo = ontology / "go-basic.obo"
     terms = read_terms(obo)
@@ -92,9 +93,9 @@ def main(argv=None):
     go_release = next((line[len("data-version:"):].strip() for line in header if line.startswith("data-version:")), None)
     package = dict(
         model="Finch",
-        description="Finch seed ensemble: per seed, the weighted mean of two readouts' raw scores (one-hidden-layer "
-                    "MLPs on mean-pooled protein-language-model embeddings), propagated up the GO is_a graph; then the "
-                    "mean of the seeds' propagated scores. Molecular-function terms only.",
+        description="Finch: the weighted mean of two readouts' raw scores (one-hidden-layer MLPs on mean-pooled "
+                    "protein-language-model embeddings), propagated up the GO is_a graph (with several seeds, the mean "
+                    "of the seeds' propagated scores). Molecular-function terms only.",
         weights=weights, seeds=seeds, readouts=readouts, terms=len(vocabulary), threshold=None,
         versions=dict(archipelago=__version__, torch=torch.__version__, go_release=go_release))
 

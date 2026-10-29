@@ -92,7 +92,7 @@ def package(tmp_path_factory):
     root, rng = tmp_path_factory.mktemp("finch"), np.random.default_rng(0)
     write_ontology(root, VOCABULARY)
     config = json.loads((Path(__file__).resolve().parents[1] / "configs/finch.json").read_text(encoding="utf-8"))
-    config["seeds"] = SEEDS
+    config["seeds"] = config["release_seeds"] = SEEDS
     for name in DIMS:
         config["readouts"][name]["width"] = WIDTH
     (root / "config.json").write_text(json.dumps(config), encoding="utf-8")
