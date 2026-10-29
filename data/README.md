@@ -53,8 +53,8 @@ otherwise rebuilds an equivalent (it says so in its log):
 
 | File | Used for |
 |---|---|
-| `release/candidates/{proteins,annotations}.parquet` and `inputs/embeddings/esm2_15b_l48/candidates.{npy,ids.txt}` | the coverage ranking's 8,952,628 candidates and their embeddings (the ranking itself and the Fig. 3b controls) |
-| `release/selection/coverage_ranking.tsv`, `coverage_ranking_unfiltered.tsv` (`rank`, `seq_id`, `score`) | the paper's rankings, so that exactly tied candidates come in the paper's order (dose sets, Fig. 3b control) |
+| `release/candidates/{proteins,annotations}.parquet` and `inputs/embeddings/esm2_15b_l48/candidates.{npy,ids.txt}` | the coverage ranking's 8,952,628 candidates and their embeddings (the ranking itself and the Fig. 3a controls) |
+| `release/selection/coverage_ranking.tsv`, `coverage_ranking_unfiltered.tsv` (`rank`, `seq_id`, `score`) | the paper's rankings, so that exactly tied candidates come in the paper's order (dose sets, Fig. 3a control) |
 | `release/hq_random/{proteins,annotations}.parquet` | the 150,000 random computational proteins of HQ + random |
 | `release/hq_support.tsv` (`seq_id`, `go_id`, `evidence`, `assigned_by`, `route`) | the GOA and experimental-label sets exactly (without it they are approximated from the release annotations) |
 | `inputs/structures/chosen.tsv` (`seq_id`, `source`, `entry`, `version`) | the paper's AlphaFold Database models for DPFunc |

@@ -1,12 +1,12 @@
 """Figure 3: choosing the computational proteins.
 
-a, how far the added proteins lie from HQ: the smoothed density of each added protein's distance to its nearest HQ protein
-in ESM2-15B embedding space, for three of panel b's training sets (random computational proteins, random cluster
+a, Finch's test micro-AUPRC gain over HQ alone (seed means) for the five ways of adding 150,000 proteins, the matrix of
+ingredients each uses, and the paired step of each ingredient. Reads <root>/results/selection/{metrics.tsv,contrasts.tsv}.
+b, how far the added proteins lie from HQ: the smoothed density of each added protein's distance to its nearest HQ protein
+in ESM2-15B embedding space, for three of panel a's training sets (random computational proteins, random cluster
 representatives, ArchipelaGO), and the median distance from an HQ protein to its nearest other HQ protein as the
 reference (dashed: HQ's own density is a spike at zero). Reads <root>/results/distances/{densities.tsv,summary.tsv}
 (retrain.scoring.distances).
-b, Finch's test micro-AUPRC gain over HQ alone (seed means) for the five ways of adding 150,000 proteins, the matrix of
-ingredients each uses, and the paired step of each ingredient. Reads <root>/results/selection/{metrics.tsv,contrasts.tsv}.
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,11 +16,7 @@ from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, read, save,
 
 HQ, PICKED = '#4985d0', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
 H = 4.0  # figure height, inches
-# panel a: three of panel b's training sets, in its order, with line colour and key label (the two sets that differ only
-# by the rare-function filter lie on the curves of the sets without it)
-LINES = [('hq_random', '#c3c6cb', 'Random'), ('pool_random', '#7d8188', 'One per cluster'),
-         ('archipelago', PICKED, 'ArchipelaGO')]
-# panel b: training set, ingredients used (one per cluster, rare function, coverage ranking)
+# panel a: training set, ingredients used (one per cluster, rare function, coverage ranking)
 ARMS = [('hq_random', (0, 0, 0)), ('pool_random', (1, 0, 0)), ('filter_random', (1, 1, 0)),
         ('coverage_unfiltered', (1, 0, 1)), ('archipelago', (1, 1, 1))]
 # row label and the paired step along random -> one per cluster -> + rare function -> + coverage (= ArchipelaGO)
@@ -28,6 +24,10 @@ STEPS = [('One per\ncluster', 'pool_random', 'hq_random'), ('Rare\nfunction', 'f
          ('Coverage\nranking', 'archipelago', 'filter_random')]
 BAR, DOT_ON, DOT_OFF, STRIPE = '#8f939a', '#3b3e44', '#dcdde0', '#f3f3f1'
 TOP, MS = 0.062, 6  # bar axis top; matrix dot size
+# panel b: three of panel a's training sets, in its order, with line colour and key label (the two sets that differ only
+# by the rare-function filter lie on the curves of the sets without it)
+LINES = [('hq_random', '#c3c6cb', 'Random'), ('pool_random', '#7d8188', 'One per cluster'),
+         ('archipelago', PICKED, 'ArchipelaGO')]
 
 
 def at(ax, x, y, dx=0.0, dy=0.0):
@@ -35,29 +35,6 @@ def at(ax, x, y, dx=0.0, dy=0.0):
     base = blended_transform_factory(ax.transAxes, ax.transData)
     return (Affine2D() + ax.figure.dpi_scale_trans + ScaledTranslation(x, y, base)
             + ScaledTranslation(dx, dy, ax.figure.dpi_scale_trans))
-
-
-def densities(ax, results):
-    density = {}
-    for r in read(results / 'densities.tsv'):
-        density.setdefault(r['condition'], []).append((float(r['distance']), float(r['density'])))
-    hq_median = {r['condition']: float(r['median']) for r in read(results / 'summary.tsv')}['hq']
-    ax.axvline(hq_median, color=HQ, lw=1.2, ls=(0, (3, 1.6)), label='HQ to nearest HQ (median)', zorder=2)
-    for k, (name, color, text) in enumerate(LINES):
-        x, y = np.array(density[name]).T
-        ax.fill_between(x, y, color=color, alpha=0.22, lw=0, zorder=3 + k)
-        ax.plot(x, y, color=color, lw=1.6 if name == 'archipelago' else 1.3, label=text, zorder=3 + k,
-                solid_capstyle='butt')
-    ax.spines['bottom'].set_zorder(10)  # the axis line over the filled densities
-    ax.set_xlim(0, 0.5)
-    ax.set_ylim(0, None)
-    ax.set_xticks(np.arange(0, 0.51, 0.1))
-    ax.set_xlabel('Distance to the nearest HQ protein')
-    ax.set_ylabel('Density')
-    handles, labels = ax.get_legend_handles_labels()
-    order = list(range(1, len(handles))) + [0]  # the training sets in panel b's order, then the HQ reference
-    ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='upper right', frameon=False, fontsize=fs(6.5),
-              handlelength=1.6, borderaxespad=0.1, labelspacing=0.35)
 
 
 def upset(b, m, gains, steps):
@@ -94,6 +71,29 @@ def upset(b, m, gains, steps):
         m.spines[side].set_visible(False)
 
 
+def densities(ax, results):
+    density = {}
+    for r in read(results / 'densities.tsv'):
+        density.setdefault(r['condition'], []).append((float(r['distance']), float(r['density'])))
+    hq_median = {r['condition']: float(r['median']) for r in read(results / 'summary.tsv')}['hq']
+    ax.axvline(hq_median, color=HQ, lw=1.2, ls=(0, (3, 1.6)), label='HQ to nearest HQ (median)', zorder=2)
+    for k, (name, color, text) in enumerate(LINES):
+        x, y = np.array(density[name]).T
+        ax.fill_between(x, y, color=color, alpha=0.22, lw=0, zorder=3 + k)
+        ax.plot(x, y, color=color, lw=1.6 if name == 'archipelago' else 1.3, label=text, zorder=3 + k,
+                solid_capstyle='butt')
+    ax.spines['bottom'].set_zorder(10)  # the axis line over the filled densities
+    ax.set_xlim(0, 0.5)
+    ax.set_ylim(0, None)
+    ax.set_xticks(np.arange(0, 0.51, 0.1))
+    ax.set_xlabel('Distance to the nearest HQ protein')
+    ax.set_ylabel('Density')
+    handles, labels = ax.get_legend_handles_labels()
+    order = list(range(1, len(handles))) + [0]  # the training sets in panel a's order, then the HQ reference
+    ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='upper right', frameon=False, fontsize=fs(6.5),
+              handlelength=1.6, borderaxespad=0.1, labelspacing=0.35)
+
+
 def letter(fig, x, text):
     fig.text(x / fig.get_figwidth(), 1 - 0.02 / H, text, ha='left', va='top', fontsize=fs(8.5), fontweight='bold')
 
@@ -103,12 +103,12 @@ def axes(fig, left, bottom, width, height, **kw):
     return fig.add_axes([left / w, bottom / H, width / w, height / H], **kw)
 
 
-def panel_b(fig, results, left, right):
+def panel_upset(fig, results, left, right):
+    """Panel a between `left` (its letter) and `right` (its bars' right edge; the steps are printed beyond it)."""
     metric = seed_means(results)
     gains = [float(metric['finch', s, 'auprc']['value']) - float(metric['finch', 'hq', 'auprc']['value']) for s, _ in ARMS]
     differences = contrasts(results)
     steps = [(name, float(differences['auprc', 'finch', a, 'finch', b]['difference'])) for name, a, b in STEPS]
-    letter(fig, left, 'b')
     bars_left = left + 0.62
     matrix_bottom, matrix_height = 0.2, 0.95
     bars_bottom = matrix_bottom + matrix_height + 0.16
@@ -120,6 +120,7 @@ def panel_b(fig, results, left, right):
 def draw(results, out):
     fig = plt.figure(figsize=(DOUBLE, H))
     letter(fig, 0, 'a')
-    densities(axes(fig, 0.47, 0.42, 3.05, H - 0.42 - 0.24), results / 'distances')
-    panel_b(fig, results / 'selection', 3.8, DOUBLE - 0.42)
+    panel_upset(fig, results / 'selection', 0, 3.02)
+    letter(fig, 3.49, 'b')
+    densities(axes(fig, 3.96, 0.42, DOUBLE - 3.96 - 0.1, H - 0.42 - 0.24), results / 'distances')
     save(fig, out, 'fig3_choosing')

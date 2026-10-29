@@ -63,7 +63,7 @@ vocabulary removed.
 
 ```bash
 python scripts/rank_coverage.py --picks 600000                 # selection/coverage_ranking.tsv (51 s on four GPUs)
-python scripts/rank_coverage.py --picks 500000 --no-filter     # selection/coverage_ranking_unfiltered.tsv (Fig. 3b control)
+python scripts/rank_coverage.py --picks 500000 --no-filter     # selection/coverage_ranking_unfiltered.tsv (Fig. 3a control)
 python -m retrain.datasets.selected check-archipelago          # the ranking's first 150,000 = the released selected proteins
 python -m retrain.datasets.selected dose                       # archipelago_300k, archipelago_600k
 python -m retrain.datasets.selected controls                   # pool_random, filter_random, coverage_unfiltered (DIAMOND)
@@ -162,11 +162,11 @@ AlphaFold Database entries when the paper's choice list is present (data/README.
 
 ```bash
 python -m retrain.scoring.score main                 # every model of Table 1 and Figs. 2 and 4b -> results/main
-python -m retrain.scoring.score selection            # Finch on the Fig. 3b control sets and the dose sets
+python -m retrain.scoring.score selection            # Finch on the Fig. 3a control sets and the dose sets
 python -m retrain.scoring.score ladder               # the recipe ablation of Fig. 4a, its variants, Finch, published methods
 python -m retrain.scoring.score explabels_training    # models trained on HQ with experimental labels only
 python -m retrain.scoring.pr_curves                  # precision-recall curves
-python -m retrain.scoring.distances                  # distances of the added proteins to HQ (Fig. 3a; GPU)
+python -m retrain.scoring.distances                  # distances of the added proteins to HQ (Fig. 3b; GPU)
 python -m retrain.scoring.test_labels                # scoring against experimental-only test labels
 python -m retrain.scoring.no_hit                     # test proteins without training relatives (DIAMOND)
 python -m retrain.scoring.sizes                      # sizes of every training set
