@@ -67,6 +67,17 @@ def test_finch_train_and_combine(tmp_path, monkeypatch):
     assert np.allclose(np.load(folder / 'dev_scores.npy'), expected, atol=1e-6)
     assert json.loads((folder / 'record.json').read_text(encoding='utf-8'))['weights'] == settings['weights']
 
+    # the recipe ablation's control: a second ESM2-15B network trained with seed 9301 + 3, averaged with the first
+    second = dict(recipe_of(settings, 'esm2_15b_l48_second'), width=8, batch=8, warmup=2, check_interval=5, patience=2)
+    fit(tmp_path, 'archipelago', 9301, 'esm2_15b_l48_second', second, 'cpu', 'esm2_15b_l48', 3)
+    assert torch.load(folder / 'esm2_15b_l48_second' / 'readout.pt', weights_only=True)['seed'] == 9304
+    monkeypatch.setattr(sys, 'argv', ['x', '--training-set', 'archipelago', '--seeds', '9301', '--model',
+                                      'ladder_two_esm2_15b', '--data', str(tmp_path)])
+    combine.main()
+    pair = tmp_path / 'runs' / 'ladder_two_esm2_15b' / 'archipelago' / 'seed9301'
+    expected = sum(0.5 * np.load(folder / r / 'dev_scores.npy') for r in ('esm2_15b_l48', 'esm2_15b_l48_second'))
+    assert np.allclose(np.load(pair / 'dev_scores.npy'), expected, atol=1e-6)
+
 
 def test_finch_refuses_training_proteins_in_the_benchmark(tmp_path):
     fake_root(tmp_path, sizes=dict(development=12, test=8))

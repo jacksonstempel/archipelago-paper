@@ -1,11 +1,15 @@
-"""Training of Finch's readouts (archipelago.readout.Readout), as in the paper:
+"""Training of Finch's readouts, as in the paper:
 
+- the readout: archipelago.readout.Readout (LayerNorm, linear layer of `width` units, GELU, dropout, linear layer to the
+  terms); with width None, the linear readout of the recipe ablation (LayerNorm and one linear layer to the terms, so no
+  dropout);
 - batches of 256 training proteins drawn uniformly with replacement (NumPy generator seeded with the fit's seed);
-- asymmetric loss (gamma+ 1, gamma- 4, probability shift 0.05), averaged over proteins and terms;
+- binary cross-entropy on the logits, averaged over proteins and terms (unlabelled terms are negatives);
 - AdamW (betas 0.9 / 0.999, eps 1e-8, weight decay 0), learning rate warmed up linearly over the first 1,000 updates and
   then constant, gradients clipped to global norm 1;
 - adaptive sharpness-aware minimization (ASAM, elementwise, eta 0.01): the gradient at the weights perturbed by
-  rho * s^2 * g / ||s * g|| with s = |w| + eta, with the same dropout mask in both passes, updates the unperturbed weights;
+  rho * s^2 * g / ||s * g|| with s = |w| + eta, with the same dropout mask in both passes, updates the unperturbed weights.
+  With asam_rho None (the recipe ablation without ASAM) each update uses the gradient at the current weights;
 - every 1,000 updates the development set is scored and the raw (unpropagated) micro-AUPRC checked; training stops after
   20 checks without improvement and keeps the best checkpoint.
 
@@ -17,31 +21,47 @@ import time
 import numpy as np
 import torch
 import torch.nn.functional as F
+from torch import nn
 
 from archipelago.evaluate import micro_auprc
 from archipelago.readout import Readout, predict
 
 DEFAULTS = dict(batch=256, warmup=1000, check_interval=1000, patience=20, weight_decay=0.0, adam_eps=1e-8,
-                max_grad_norm=1.0, gamma_pos=1.0, gamma_neg=4.0, clip=0.05, asam_eta=0.01)
+                max_grad_norm=1.0, asam_eta=0.01)
 
 
-def asymmetric_loss(logits, targets, gamma_pos=1.0, gamma_neg=4.0, clip=0.05):
-    """Asymmetric loss (Ridnik et al., 2021), mean over all protein-term pairs."""
-    logits = logits.float()
-    targets = targets.bool()
-    p = torch.sigmoid(logits)
-    q = (torch.sigmoid(-logits) + clip).clamp(max=1.0)  # shifted probability of "negative"
-    positive = -((1 - p) ** gamma_pos) * F.logsigmoid(logits)
-    negative = -((1 - q) ** gamma_neg) * torch.log(q.clamp(min=1e-8))
-    return torch.where(targets, positive, negative).mean()
+class LinearReadout(nn.Module):
+    """The recipe ablation's linear readout: LayerNorm and one linear layer to the terms."""
+
+    def __init__(self, input_dim, terms):
+        super().__init__()
+        self.network = nn.Sequential(nn.LayerNorm(input_dim), nn.Linear(input_dim, terms))
+
+    def forward(self, x, dropout_mask=None):
+        return self.network(x)
+
+
+def readout(input_dim, terms, width, dropout):
+    """Finch's readout, or the linear readout when width is None (dropout must then be None too)."""
+    if width is None:
+        if dropout is not None:
+            raise ValueError('The linear readout has no hidden layer to drop out: dropout must be None')
+        return LinearReadout(input_dim, terms)
+    return Readout(input_dim, width, terms, dropout)
+
+
+def bce(logits, targets):
+    """Binary cross-entropy on the logits, mean over all protein-term pairs."""
+    return F.binary_cross_entropy_with_logits(logits.float(), targets.float())
 
 
 def train(train_x, train_y, dev_x, dev_y, recipe, seed, device="cpu", max_updates=None, log=print):
     """Train one readout. Returns dict(state, dev_scores, best_step, steps, history).
 
     train_x: embeddings (proteins x dim, any float dtype); train_y: binary labels (proteins x terms);
-    dev_x, dev_y: the development set used for early stopping; recipe: width, dropout, lr, asam_rho and optional
-    overrides of DEFAULTS. max_updates stops early (for quick checks only).
+    dev_x, dev_y: the development set used for early stopping; recipe: width, dropout, lr, asam_rho (width, dropout and
+    asam_rho may be None: see the module docstring) and optional overrides of DEFAULTS. max_updates stops early (for
+    quick checks only).
     """
     r = dict(DEFAULTS, **recipe)
     torch.manual_seed(seed)
@@ -49,7 +69,7 @@ def train(train_x, train_y, dev_x, dev_y, recipe, seed, device="cpu", max_update
     rng = np.random.default_rng(seed)
     n, dim = train_x.shape
     terms = train_y.shape[1]
-    model = Readout(dim, r["width"], terms, r["dropout"]).to(device)
+    model = readout(dim, terms, r["width"], r["dropout"]).to(device)
     parameters = list(model.parameters())
     optimizer = torch.optim.AdamW(parameters, lr=r["lr"], betas=(0.9, 0.999), eps=r["adam_eps"],
                                   weight_decay=r["weight_decay"])
@@ -64,7 +84,7 @@ def train(train_x, train_y, dev_x, dev_y, recipe, seed, device="cpu", max_update
     def loss_at(bx, by, mask):
         with autocast:
             logits = model(bx, mask)
-        return asymmetric_loss(logits, by, r["gamma_pos"], r["gamma_neg"], r["clip"])
+        return bce(logits, by)
 
     best, best_step, best_state, best_scores, stale, step, history = -1.0, 0, None, None, 0, 0, []
     started = time.perf_counter()
@@ -75,23 +95,26 @@ def train(train_x, train_y, dev_x, dev_y, recipe, seed, device="cpu", max_update
         rows = torch.as_tensor(drawn[step % r["check_interval"]], device=device)
         step += 1
         bx, by = x[rows].float(), y[rows]
-        mask = F.dropout(torch.ones(len(rows), r["width"], device=device), p=r["dropout"], training=True)
+        mask = None if r["width"] is None else \
+            F.dropout(torch.ones(len(rows), r["width"], device=device), p=r["dropout"], training=True)
 
-        # ASAM: gradient at the adaptively perturbed weights, same dropout mask, then restore and update
-        optimizer.zero_grad(set_to_none=True)
-        loss_at(bx, by, mask).backward()
-        with torch.no_grad():
-            scales = [p.abs() + r["asam_eta"] for p in parameters]
-            norm = torch.sqrt(sum(((p.grad * s) ** 2).sum() for p, s in zip(parameters, scales)))
-            steps = [r["asam_rho"] * s * s * p.grad / (norm + 1e-12) for p, s in zip(parameters, scales)]
-            for p, e in zip(parameters, steps):
-                p.add_(e)
         optimizer.zero_grad(set_to_none=True)
         loss = loss_at(bx, by, mask)
         loss.backward()
-        with torch.no_grad():
-            for p, e in zip(parameters, steps):
-                p.sub_(e)
+        if r["asam_rho"] is not None:
+            # ASAM: gradient at the adaptively perturbed weights, same dropout mask, then restore and update
+            with torch.no_grad():
+                scales = [p.abs() + r["asam_eta"] for p in parameters]
+                norm = torch.sqrt(sum(((p.grad * s) ** 2).sum() for p, s in zip(parameters, scales)))
+                steps = [r["asam_rho"] * s * s * p.grad / (norm + 1e-12) for p, s in zip(parameters, scales)]
+                for p, e in zip(parameters, steps):
+                    p.add_(e)
+            optimizer.zero_grad(set_to_none=True)
+            loss = loss_at(bx, by, mask)
+            loss.backward()
+            with torch.no_grad():
+                for p, e in zip(parameters, steps):
+                    p.sub_(e)
         torch.nn.utils.clip_grad_norm_(parameters, r["max_grad_norm"])
         for group in optimizer.param_groups:
             group["lr"] = r["lr"] * min(step / r["warmup"], 1.0)

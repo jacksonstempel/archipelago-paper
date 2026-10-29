@@ -79,16 +79,34 @@ rankings instead when they are present (data/README.md).
 python scripts/embed.py --set <set> --encoder esm2_15b_l48     # every training set, development and test (GPU)
 python scripts/embed.py --set <set> --encoder prott5_l21
 python -m retrain.finch.train --training-set archipelago --seed 9301    # each training set, seeds 9301-9303 (GPU)
-python -m retrain.finch.combine --training-set archipelago               # the 0.60 / 0.40 weighted mean
+python -m retrain.finch.combine --training-set archipelago               # the 0.725 / 0.275 weighted mean
 python -m retrain.baselines.naive --training-sets goa hq archipelago
 python -m retrain.baselines.diamond_knn --training-sets goa hq archipelago        # DIAMOND
 python -m retrain.baselines.embedding_knn --training-sets goa hq archipelago
 python scripts/export_package.py --out finch_package           # the model package Finch.from_pretrained loads
 ```
 
-Embedding: ESM2-15B about 77 GPU-hours for the 9.9 million candidates, a few GPU-hours for the training sets; ProtT5 is
-faster. Finch: 5 to 30 minutes per readout on one H100 (about 2 GPU-hours for every training set and seed of the main
-comparison). Baselines: minutes.
+Finch's recipe is `configs/finch.json`: an ESM2-15B readout (hidden width 8,192, dropout 0.8, ASAM rho 8) and a ProtT5
+readout (width 4,096, dropout 0.6, rho 4), each trained with binary cross-entropy, AdamW without weight decay, 1,000
+warm-up updates and a constant learning rate of 1e-5, ASAM eta 0.01 and batches of 256, with the best development
+checkpoint kept (checks every 1,000 updates, patience 20); their raw scores are averaged 0.725 / 0.275. The package is
+the seed ensemble of the three ArchipelaGO runs, with the threshold of its development micro-Fmax as the default cut.
+
+The recipe ablation (Fig. 4a) builds Finch up on ArchipelaGO: a linear readout on ESM2-3B, the same on ESM2-15B, a hidden
+layer, ASAM (Finch's ESM2-15B readout), and Finch. A control averages two ESM2-15B networks trained with different seeds.
+Each model is listed under `ladder` in `configs/finch.json` with the learning rate and dropout that the paper chose for
+it on the development set (the search itself is not part of this repository):
+
+```bash
+python scripts/embed.py --set <set> --encoder esm2_3b_l36      # archipelago, development and test (GPU)
+python -m retrain.finch.train --training-set archipelago --seed 9301 \
+    --readouts esm2_3b_l36_linear esm2_15b_l48_linear esm2_15b_l48_adamw esm2_15b_l48_second   # seeds 9301-9303
+python -m retrain.finch.combine --training-set archipelago --model ladder_linear_esm2_3b       # each model under 'ladder'
+```
+
+Embedding: ESM2-15B about 77 GPU-hours for the 9.9 million candidates, a few GPU-hours for the training sets; ProtT5 and
+ESM2-3B are faster. Finch: the paper's runs, with fused kernels, took 3 to 25 minutes per readout on one H100 (about 3
+GPU-hours for every training set and seed of the main comparison). Baselines: minutes.
 
 ### 4. The published methods
 
