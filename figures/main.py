@@ -71,11 +71,11 @@ def figures(results, out):
         ax.text(-0.14, 1.02, letter, transform=ax.transAxes, fontsize=fs(8), fontweight='bold', va='bottom', ha='left')
     save(fig, out, 'fig1_finch')
 
-    # Retraining figure. Per published method, ArchipelaGO, HQ and original data side by side; method order as the Finch figure.
+    # Retraining figure. Per published method, original data, HQ and ArchipelaGO side by side; methods by original-data score.
     W = 0.25  # one bar
     GAP = 0.25 * 0.85  # between the three-bar groups
-    order = [('archipelago', FINCH, 'ArchipelaGO'), ('hq', COLOURS['hq'], 'HQ'),
-             ('original', COLOURS['original'], 'Original data')]
+    order = [('original', COLOURS['original'], 'Original data'), ('hq', COLOURS['hq'], 'HQ'),
+             ('archipelago', FINCH, 'ArchipelaGO')]
     fig, ax = plt.subplots(figsize=(DOUBLE * 0.9, 2.8))
     fig.subplots_adjust(left=0.08, right=0.99, bottom=0.11, top=0.88)  # fixed, so the key can be placed against the axes
     centres = []
