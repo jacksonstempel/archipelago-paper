@@ -11,9 +11,9 @@ FINCH = COLOURS['archipelago']
 SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on ArchipelaGO first
 # Fig. 4a: the recipe ablation's steps (configs/finch.json, 'ladder'), ending at Finch; its control (two ESM2-15B networks)
 # is not drawn
-LADDER = [('ladder_linear_esm2_3b', 'Linear readout\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
-          ('ladder_hidden', '+ Hidden\nlayer'), ('ladder_asam', '+ ASAM'), ('finch', '+ ProtT5\nnetwork (Finch)')]
-SHARE = 0.002  # published methods closer than this to the one above them share its label in Fig. 4a
+LADDER = [('ladder_linear_esm2_3b', 'Linear readout,\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
+          ('ladder_hidden', '+ hidden\nlayer'), ('ladder_asam', '+ ASAM'), ('finch', '+ ProtT5\nnetwork')]
+Y0, Y1 = 0.4, 0.7  # Fig. 4a's axis
 
 
 def bar(ax, x, v, color, w):
@@ -29,35 +29,38 @@ def style_bars(ax):
 
 
 def waterfall(ax, auprc):
-    """Fig. 4a: test micro-AUPRC from a linear readout on ESM2-3B to Finch, one ingredient per step, each step a floating bar
-    from the level before it; the published methods trained on ArchipelaGO as dashed lines."""
+    """Fig. 4a: test micro-AUPRC from a linear readout on ESM2-3B (a full bar) through one ingredient per step (floating
+    bars from the level before) to Finch (a full bar), each label under its bar."""
     levels = [auprc(m, 'archipelago') for m, _ in LADDER]
-    w = 0.62
-    # the start: a level, not a bar (the axis does not start at zero)
-    ax.plot([-w / 2, w / 2], [levels[0]] * 2, color=GREY, lw=2.2, solid_capstyle='butt', zorder=3)
-    ax.text(0, levels[0] - 0.003, half_up(levels[0]), ha='center', va='top', fontsize=fs(6.5), zorder=4)
+    w, gap = 0.62, 0.004  # bar width; room between a bar's bottom and its label
+    end = len(levels)  # Finch, the full bar after the last step
+    below_axis = blended_transform_factory(ax.transData, ax.transAxes)
+
+    def label(x, y, text):
+        """A step's name under its bar: under the axis for the full bars, under the bar's bottom for the steps."""
+        if y is None:
+            ax.text(x, -0.02, text, transform=below_axis, ha='center', va='top', fontsize=fs(6.5), linespacing=1.05)
+        else:
+            ax.text(x, y - gap, text, ha='center', va='top', fontsize=fs(6.5), linespacing=1.05, zorder=4)
+
+    ax.bar(0, levels[0] - Y0, w, bottom=Y0, color='#8f939a', lw=0, zorder=3)  # the start, a full bar
+    ax.text(0, levels[0] + 0.003, half_up(levels[0]), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
+    label(0, None, LADDER[0][1])
     for i in range(1, len(levels)):
         lo, hi = levels[i - 1], levels[i]
         ax.bar(i, hi - lo, w, bottom=lo, color=FINCH, lw=0, zorder=3)
         ax.plot([i - 1 + w / 2, i - w / 2], [lo, lo], color=GREY, lw=0.6, ls=(0, (1.5, 1.5)), zorder=2)  # connector
-        ax.text(i, hi + 0.0015, half_up(hi - lo, sign=True), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
-    ax.text(len(levels) - 1 + w / 2 + 0.06, levels[-1], half_up(levels[-1]), ha='left', va='center', fontsize=fs(6.5),
-            fontweight='bold', zorder=4)
-    labels = []  # [value, names]: a method close to the one above it shares that one's label
-    for m in sorted(PUBLISHED, key=lambda m: -auprc(m, 'archipelago')):
-        v = auprc(m, 'archipelago')
-        ax.axhline(v, color='#8f939a', lw=0.8, ls=(0, (3, 2)), zorder=1)
-        if labels and labels[-1][0] - v < SHARE:
-            labels[-1][1].append(NAMES[m])
-        else:
-            labels.append([v, [NAMES[m]]])
-    for v, names in labels:
-        ax.text(-0.45, v + 0.0012, ', '.join(names), ha='left', va='bottom', fontsize=fs(6.5), color=GREY)
-    ax.set_xticks(range(len(LADDER)), [t for _, t in LADDER], fontsize=fs(6.5), linespacing=1.05)
-    ax.tick_params(axis='x', length=0)
-    ax.set_xlim(-0.55, len(LADDER) - 0.3)
-    ax.set_ylim(0.52, 0.64)
-    ax.set_yticks(np.arange(0.52, 0.641, 0.02))
+        ax.text(i, hi + 0.003, half_up(hi - lo, sign=True), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
+        label(i, lo, LADDER[i][1])
+    ax.plot([end - 1 + w / 2, end - w / 2], [levels[-1]] * 2, color=GREY, lw=0.6, ls=(0, (1.5, 1.5)), zorder=2)
+    ax.bar(end, levels[-1] - Y0, w, bottom=Y0, color=FINCH, lw=0, zorder=3)  # Finch, a full bar
+    ax.text(end, levels[-1] + 0.003, half_up(levels[-1]), ha='center', va='bottom', fontsize=fs(6.5), fontweight='bold',
+            zorder=4)
+    label(end, None, 'Finch')
+    ax.set_xticks([])
+    ax.set_xlim(-0.55, end + 0.55)
+    ax.set_ylim(Y0, Y1)
+    ax.set_yticks(np.arange(Y0, Y1 + 0.001, 0.05))
     ax.set_ylabel('Micro-AUPRC')
 
 
