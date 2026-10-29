@@ -5,8 +5,8 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   main/metrics.tsv, main/contrasts.tsv      score main          Table 1, Fig. 2, Fig. 4b's key, SI tables
   ladder/metrics.tsv, ladder/contrasts.tsv  score ladder        Fig. 4a, SI table of the recipe ablation
   pr_curves/curves.tsv                      pr_curves           Fig. 4b, SI precision-recall figure
-  distances/densities.tsv, summary.tsv      distances           Fig. 3a
-  selection/metrics.tsv, contrasts.tsv      score selection     Fig. 3b, SI tables of the selection rules and picks
+  selection/metrics.tsv, contrasts.tsv      score selection     Fig. 3a, SI tables of the selection rules and picks
+  distances/densities.tsv, summary.tsv      distances           Fig. 3b
   dataset_sizes.tsv                         sizes               Supplementary Table 2
   experimental_test_labels/                 test_labels         SI: experimental-only test labels
   explabels_training/                       score explabels_training   SI: HQ trained with experimental labels only
