@@ -12,7 +12,7 @@ SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on Arc
 # Fig. 4a: the recipe ablation's steps (configs/finch.json, 'ladder'), ending at Finch; its control (two ESM2-15B networks)
 # is not drawn
 LADDER = [('ladder_linear_esm2_3b', 'Linear readout,\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
-          ('ladder_narrow', '+ hidden\nlayer'), ('ladder_hidden', '+ width,\ndropout'), ('ladder_asam', '+ ASAM'),
+          ('ladder_narrow', '+ hidden\nlayer'), ('ladder_hidden', '+ width,\nheavy\ndropout'), ('ladder_asam', '+ ASAM'),
           ('finch', '+ ProtT5\nnetwork')]
 Y0, Y1 = 0.4, 0.65  # Fig. 4a's axis
 BAND = '#e6e7e9'  # Fig. 4a: the published methods' range on ArchipelaGO
@@ -33,7 +33,7 @@ def style_bars(ax):
 def waterfall(ax, auprc):
     """Fig. 4a: test micro-AUPRC from a linear readout on ESM2-3B (a full bar) through one ingredient per step (floating
     bars from the level before) to Finch (a full bar), each label under its bar; the published methods as a pale band. The
-    hidden layer enters in two steps: narrow (1,024 units) without dropout, then wide (8,192) with dropout."""
+    hidden layer enters in two steps: narrow (1,024 units) with light dropout, then wide (8,192) with heavy dropout."""
     levels = [auprc(m, 'archipelago') for m, _ in LADDER]
     w, gap = 0.62, 0.004  # bar width; room between a bar's bottom and its label
     end = len(levels)  # Finch, the full bar after the last step

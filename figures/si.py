@@ -277,8 +277,8 @@ def recipe_table(results, out):
     for model, name, base, where in (
             ('ladder_linear_esm2_3b', 'Linear readout on ESM2-3B', None, None),
             ('ladder_linear_esm2_15b', 'Linear readout on ESM2-15B', 'ladder_linear_esm2_3b', None),
-            ('ladder_narrow', '+ hidden layer, 1,024 units, no dropout', 'ladder_linear_esm2_15b', None),
-            ('ladder_hidden', '+ width 8,192 and dropout', 'ladder_narrow', None),
+            ('ladder_narrow', '+ hidden layer, 1,024 units, light dropout', 'ladder_linear_esm2_15b', None),
+            ('ladder_hidden', '+ width 8,192 and heavy dropout', 'ladder_narrow', None),
             ('ladder_asam', '+ ASAM', 'ladder_hidden', None),
             ('finch', '+ ProtT5 network, averaged (Finch)', 'ladder_asam', 'Methods'),
             ('ladder_two_esm2_15b', 'Control: + a second ESM2-15B network, averaged', 'ladder_asam', 'as step 4')):
