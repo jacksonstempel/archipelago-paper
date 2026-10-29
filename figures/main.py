@@ -13,7 +13,7 @@ SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on Arc
 # is not drawn
 LADDER = [('ladder_linear_esm2_3b', 'Linear readout,\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
           ('ladder_hidden', '+ hidden\nlayer'), ('ladder_asam', '+ ASAM'), ('finch', '+ ProtT5\nnetwork')]
-Y0, Y1 = 0.4, 0.7  # Fig. 4a's axis
+Y0, Y1 = 0.4, 0.65  # Fig. 4a's axis
 BAND = '#e6e7e9'  # Fig. 4a: the published methods' range on ArchipelaGO
 
 
