@@ -12,7 +12,8 @@ SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on Arc
 # Fig. 4a: the recipe ablation's steps (configs/finch.json, 'ladder'), ending at Finch; its control (two ESM2-15B networks)
 # is not drawn
 LADDER = [('ladder_linear_esm2_3b', 'Linear readout,\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
-          ('ladder_hidden', '+ hidden\nlayer'), ('ladder_asam', '+ ASAM'), ('finch', '+ ProtT5\nnetwork')]
+          ('ladder_narrow', '+ hidden\nlayer'), ('ladder_hidden', '+ width,\ndropout'), ('ladder_asam', '+ ASAM'),
+          ('finch', '+ ProtT5\nnetwork')]
 Y0, Y1 = 0.4, 0.65  # Fig. 4a's axis
 BAND = '#e6e7e9'  # Fig. 4a: the published methods' range on ArchipelaGO
 
@@ -31,7 +32,8 @@ def style_bars(ax):
 
 def waterfall(ax, auprc):
     """Fig. 4a: test micro-AUPRC from a linear readout on ESM2-3B (a full bar) through one ingredient per step (floating
-    bars from the level before) to Finch (a full bar), each label under its bar; the published methods as a pale band."""
+    bars from the level before) to Finch (a full bar), each label under its bar; the published methods as a pale band. The
+    hidden layer enters in two steps: narrow (1,024 units) without dropout, then wide (8,192) with dropout."""
     levels = [auprc(m, 'archipelago') for m, _ in LADDER]
     w, gap = 0.62, 0.004  # bar width; room between a bar's bottom and its label
     end = len(levels)  # Finch, the full bar after the last step
@@ -60,8 +62,10 @@ def waterfall(ax, auprc):
     # the published methods trained on ArchipelaGO: a pale band over their range, behind the bars
     lo, hi = min(auprc(m, 'archipelago') for m in PUBLISHED), max(auprc(m, 'archipelago') for m in PUBLISHED)
     ax.axhspan(lo, hi, color=BAND, lw=0, zorder=1)
-    ax.text(3, lo - 0.008, f'Published methods\n({half_up(lo)}–{half_up(hi)})', ha='center', va='top', fontsize=fs(6.5),
-            color=GREY, linespacing=1.05, zorder=4)  # under the band, between the floating steps
+    # its label inside the band, halfway between the wide hidden layer and Finch
+    x = ([m for m, _ in LADDER].index('ladder_hidden') + end) / 2
+    ax.text(x, (lo + hi) / 2, f'Published methods\n({half_up(lo)}–{half_up(hi)})', ha='center', va='center',
+            fontsize=fs(6.5), color=GREY, linespacing=1.05, zorder=4)
     ax.spines['bottom'].set_zorder(5)  # the axis line over the bars' bottoms
     ax.set_xticks([])
     ax.set_xlim(-0.55, end + 0.55)
