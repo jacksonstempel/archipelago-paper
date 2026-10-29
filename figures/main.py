@@ -13,7 +13,7 @@ SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on Arc
 # is not drawn
 LADDER = [('ladder_linear_esm2_3b', 'Linear readout,\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
           ('ladder_hidden', '+ hidden\nlayer'), ('ladder_asam', '+ ASAM'), ('finch', '+ ProtT5\nnetwork')]
-Y0, Y1 = 0.3, 0.65  # Fig. 4a's axis
+Y0, Y1 = 0.4, 0.7  # Fig. 4a's axis
 BAND = '#e6e7e9'  # Fig. 4a: the published methods' range on ArchipelaGO
 
 
@@ -66,7 +66,7 @@ def waterfall(ax, auprc):
     ax.set_xticks([])
     ax.set_xlim(-0.55, end + 0.55)
     ax.set_ylim(Y0, Y1)
-    ax.set_yticks(np.arange(Y0, Y1 + 0.001, 0.1))
+    ax.set_yticks(np.arange(Y0, Y1 + 0.001, 0.05))
     ax.set_ylabel('Micro-AUPRC')
 
 
