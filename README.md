@@ -92,16 +92,22 @@ warm-up updates and a constant learning rate of 1e-5, ASAM eta 0.01 and batches 
 checkpoint kept (checks every 1,000 updates, patience 20); their raw scores are averaged 0.725 / 0.275. The package is
 one ArchipelaGO run (seed 9301, `release_seeds`), with the threshold of its development micro-Fmax as the default cut.
 
-The recipe ablation (Fig. 4a) builds Finch up on ArchipelaGO: a linear readout on ESM2-3B, the same on ESM2-15B, a hidden
-layer, ASAM (Finch's ESM2-15B readout), and Finch. A control averages two ESM2-15B networks trained with different seeds.
-Each model is listed under `ladder` in `configs/finch.json` with the learning rate and dropout that the paper chose for
-it on the development set (the search itself is not part of this repository):
+The recipe ablation (Fig. 4a) builds Finch up on ArchipelaGO: a linear readout on ESM2-3B, the same on ESM2-15B, a narrow
+hidden layer (width 1,024, no dropout), the full hidden layer (width 8,192, dropout 0.8), ASAM (Finch's ESM2-15B readout),
+and Finch. A control averages two ESM2-15B networks trained with different seeds; two comparisons train the full hidden
+layer on ESM2-3B and a hidden layer of width 2,048 on ESM2-15B. Each model is listed under `ladder` in
+`configs/finch.json` with the learning rate and dropout that the paper chose for it on the development set (the search
+itself is not part of this repository). Finch with its ProtT5 readout on ProtT5's last layer (24) instead of layer 21,
+same weights, is listed under `variants`:
 
 ```bash
 python scripts/embed.py --set <set> --encoder esm2_3b_l36      # archipelago, development and test (GPU)
+python scripts/embed.py --set <set> --encoder prott5_l24       # the same sets, for the variant
 python -m retrain.finch.train --training-set archipelago --seed 9301 \
-    --readouts esm2_3b_l36_linear esm2_15b_l48_linear esm2_15b_l48_adamw esm2_15b_l48_second   # seeds 9301-9303
+    --readouts esm2_3b_l36_linear esm2_15b_l48_linear esm2_15b_l48_narrow esm2_15b_l48_adamw esm2_15b_l48_second \
+    esm2_3b_l36_adamw esm2_15b_l48_adamw_2048 prott5_l24                                    # seeds 9301-9303
 python -m retrain.finch.combine --training-set archipelago --model ladder_linear_esm2_3b       # each model under 'ladder'
+python -m retrain.finch.combine --training-set archipelago --model finch_prott5_l24            # and under 'variants'
 ```
 
 Embedding: ESM2-15B about 77 GPU-hours for the 9.9 million candidates, a few GPU-hours for the training sets; ProtT5 and
@@ -157,7 +163,7 @@ AlphaFold Database entries when the paper's choice list is present (data/README.
 ```bash
 python -m retrain.scoring.score main                 # every model of Table 1 and Figs. 2 and 4b -> results/main
 python -m retrain.scoring.score selection            # Finch on the Fig. 3b control sets and the dose sets
-python -m retrain.scoring.score ladder               # the recipe ablation of Fig. 4a, Finch and the published methods
+python -m retrain.scoring.score ladder               # the recipe ablation of Fig. 4a, its variants, Finch, published methods
 python -m retrain.scoring.score explabels_training    # models trained on HQ with experimental labels only
 python -m retrain.scoring.pr_curves                  # precision-recall curves
 python -m retrain.scoring.distances                  # distances of the added proteins to HQ (Fig. 3a; GPU)

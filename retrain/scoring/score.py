@@ -5,8 +5,8 @@
 RUN is one of
   main                every model on every training set of the main comparisons (Table 1, Figs. 2 and 4b, SI tables)
   selection           Finch on HQ plus 150,000 proteins chosen by each rule of Fig. 3b, and with 300,000 / 600,000 picks
-  ladder              the models of the Finch recipe ablation (Fig. 4a; configs/finch.json, 'ladder'), Finch and the
-                      published methods, all trained on ArchipelaGO
+  ladder              the models of the Finch recipe ablation (Fig. 4a; configs/finch.json, 'ladder'), Finch's variants
+                      ('variants'), Finch and the published methods, all trained on ArchipelaGO
   explabels_training  every model trained on the HQ proteins with their experimental labels only (hq_explabels), beside
                       its original data, HQ and ArchipelaGO (Supplementary Information)
 
@@ -48,7 +48,7 @@ RUNS = {  # run: {method: training sets}
              **{m: ('goa', 'hq', 'archipelago') for m in BASELINES}},
     'selection': {'finch': ('hq', 'hq_random', 'pool_random', 'filter_random', 'coverage_unfiltered', 'archipelago',
                             'archipelago_300k', 'archipelago_600k')},
-    'ladder': {m: ('archipelago',) for m in (*finch_config()['ladder'], 'finch', *PUBLISHED)},
+    'ladder': {m: ('archipelago',) for m in (*finch_config()['ladder'], *finch_config()['variants'], 'finch', *PUBLISHED)},
     'explabels_training': {'finch': ('hq_explabels', 'hq', 'archipelago'),
                            **{m: ('original', 'hq_explabels', 'hq', 'archipelago') for m in PUBLISHED},
                            **{m: ('hq_explabels', 'hq', 'archipelago') for m in BASELINES}},

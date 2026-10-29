@@ -5,8 +5,8 @@
 Reads runs/finch/<training set>/seed<k>/<readout>/{dev,test}_scores.npy (retrain.finch.train) and writes
 runs/<model>/<training set>/seed<k>/{dev_scores.npy, test_scores.npy, record.json}. --model finch (the default) is Finch
 (ESM2-15B 0.725, ProtT5 0.275); the models of the recipe ablation are listed under 'ladder' in configs/finch.json
-(--model ladder_linear_esm2_3b, ...). Scores stay raw: the scorer propagates them up the GO graph and forms the seed
-ensemble (the mean of the seeds' propagated scores).
+(--model ladder_linear_esm2_3b, ...), and Finch's variants under 'variants' (--model finch_prott5_l24). Scores stay raw:
+the scorer propagates them up the GO graph and forms the seed ensemble (the mean of the seeds' propagated scores).
 """
 import argparse
 import json
@@ -23,11 +23,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--training-set', required=True)
     parser.add_argument('--seeds', nargs='+', type=int, default=settings['seeds'])
-    parser.add_argument('--model', choices=['finch', *settings['ladder']], default='finch')
+    models = {'finch': settings['weights'], **settings['ladder'], **settings['variants']}
+    parser.add_argument('--model', choices=list(models), default='finch')
     add_argument(parser)
     a = parser.parse_args()
     root = data_root(a.data)
-    weights = settings['weights'] if a.model == 'finch' else settings['ladder'][a.model]
+    weights = models[a.model]
     for seed in a.seeds:
         readouts = fit_folder(root, 'finch', a.training_set, seed)
         scores, members = {}, {}

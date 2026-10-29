@@ -4,8 +4,9 @@
         [--data DIR] [--device cuda]
 
 The readouts and their recipes are configs/finch.json (retrain.finch.recipe): by default Finch's two; the recipe
-ablation's readouts (Fig. 4a) are trained on ArchipelaGO with --readouts esm2_3b_l36_linear esm2_15b_l48_linear
-esm2_15b_l48_adamw esm2_15b_l48_second. The paper's runs used a fused-kernel implementation of the same recipe, so
+ablation's readouts (Fig. 4a) and its variant's are trained on ArchipelaGO with --readouts esm2_3b_l36_linear
+esm2_15b_l48_linear esm2_15b_l48_narrow esm2_15b_l48_adamw esm2_15b_l48_second esm2_3b_l36_adamw esm2_15b_l48_adamw_2048
+prott5_l24. The paper's runs used a fused-kernel implementation of the same recipe, so
 retrained scores match up to seed and precision noise, not bit for bit.
 
 Inputs under the data root: datasets/<training set>, datasets/development (labels for early stopping), datasets/test

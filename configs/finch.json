@@ -1,5 +1,5 @@
 {
-  "description": "Finch: two readouts trained on ArchipelaGO and their weighted mean (manuscript Methods, Finch). Settings under 'training' are shared by every readout; each readout lists its encoder, the embedding it reads (inputs/embeddings/<embedding>) and its recipe. 'ladder' lists the other models of the Finch recipe ablation (Fig. 4a and its control), each the weighted mean of readouts like Finch; the ablation ends at Finch itself. A readout with width null is the linear readout (no hidden layer, no dropout); asam_rho null trains with AdamW alone; seed_offset trains the readout with the run's seed plus that offset. 'release_seeds': the runs in the released model package (scripts/export_package.py).",
+  "description": "Finch: two readouts trained on ArchipelaGO and their weighted mean (manuscript Methods, Finch). Settings under 'training' are shared by every readout; each readout lists its encoder, the embedding it reads (inputs/embeddings/<embedding>) and its recipe. 'ladder' lists the other models of the Finch recipe ablation (Fig. 4a, its control and two comparisons: the hidden layer on ESM2-3B and one of width 2,048 on ESM2-15B), each the weighted mean of readouts like Finch; the ablation ends at Finch itself. 'variants' lists Finch with a readout replaced (its ProtT5 readout on ProtT5's last layer, 24), at Finch's weights. A readout with width null is the linear readout (no hidden layer, no dropout); dropout 0.0 trains a hidden layer without dropout; asam_rho null trains with AdamW alone; seed_offset trains the readout with the run's seed plus that offset. 'release_seeds': the runs in the released model package (scripts/export_package.py).",
   "weights": {
     "esm2_15b_l48": 0.725,
     "prott5_l21": 0.275
@@ -65,13 +65,51 @@
       "lr": 1e-05,
       "asam_rho": 8.0,
       "seed_offset": 3
+    },
+    "esm2_15b_l48_narrow": {
+      "encoder": "ESM2-15B (facebook/esm2_t48_15B_UR50D), layer 48, 5,120 dimensions",
+      "embedding": "esm2_15b_l48",
+      "width": 1024,
+      "dropout": 0.0,
+      "lr": 3e-05,
+      "asam_rho": null
+    },
+    "esm2_3b_l36_adamw": {
+      "encoder": "ESM2-3B (facebook/esm2_t36_3B_UR50D), layer 36, 2,560 dimensions",
+      "embedding": "esm2_3b_l36",
+      "width": 8192,
+      "dropout": 0.8,
+      "lr": 3e-05,
+      "asam_rho": null
+    },
+    "esm2_15b_l48_adamw_2048": {
+      "encoder": "ESM2-15B (facebook/esm2_t48_15B_UR50D), layer 48, 5,120 dimensions",
+      "embedding": "esm2_15b_l48",
+      "width": 2048,
+      "dropout": 0.7,
+      "lr": 1e-05,
+      "asam_rho": null
+    },
+    "prott5_l24": {
+      "encoder": "ProtT5-XL-U50 (Rostlab/prot_t5_xl_half_uniref50-enc), layer 24 (the last, after its closing LayerNorm), first 1,024 tokens, 1,024 dimensions",
+      "embedding": "prott5_l24",
+      "width": 4096,
+      "dropout": 0.6,
+      "lr": 3e-05,
+      "asam_rho": 4.0
     }
   },
   "ladder": {
     "ladder_linear_esm2_3b": {"esm2_3b_l36_linear": 1.0},
     "ladder_linear_esm2_15b": {"esm2_15b_l48_linear": 1.0},
+    "ladder_narrow": {"esm2_15b_l48_narrow": 1.0},
     "ladder_hidden": {"esm2_15b_l48_adamw": 1.0},
     "ladder_asam": {"esm2_15b_l48": 1.0},
-    "ladder_two_esm2_15b": {"esm2_15b_l48": 0.5, "esm2_15b_l48_second": 0.5}
+    "ladder_two_esm2_15b": {"esm2_15b_l48": 0.5, "esm2_15b_l48_second": 0.5},
+    "ladder_hidden_esm2_3b": {"esm2_3b_l36_adamw": 1.0},
+    "ladder_hidden_2048": {"esm2_15b_l48_adamw_2048": 1.0}
+  },
+  "variants": {
+    "finch_prott5_l24": {"esm2_15b_l48": 0.725, "prott5_l24": 0.275}
   }
 }

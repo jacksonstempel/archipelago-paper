@@ -82,8 +82,8 @@ original data `original_deepgose`, `original_transfew`, `original_dpfunc`.
 vocabulary order; raw scores, which the scorer propagates (DeepGO-SE's are already propagated, as its published inference
 does). `record.json` is written last and marks the fit complete. Further checkpoints of a fit are
 `<split>_scores_<name>.npy` (TransFew: `bcebest`, `auprcbest`). Methods: `finch`, `deepgose`, `transfew`, `dpfunc`,
-`naive`, `diamond_knn`, `diamond_knn_screen`, `embedding_knn`, and the recipe ablation's models (`ladder_*`, listed in
-`configs/finch.json`); the training set of the original data is `original`.
+`naive`, `diamond_knn`, `diamond_knn_screen`, `embedding_knn`, and the recipe ablation's models (`ladder_*` and
+`finch_prott5_l24`, listed in `configs/finch.json`); the training set of the original data is `original`.
 Finch's readouts are in `runs/finch/<training set>/seed<k>/<readout>/`, with `readout.pt` (`state_dict`, `readout`,
 `seed`, `recipe`, `input_dim`, `terms`, `vocabulary`, `best_step`), which `scripts/export_package.py` packages.
 
