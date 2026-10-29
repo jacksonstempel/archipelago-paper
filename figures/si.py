@@ -1,19 +1,21 @@
-"""Tables and figures of the Supplementary Information: LaTeX table bodies (rows only; the SI typesets the headers) and two
-figures, written into <out>/si/. Reads, under <root>/results/:
+"""Tables and figures of the Supplementary Information: LaTeX table bodies (rows only; the SI typesets the headers) and
+one figure, written into <out>/si/. Reads, under <root>/results/:
 
   main/{metrics.tsv,contrasts.tsv}                         every model on every training set (retrain.scoring.score main)
   dataset_sizes.tsv                                        retrain.scoring.sizes
   experimental_test_labels/{metrics.tsv,contrasts.tsv,counts.tsv}   retrain.scoring.test_labels
   explabels_training/{metrics.tsv,contrasts.tsv}           retrain.scoring.score explabels_training
   no_hit/{subsets.tsv,differences.tsv}                     retrain.scoring.no_hit
-  pr_curves/curves.tsv                                     retrain.scoring.pr_curves
   selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
+  parameters.json                                          retrain.scoring.parameters
 
 Supplementary Table 1 (the annotation sources) is typed in the SI and the label-review prompt is released with the
 reviewed labels; neither is generated here. Nor is the SI's comparison of the two losses on the development set, which
 comes from the learning-rate and dropout search that chose the recipe (not part of this repository).
 """
+import json
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -40,7 +42,7 @@ def write(out, name, lines):
 
 
 def tables(results, out):
-    """Every table body of the SI."""
+    """Every table body of the SI but those of the recipe ablation."""
     main = {split: seed_means(results / 'main', split) for split in ('test', 'development')}
     m = lambda method, ts, metric, split='test': main[split].get((method, ts, metric))  # noqa: E731
     contrast = contrasts(results / 'main')
@@ -77,9 +79,9 @@ def tables(results, out):
     write(out, 'table_ladder.tex', lines)
 
     # Supplementary Table 4: paired differences
-    def differences(table, method, a, method_b, b, metrics=(('auprc', 3), ('fmax', 3), ('smin', 2))):
+    def differences(table, method, a, method_b, b):
         cells = []
-        for k, places in metrics:
+        for k, places in (('auprc', 3), ('fmax', 3), ('smin', 2)):
             r = table[k, method, a, method_b, b]
             cells.append(f"{r3(r['difference'], True, places)} {ci(r['ci_low'], r['ci_high'], places)}")
         return cells
@@ -138,19 +140,6 @@ def tables(results, out):
     experimental_contrast = contrasts(folder)
     value = {'official': lambda method, ts: float(m(method, ts, 'auprc')['value']),
              'exp': lambda method, ts: float(experimental[method, ts, 'auprc']['value'])}
-    models = ([(method, ts) for method in PUBLISHED for ts in ('original', 'goa', 'hq', 'archipelago')]
-              + [('finch', ts) for ts in ('goa', 'hq', 'hq_random', 'archipelago')]
-              + [('naive', ts) for ts in ('goa', 'hq', 'archipelago')])
-    lines = []
-    for method in ['finch', 'transfew', 'deepgose', 'dpfunc', 'naive']:
-        first = True
-        for ts, name in SETS:
-            if (method, ts) not in models:
-                continue
-            lines.append(f"{NAMES[method] if first else ''} & {name} & {r3(value['official'](method, ts))} & "
-                         f"{r3(value['exp'](method, ts))} \\\\")
-            first = False
-    write(out, 'table_explabels.tex', lines)
     steps = [(method, a, b) for method in PUBLISHED
              for a, b in (('original', 'goa'), ('goa', 'hq'), ('hq', 'archipelago'), ('original', 'archipelago'))] + \
             [('finch', 'goa', 'hq'), ('finch', 'hq', 'hq_random'), ('finch', 'hq', 'archipelago'),
@@ -202,16 +191,13 @@ def tables(results, out):
     nohit = {(r['subset'], r['method'], r['base']): r for r in read(folder / 'differences.tsv')}
     cutname = {'none': 'all test proteins', '1e-10': r'$10^{-10}$', '1e-06': r'$10^{-6}$', '0.001': r'$10^{-3}$',
                '0.01': r'$10^{-2}$', '0.1': r'$10^{-1}$', '1': '1', '10': '10'}
-    for name, columns in (('table_nohit.tex', [('finch', 'hq'), ('finch', 'hq_random')] +
-                           [(method, 'original') for method in PUBLISHED]),
-                          ('table_nohit_hq.tex', [(method, 'hq') for method in PUBLISHED])):
-        lines = []
-        for cut, n, k in subsets:
-            cells = [f"{r3(nohit[cut, method, base]['difference'], True)} "
-                     f"{ci(nohit[cut, method, base]['ci_low'], nohit[cut, method, base]['ci_high'])}"
-                     for method, base in columns]
-            lines.append(f'{cutname[cut]} & {n:,} & {k:,} & ' + ' & '.join(cells) + r' \\')
-        write(out, name, lines)
+    lines = []
+    for cut, n, k in subsets:
+        cells = [f"{r3(nohit[cut, method, base]['difference'], True)} "
+                 f"{ci(nohit[cut, method, base]['ci_low'], nohit[cut, method, base]['ci_high'])}"
+                 for method, base in [('finch', 'hq'), ('finch', 'hq_random')] + [(p, 'original') for p in PUBLISHED]]
+        lines.append(f'{cutname[cut]} & {n:,} & {k:,} & ' + ' & '.join(cells) + r' \\')
+    write(out, 'table_nohit.tex', lines)
 
     # selection rules and number of picks (Finch)
     folder = results / 'selection'
@@ -250,29 +236,37 @@ def tables(results, out):
                          (('archipelago_600k', 'archipelago_300k'), '600,000 $-$ 300,000 picks')):
         if a == 'archipelago_300k':
             lines.append(r'\midrule')
-        cells = differences(selection_contrast, 'finch', a, 'finch', b,
-                            (('auprc', 3), ('fmax', 3), ('f1', 3), ('smin', 2)))
-        lines.append(f'{name} & ' + ' & '.join(cells) + r' \\')
+        lines.append(f'{name} & ' + ' & '.join(differences(selection_contrast, 'finch', a, 'finch', b)) + r' \\')
     write(out, 'table_arms_diff.tex', lines)
     return subsets, nohit
 
 
-def recipe_table(results, out):
-    """The Finch recipe ablation (Fig. 4a), all on ArchipelaGO: test AUPRC, Fmax and Smin, development AUPRC, the step
-    from the model it builds on and the difference from DeepGO-SE (paired)."""
+def recipe_tables(results, out):
+    """The Finch recipe ablation (Fig. 4a) and further models, all trained on ArchipelaGO: test AUPRC, Fmax and Smin,
+    development AUPRC, for the ablation the paired gain over the step it builds on, and trainable parameters in
+    millions; then the paired comparisons cited in the main text."""
     folder = results / 'ladder'
     ladder = {split: seed_means(folder, split) for split in ('test', 'development')}
     ladder_contrast = contrasts(folder)
-    readouts = finch_config()['readouts']
-    models = finch_config()['ladder']
+    settings = finch_config()
+    models = {**settings['ladder'], **settings['variants']}
+    parameters = json.loads((results / 'parameters.json').read_text(encoding='utf-8'))
+    millions = lambda n: f'{n / 1e6:,.1f}'  # noqa: E731
 
-    def setting(model):
-        """The learning rate and dropout of a one-readout model, in LaTeX."""
-        r = readouts[next(iter(models[model]))]
+    def setting(readout):
+        """A readout's learning rate and dropout, in LaTeX."""
+        r = settings['readouts'][readout]
         mantissa, exponent = f"{r['lr']:.0e}".split('e')
         lr = r'$10^{%d}$' % int(exponent) if mantissa == '1' else r'$%s\times10^{%d}$' % (mantissa, int(exponent))
         return lr + ('' if r['dropout'] is None else f", {r['dropout']:g}")
 
+    def scores(model):
+        t = lambda k: ladder['test'][model, 'archipelago', k]  # noqa: E731
+        return (f"{r3(t('auprc')['value'])} {ci(t('auprc')['ci_low'], t('auprc')['ci_high'])} & "
+                f"{r3(t('fmax')['value'])} & {float(t('smin')['value']):.2f} & "
+                f"{r3(ladder['development'][model, 'archipelago', 'auprc']['value'])}")
+
+    # where None: the learning rate and dropout of the model's one readout
     lines = []
     for model, name, base, where in (
             ('ladder_linear_esm2_3b', 'Linear readout on ESM2-3B', None, None),
@@ -284,23 +278,60 @@ def recipe_table(results, out):
             ('ladder_two_esm2_15b', 'Control: + a second ESM2-15B network, averaged', 'ladder_asam', 'as step 4')):
         if model == 'ladder_two_esm2_15b':
             lines.append(r'\midrule')
-        t = lambda k: ladder['test'][model, 'archipelago', k]  # noqa: E731
         step = DASH
         if base:
             d = ladder_contrast['auprc', model, 'archipelago', base, 'archipelago']
             step = f"{r3(d['difference'], True)} {ci(d['ci_low'], d['ci_high'])}"
-        d = ladder_contrast['auprc', model, 'archipelago', 'deepgose', 'archipelago']
-        development = ladder['development'][model, 'archipelago', 'auprc']['value']
-        lines.append(f"{name} & {where or setting(model)} & {r3(t('auprc')['value'])} "
-                     f"{ci(t('auprc')['ci_low'], t('auprc')['ci_high'])} & {r3(t('fmax')['value'])} & "
-                     f"{float(t('smin')['value']):.2f} & {r3(development)} & "
-                     f"{step} & {r3(d['difference'], True)} {ci(d['ci_low'], d['ci_high'])} \\\\")
+        lines.append(f"{name} & {where or setting(next(iter(models[model])))} & {scores(model)} & {step} & "
+                     f"{millions(sum(parameters[model].values()))} \\\\")
     write(out, 'table_recipe.tex', lines)
 
+    # further models; Finch with ProtT5 layer 24 shows the learning rate and dropout of that network
+    lines = []
+    for model, name, where in (('ladder_hidden_esm2_3b', 'Wide hidden layer on ESM2-3B', None),
+                               ('ladder_hidden_2048', 'Hidden layer of 2,048 units on ESM2-15B', None),
+                               ('finch_prott5_l24', 'Finch with ProtT5 layer 24', setting('prott5_l24')),
+                               ('deepgose', 'DeepGO-SE', 'published'), ('transfew', 'TransFew', 'published'),
+                               ('dpfunc', 'DPFunc', 'published')):
+        parts = parameters[model].values()
+        count = millions(sum(parts))
+        if model == 'deepgose':  # one part per world of the ensemble
+            lines.append(r'\midrule')
+            count = f'{millions(sum(parts) / len(parts))} per model, {count} for six'
+        lines.append(f"{name} & {where or setting(next(iter(models[model])))} & {scores(model)} & {count} \\\\")
+    write(out, 'table_variants.tex', lines)
 
-def figures(results, out, subsets, nohit):
-    """The gain against the no-hit cutoff, and the precision-recall curves of the published methods."""
-    main = seed_means(results / 'main')
+    # the paired comparisons cited in the main text; a bound that rounds to zero keeps its sign, so each interval shows
+    # on which side of zero it ends
+    def bound(value, places):
+        s = r3(value, places=places)
+        return '$-$' + s if float(value) < 0 and not s.startswith('$-$') else s
+
+    def paired(d, places):
+        s = bound(d['difference'], places)
+        return f"{s if s.startswith('$-$') else '+' + s} [{bound(d['ci_low'], places)}, {bound(d['ci_high'], places)}]"
+
+    lines = []
+    for a, b, name in (('ladder_linear_esm2_15b', 'deepgose', 'Linear readout on ESM2-15B $-$ DeepGO-SE'),
+                       ('ladder_narrow', 'deepgose', 'Hidden layer of 1,024 units on ESM2-15B $-$ DeepGO-SE'),
+                       ('ladder_narrow', 'transfew', 'Hidden layer of 1,024 units on ESM2-15B $-$ TransFew'),
+                       ('ladder_hidden', 'deepgose', 'Wide hidden layer on ESM2-15B $-$ DeepGO-SE'),
+                       ('ladder_hidden_esm2_3b', 'deepgose', 'Wide hidden layer on ESM2-3B $-$ DeepGO-SE'),
+                       ('deepgose', 'ladder_linear_esm2_3b', 'DeepGO-SE $-$ linear readout on ESM2-3B'),
+                       ('ladder_hidden_esm2_3b', 'ladder_linear_esm2_3b',
+                        'Wide hidden layer $-$ linear readout, both on ESM2-3B'),
+                       ('ladder_hidden', 'transfew', 'Wide hidden layer on ESM2-15B $-$ TransFew'),
+                       ('transfew', 'ladder_linear_esm2_15b', 'TransFew $-$ linear readout on ESM2-15B'),
+                       ('ladder_hidden_2048', 'ladder_hidden', '2,048 units $-$ 8,192 units, both on ESM2-15B'),
+                       ('finch', 'finch_prott5_l24', 'Finch $-$ Finch with ProtT5 layer 24')):
+        cells = [paired(ladder_contrast[k, a, 'archipelago', b, 'archipelago'], places)
+                 for k, places in (('auprc', 3), ('fmax', 3), ('smin', 2))]
+        lines.append(f'{name} & ' + ' & '.join(cells) + r' \\')
+    write(out, 'table_pairs.tex', lines)
+
+
+def figure(out, subsets, nohit):
+    """The gain against the no-hit cutoff."""
     fig, axes = plt.subplots(1, 2, figsize=(DOUBLE, 2.5), sharey=True)
     fig.subplots_adjust(left=0.07, right=0.99, bottom=0.27, top=0.9, wspace=0.08)
     x = np.arange(len(subsets))
@@ -328,34 +359,10 @@ def figures(results, out, subsets, nohit):
     axes[0].set_ylim(-0.01, 0.2)
     save(fig, out, 'si_fig_nohit')
 
-    pr = {}
-    for r in read(results / 'pr_curves' / 'curves.tsv'):
-        if r['seed'] == 'mean':
-            pr.setdefault((r['method'], r['training_set']), []).append((float(r['recall']), float(r['precision'])))
-    fig, axes = plt.subplots(1, 3, figsize=(DOUBLE, 2.75), sharey=True)
-    fig.subplots_adjust(left=0.07, right=0.99, bottom=0.15, top=0.9, wspace=0.1)
-    for ax, method in zip(axes, PUBLISHED):
-        for ts, name in (('archipelago', 'ArchipelaGO'), ('hq', 'HQ'), ('original', 'Original data')):
-            recall, precision = np.array(pr[method, ts]).T
-            ax.plot(recall, precision, color=COLOURS[ts], lw=1.2, label=f"{name}  {r3(main[method, ts, 'auprc']['value'])} | "
-                                                                       f"{r3(main[method, ts, 'fmax']['value'])}")
-            f1 = 2 * recall * precision / np.maximum(recall + precision, 1e-12)
-            k = int(np.argmax(f1))
-            ax.scatter(recall[k], precision[k], s=12, color=COLOURS[ts], edgecolors=INK, linewidths=0.4, zorder=4)
-        ax.set_title(NAMES[method], fontsize=fs(7), fontweight='bold', loc='left')
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1.02)
-        ax.set_xticks(np.arange(0, 1.01, 0.2))
-        ax.set_xlabel('Recall')
-        ax.legend(loc='lower left', title='AUPRC | Fmax', frameon=False, fontsize=fs(5.5), title_fontsize=fs(5.5),
-                  alignment='left', handlelength=1.4)
-    axes[0].set_ylabel('Precision')
-    save(fig, out, 'si_fig_pr')
-
 
 def draw(results, out):
     out = out / 'si'
     out.mkdir(parents=True, exist_ok=True)
     subsets, nohit = tables(results, out)
-    recipe_table(results, out)
-    figures(results, out, subsets, nohit)
+    recipe_tables(results, out)
+    figure(out, subsets, nohit)

@@ -104,10 +104,10 @@ def seed_everything(seed):
     torch.backends.cudnn.allow_tf32 = False
 
 
-def new_model(terms):
+def new_model(terms, device):
     from retrain.dpfunc.model import combine_inter_model
     model = combine_inter_model(inter_size=N_INTERPRO, inter_hid=1280, graph_size=1280, graph_hid=1280, label_num=terms,
-                                head=4).cuda()
+                                head=4).to(device)
     model.GNN.conv1.set_allow_zero_in_degree(True)
     model.GNN.conv2.set_allow_zero_in_degree(True)
     return model
@@ -183,7 +183,7 @@ def train(root, ontology, training_set, seed, folder):
     ontology.assert_closed(train_split.labels)
     seed_everything(seed)
     loader = train_split.loader(shuffle=True)
-    model = new_model(terms)
+    model = new_model(terms, 'cuda')
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
     loss_fn, history, kept, started = FocalLoss(), [], [], time.monotonic()
     log(f'DPFunc on {training_set}, seed {seed}: {len(loader.dataset):,} proteins, {EPOCHS} epochs')
@@ -219,7 +219,7 @@ def predict(root, ontology, training_set, seed, folder):
     dev, test = Split(root, 'development', terms), Split(root, 'test', terms, labels=False)
     dev_parts, test_parts = [], []
     for epoch in range(EPOCHS - AVERAGED + 1, EPOCHS + 1):
-        model = new_model(terms)
+        model = new_model(terms, 'cuda')
         model.load_state_dict(torch.load(folder / f'epoch{epoch}.pt', map_location='cuda')['model_state_dict'])
         dev_parts.append(evaluate(model, dev)[0])
         test_parts.append(evaluate(model, test)[0])

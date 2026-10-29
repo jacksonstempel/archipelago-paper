@@ -165,11 +165,12 @@ python -m retrain.scoring.score main                 # every model of Table 1 an
 python -m retrain.scoring.score selection            # Finch on the Fig. 3a control sets and the dose sets
 python -m retrain.scoring.score ladder               # the recipe ablation of Fig. 4a, its variants, Finch, published methods
 python -m retrain.scoring.score explabels_training    # models trained on HQ with experimental labels only
-python -m retrain.scoring.pr_curves                  # precision-recall curves
+python -m retrain.scoring.pr_curves                  # precision-recall curves (Fig. 4b)
 python -m retrain.scoring.distances                  # distances of the added proteins to HQ (Fig. 3b; GPU)
 python -m retrain.scoring.test_labels                # scoring against experimental-only test labels
 python -m retrain.scoring.no_hit                     # test proteins without training relatives (DIAMOND)
 python -m retrain.scoring.sizes                      # sizes of every training set
+python -m retrain.scoring.parameters                 # trainable parameters of the models on ArchipelaGO (CPU)
 python -m figures.make_all                           # every figure and table -> <data root>/figures
 ```
 

@@ -1,5 +1,5 @@
-"""Micro-averaged precision-recall curves on the test set (Fig. 4b and the Supplementary Information), from the scored
-files of the main run.
+"""Micro-averaged precision-recall curves on the test set of Finch and the published methods trained on ArchipelaGO
+(Fig. 4b), from the scored files of the main run.
 
     python -m retrain.scoring.pr_curves [--data DIR] [--device cuda|cpu]
 
@@ -23,8 +23,7 @@ from archipelago.go import Propagation, read_parents
 from archipelago.io import read_labels, read_table, read_vocabulary
 from retrain.common import add_argument, data_root, log
 
-MODELS = {('finch', 'archipelago')} | {(m, t) for m in ('dpfunc', 'transfew', 'deepgose')
-                                         for t in ('original', 'hq', 'archipelago')}
+MODELS = {(m, 'archipelago') for m in ('finch', 'dpfunc', 'transfew', 'deepgose')}
 GRID = np.arange(1, 501) / 500
 
 
