@@ -5,7 +5,7 @@ one figure, written into <out>/si/. Reads, under <root>/results/:
   dataset_sizes.tsv                                        retrain.scoring.sizes
   experimental_test_labels/{metrics.tsv,contrasts.tsv,counts.tsv}   retrain.scoring.test_labels
   explabels_training/{metrics.tsv,contrasts.tsv}           retrain.scoring.score explabels_training
-  no_hit/{subsets.tsv,differences.tsv}                     retrain.scoring.no_hit
+  no_hit/{subsets.tsv,differences.tsv,E0.001/,E10/}        retrain.scoring.no_hit
   selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
@@ -34,6 +34,19 @@ def r3(value, sign=False, places=3):
 
 def ci(low, high, places=3):
     return f'[{r3(low, places=places)}, {r3(high, places=places)}]'
+
+
+def bound(value, places):
+    """Rounded half up; a negative number that rounds to zero keeps its sign, so an interval shows on which side of zero
+    it ends."""
+    s = r3(value, places=places)
+    return '$-$' + s if float(value) < 0 and not s.startswith('$-$') else s
+
+
+def paired(d, places):
+    """A contrasts.tsv row: the signed difference and its interval."""
+    s = bound(d['difference'], places)
+    return f"{s if s.startswith('$-$') else '+' + s} [{bound(d['ci_low'], places)}, {bound(d['ci_high'], places)}]"
 
 
 def write(out, name, lines):
@@ -199,6 +212,20 @@ def tables(results, out):
         lines.append(f'{cutname[cut]} & {n:,} & {k:,} & ' + ' & '.join(cells) + r' \\')
     write(out, 'table_nohit.tex', lines)
 
+    # Finch's lead over DeepGO-SE and TransFew, all trained on ArchipelaGO, on two of the no-hit subsets and with
+    # experimental-only labels
+    size = {cut: f'{n:,}' for cut, n, _ in subsets}
+    lines = []
+    for table, name, n in ((contrasts(folder / 'E0.001'), r'No hit at \Eval{10^{-3}}', size['0.001']),
+                           (contrasts(folder / 'E10'), r'No hit at \Eval{10}', size['10']),
+                           (experimental_contrast, 'Experimental-only labels', r'\CountExpProteins{}')):
+        for method in ('deepgose', 'transfew'):
+            cells = [paired(table[k, 'finch', 'archipelago', method, 'archipelago'], places)
+                     for k, places in (('auprc', 3), ('fmax', 3), ('smin', 2))]
+            lines.append((f'{name} & {n}' if method == 'deepgose' else ' & ') + f' & {NAMES[method]} & '
+                         + ' & '.join(cells) + r' \\')
+    write(out, 'table_lead.tex', lines)
+
     # selection rules and number of picks (Finch)
     folder = results / 'selection'
     selection = {split: seed_means(folder, split) for split in ('test', 'development')}
@@ -301,16 +328,7 @@ def recipe_tables(results, out):
         lines.append(f"{name} & {where or setting(next(iter(models[model])))} & {scores(model)} & {count} \\\\")
     write(out, 'table_variants.tex', lines)
 
-    # the paired comparisons cited in the main text; a bound that rounds to zero keeps its sign, so each interval shows
-    # on which side of zero it ends
-    def bound(value, places):
-        s = r3(value, places=places)
-        return '$-$' + s if float(value) < 0 and not s.startswith('$-$') else s
-
-    def paired(d, places):
-        s = bound(d['difference'], places)
-        return f"{s if s.startswith('$-$') else '+' + s} [{bound(d['ci_low'], places)}, {bound(d['ci_high'], places)}]"
-
+    # the paired comparisons cited in the main text
     lines = []
     for a, b, name in (('ladder_linear_esm2_15b', 'deepgose', 'Linear readout on ESM2-15B $-$ DeepGO-SE'),
                        ('ladder_narrow', 'deepgose', 'Hidden layer of 1,024 units on ESM2-15B $-$ DeepGO-SE'),

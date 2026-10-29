@@ -12,7 +12,8 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   dataset_sizes.tsv                         sizes               Supplementary Table 2
   experimental_test_labels/                 test_labels         SI: experimental-only test labels
   explabels_training/                       score explabels_training   SI: HQ trained with experimental labels only
-  no_hit/subsets.tsv, differences.tsv       no_hit              SI: test proteins without training relatives
+  no_hit/subsets.tsv, differences.tsv,      no_hit              SI: test proteins without training relatives, and
+    E0.001/contrasts.tsv, E10/contrasts.tsv                     Finch's lead there
 
 Fig. 1 reads the counts in figures/sankey_counts.json; Extended Data Fig. 1 is a schematic.
 DIAMOND-kNN is the method `diamond_knn` of the main run (no E-value cutoff, as reported).

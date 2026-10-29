@@ -8,7 +8,8 @@ hit in any training set at progressively looser E-value cutoffs (Supplementary I
    E <= 10,000, at most 25 targets per query, the screen's fixed database size): results/no_hit/test_hits.tsv.
 2. For each cutoff c in 1e-10, 1e-6, 1e-3, 0.01, 0.1, 1, 10: the test proteins whose best hit has E > c (or that have no
    hit), scored with the scorer (the main run's fits; test labels and clusters of those proteins only):
-   results/no_hit/E<c>/. Sizes in results/no_hit/subsets.tsv.
+   results/no_hit/E<c>/, with contrasts.tsv as retrain.scoring.score writes it. Sizes in
+   results/no_hit/subsets.tsv.
 3. results/no_hit/differences.tsv: per subset (`none` = all test proteins, from results/main), model and earlier training
    set, the test micro-AUPRC of ArchipelaGO minus that set (seed means) with its paired 95% cluster-bootstrap interval.
 
@@ -24,7 +25,7 @@ from pathlib import Path
 import numpy as np
 
 from retrain.common import DIAMOND_DBSIZE, add_argument, data_root, diamond, load, log, write_fasta
-from retrain.scoring.score import bundle, fits, run_scorer, test_subset
+from retrain.scoring.score import bundle, contrasts, fits, run_scorer, test_subset
 
 TRAINING_SETS = ('goa', 'hq', 'hq_random', 'archipelago', 'original_deepgose', 'original_dpfunc', 'original_transfew')
 CUTOFFS = (1e-10, 1e-6, 1e-3, 1e-2, 1e-1, 1.0, 10.0)
@@ -91,6 +92,7 @@ def main():
         log(f'E <= {name}: {len(keep):,} test proteins without a hit, {clusters:,} clusters')
         config = test_subset(root, data, root / 'scoring' / f'no_hit_E{name}', keep, labels, models)
         run_scorer(root, config, out / f'E{name}', a.device)
+        contrasts(out / f'E{name}')
         subsets.append((name, len(keep), clusters, out / f'E{name}'))
     with open(out / 'subsets.tsv', 'w', newline='\n') as handle:
         handle.write('cutoff\tproteins\tclusters\n')
