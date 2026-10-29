@@ -93,7 +93,7 @@ checkpoint kept (checks every 1,000 updates, patience 20); their raw scores are 
 one ArchipelaGO run (seed 9301, `release_seeds`), with the threshold of its development micro-Fmax as the default cut.
 
 The recipe ablation (Fig. 4a) builds Finch up on ArchipelaGO: a linear readout on ESM2-3B, the same on ESM2-15B, a narrow
-hidden layer (width 1,024, no dropout), the full hidden layer (width 8,192, dropout 0.8), ASAM (Finch's ESM2-15B readout),
+hidden layer (width 1,024, dropout 0.3), the full hidden layer (width 8,192, dropout 0.8), ASAM (Finch's ESM2-15B readout),
 and Finch. A control averages two ESM2-15B networks trained with different seeds; two comparisons train the full hidden
 layer on ESM2-3B and a hidden layer of width 2,048 on ESM2-15B. Each model is listed under `ladder` in
 `configs/finch.json` with the learning rate and dropout that the paper chose for it on the development set (the search

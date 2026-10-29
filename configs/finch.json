@@ -1,5 +1,5 @@
 {
-  "description": "Finch: two readouts trained on ArchipelaGO and their weighted mean (manuscript Methods, Finch). Settings under 'training' are shared by every readout; each readout lists its encoder, the embedding it reads (inputs/embeddings/<embedding>) and its recipe. 'ladder' lists the other models of the Finch recipe ablation (Fig. 4a, its control and two comparisons: the hidden layer on ESM2-3B and one of width 2,048 on ESM2-15B), each the weighted mean of readouts like Finch; the ablation ends at Finch itself. 'variants' lists Finch with a readout replaced (its ProtT5 readout on ProtT5's last layer, 24), at Finch's weights. A readout with width null is the linear readout (no hidden layer, no dropout); dropout 0.0 trains a hidden layer without dropout; asam_rho null trains with AdamW alone; seed_offset trains the readout with the run's seed plus that offset. 'release_seeds': the runs in the released model package (scripts/export_package.py).",
+  "description": "Finch: two readouts trained on ArchipelaGO and their weighted mean (manuscript Methods, Finch). Settings under 'training' are shared by every readout; each readout lists its encoder, the embedding it reads (inputs/embeddings/<embedding>) and its recipe. 'ladder' lists the other models of the Finch recipe ablation (Fig. 4a, its control and two comparisons: the hidden layer on ESM2-3B and one of width 2,048 on ESM2-15B), each the weighted mean of readouts like Finch; the ablation ends at Finch itself. 'variants' lists Finch with a readout replaced (its ProtT5 readout on ProtT5's last layer, 24), at Finch's weights. A readout with width null is the linear readout (no hidden layer, no dropout); asam_rho null trains with AdamW alone; seed_offset trains the readout with the run's seed plus that offset. 'release_seeds': the runs in the released model package (scripts/export_package.py).",
   "weights": {
     "esm2_15b_l48": 0.725,
     "prott5_l21": 0.275
@@ -70,8 +70,8 @@
       "encoder": "ESM2-15B (facebook/esm2_t48_15B_UR50D), layer 48, 5,120 dimensions",
       "embedding": "esm2_15b_l48",
       "width": 1024,
-      "dropout": 0.0,
-      "lr": 3e-05,
+      "dropout": 0.3,
+      "lr": 1e-05,
       "asam_rho": null
     },
     "esm2_3b_l36_adamw": {
