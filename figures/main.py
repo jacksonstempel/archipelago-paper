@@ -13,7 +13,8 @@ SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on Arc
 # is not drawn
 LADDER = [('ladder_linear_esm2_3b', 'Linear readout,\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
           ('ladder_hidden', '+ hidden\nlayer'), ('ladder_asam', '+ ASAM'), ('finch', '+ ProtT5\nnetwork')]
-Y0, Y1 = 0.4, 0.7  # Fig. 4a's axis
+Y0, Y1 = 0.0, 0.65  # Fig. 4a's axis
+BAND = '#e6e7e9'  # Fig. 4a: the published methods' range on ArchipelaGO
 
 
 def bar(ax, x, v, color, w):
@@ -30,7 +31,7 @@ def style_bars(ax):
 
 def waterfall(ax, auprc):
     """Fig. 4a: test micro-AUPRC from a linear readout on ESM2-3B (a full bar) through one ingredient per step (floating
-    bars from the level before) to Finch (a full bar), each label under its bar."""
+    bars from the level before) to Finch (a full bar), each label under its bar; the published methods as a pale band."""
     levels = [auprc(m, 'archipelago') for m, _ in LADDER]
     w, gap = 0.62, 0.004  # bar width; room between a bar's bottom and its label
     end = len(levels)  # Finch, the full bar after the last step
@@ -54,13 +55,18 @@ def waterfall(ax, auprc):
         label(i, lo, LADDER[i][1])
     ax.plot([end - 1 + w / 2, end - w / 2], [levels[-1]] * 2, color=GREY, lw=0.6, ls=(0, (1.5, 1.5)), zorder=2)
     ax.bar(end, levels[-1] - Y0, w, bottom=Y0, color=FINCH, lw=0, zorder=3)  # Finch, a full bar
-    ax.text(end, levels[-1] + 0.003, half_up(levels[-1]), ha='center', va='bottom', fontsize=fs(6.5), fontweight='bold',
-            zorder=4)
+    ax.text(end, levels[-1] + 0.003, half_up(levels[-1]), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
     label(end, None, 'Finch')
+    # the published methods trained on ArchipelaGO: a pale band over their range, behind the bars
+    lo, hi = min(auprc(m, 'archipelago') for m in PUBLISHED), max(auprc(m, 'archipelago') for m in PUBLISHED)
+    ax.axhspan(lo, hi, color=BAND, lw=0, zorder=1)
+    ax.text(3, lo - 0.008, f'Published methods\n({half_up(lo)}–{half_up(hi)})', ha='center', va='top', fontsize=fs(6.5),
+            color=GREY, linespacing=1.05, zorder=4)  # under the band, between the floating steps
+    ax.spines['bottom'].set_zorder(5)  # the axis line over the bars' bottoms
     ax.set_xticks([])
     ax.set_xlim(-0.55, end + 0.55)
     ax.set_ylim(Y0, Y1)
-    ax.set_yticks(np.arange(Y0, Y1 + 0.001, 0.05))
+    ax.set_yticks(np.arange(Y0, Y1 + 0.001, 0.1))
     ax.set_ylabel('Micro-AUPRC')
 
 

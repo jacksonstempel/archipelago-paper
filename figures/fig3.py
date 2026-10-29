@@ -48,6 +48,7 @@ def densities(ax, results):
         ax.fill_between(x, y, color=color, alpha=0.22, lw=0, zorder=3 + k)
         ax.plot(x, y, color=color, lw=1.6 if name == 'archipelago' else 1.3, label=text, zorder=3 + k,
                 solid_capstyle='butt')
+    ax.spines['bottom'].set_zorder(10)  # the axis line over the filled densities
     ax.set_xlim(0, 0.5)
     ax.set_ylim(0, None)
     ax.set_xticks(np.arange(0, 0.51, 0.1))
