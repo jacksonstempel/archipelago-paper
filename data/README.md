@@ -39,11 +39,13 @@ The Hugging Face dataset, as downloaded (Parquet, one folder per table):
 | `training_annotations/` | their asserted (direct) annotations | `protein_id`, `go_id`, `evidence_class`, `evidence`, `source`, `assigned_by` |
 | `benchmark/development`, `benchmark/test` | 2,500 and 5,000 proteins | `protein_id`, `accessions`, `sequence`, `cluster` (homology cluster), `go_terms` |
 | `benchmark_annotations/` | their asserted annotations, including the accepted review labels | as `training_annotations` |
-| `benchmark_reviews/` | every reviewed non-experimental annotation of the benchmark, accepted or not, with its reasoning | |
+| `benchmark_reviews/` | every reviewed non-experimental annotation of the benchmark, accepted or not, with its reasoning | `protein_id`, `go_id`, `decision` (`accept` or `do_not_accept`), the reasoning and sources |
 | `go_terms/` | the 8,739 vocabulary terms | `go_id`, `name`, `column` (output column), `parents`, `information_accretion`, protein counts |
 | `ontology/go-basic.obo.gz` | the GO release of every label | |
 
-`python -m retrain.datasets.release` turns these into `datasets/{ontology,hq,archipelago,development,test}`.
+`python -m retrain.datasets.release` turns these into `datasets/{ontology,hq,archipelago,development,test}`. The test
+set's reviews are read directly by the scoring with other test labels (`retrain.scoring.test_labels all_goa`,
+`retrain.scoring.masked`); in the test annotations, the accepted ones have the source `literature review (this work)`.
 
 ### Files not in the public release
 
@@ -80,7 +82,8 @@ original data `original_deepgose`, `original_transfew`, `original_dpfunc`.
 
 `dev_scores.npy` and `test_scores.npy`: float32, (2,500 or 5,000) x 8,739, rows in development / test order, columns in
 vocabulary order; raw scores, which the scorer propagates (DeepGO-SE's are already propagated, as its published inference
-does). `record.json` is written last and marks the fit complete. Further checkpoints of a fit are
+does). `record.json` is written last and marks the fit complete. The published methods' records hold `train_seconds`,
+the time spent training (DeepGO-SE: in each world's `record.json`); Finch's is in each readout's `history.json`. Further checkpoints of a fit are
 `<split>_scores_<name>.npy` (TransFew: `bcebest`, `auprcbest`). Methods: `finch`, `deepgose`, `transfew`, `dpfunc`,
 `naive`, `diamond_knn`, `diamond_knn_screen`, `embedding_knn`, and the recipe ablation's models (`ladder_*` and
 `finch_prott5_l24`, listed in `configs/finch.json`); the training set of the original data is `original`.

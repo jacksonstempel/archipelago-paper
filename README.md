@@ -167,14 +167,19 @@ python -m retrain.scoring.score ladder               # the recipe ablation of Fi
 python -m retrain.scoring.score explabels_training    # models trained on HQ with experimental labels only
 python -m retrain.scoring.pr_curves                  # precision-recall curves (Fig. 4b)
 python -m retrain.scoring.distances                  # distances of the added proteins to HQ (Fig. 3b; GPU)
-python -m retrain.scoring.test_labels                # scoring against experimental-only test labels
+python -m retrain.scoring.test_labels experimental   # scoring against experimental-only test labels
+python -m retrain.scoring.test_labels all_goa        # ... with every GOA assertion the label review considered
+python -m retrain.scoring.masked                     # ... with the reviewed GOA assertions masked (GPU)
 python -m retrain.scoring.no_hit                     # test proteins without training relatives (DIAMOND)
 python -m retrain.scoring.sizes                      # sizes of every training set
 python -m retrain.scoring.parameters                 # trainable parameters of the models on ArchipelaGO (CPU)
+python -m retrain.scoring.training_cost              # GPU-hours of the training runs, from the fits' records
 python -m figures.make_all                           # every figure and table -> <data root>/figures
 ```
 
-Scoring the main comparison takes about half a minute on one H100 (a few seconds per run on 32 CPU cores). The figure
+Scoring the main comparison takes about half a minute on one H100 (a few seconds per run on 32 CPU cores). The masked
+scoring computes the scorer's metrics itself, since the scorer cannot leave pairs out, and first checks that without a
+mask it reproduces the scorer's results. The figure
 scripts need only the result files; `--tikz` draws Fig. 1's PDF with true colour gradients through TikZ, as in the paper
 (needs `tectonic` and the Arial font).
 
