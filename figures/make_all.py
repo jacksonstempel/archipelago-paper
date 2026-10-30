@@ -4,7 +4,8 @@
 
 Reads <root>/results/ (written by retrain.scoring; see figures/__init__.py for the files each figure needs) and writes
 into --out (default <root>/figures/): fig1_dataset, fig2_retraining, fig3_choosing, fig4_finch, ed_fig1_finch_model
-(.png, .pdf, .svg), table1.tex, and si/ (the Supplementary Information's table bodies and figure). --tikz writes
+(.png, .pdf, .svg), table1.tex, table2.tex, table2_intervals.tex (Table 2 with intervals, for the SI), and si/ (the
+Supplementary Information's table bodies and figure). --tikz writes
 Fig. 1's PDF through TikZ with true gradients, as in the paper (needs `tectonic` on PATH).
 """
 import argparse
@@ -25,6 +26,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     fig1.draw(out, a.tikz)
     main_figures.figures(results, out)
+    main_figures.table2(results, out)
     fig3.draw(results, out)
     ed_fig1.draw(out)
     si.draw(results, out)

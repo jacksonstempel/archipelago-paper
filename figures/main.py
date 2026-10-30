@@ -1,11 +1,14 @@
 """Figure 2 (every published method retrained), Figure 4 (Finch: the recipe ablation and precision-recall curves) and the
-body of Table 1, from the results: <root>/results/main/metrics.tsv (test, seed means), <root>/results/ladder/metrics.tsv
-and <root>/results/pr_curves/curves.tsv."""
+bodies of Tables 1 and 2, from the results: <root>/results/main/metrics.tsv (test, seed means), <root>/results/ladder/
+metrics.tsv and <root>/results/pr_curves/curves.tsv; Table 2 also reads the contrasts.tsv of every version of the test
+set (main, experimental_test_labels, masked_test_labels, all_goa_test_labels, no_hit/E0.001, no_hit/E10) with the
+label versions' counts.tsv and no_hit/subsets.tsv."""
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import blended_transform_factory
 
-from figures.style import COLOURS, DOUBLE, GREY, INK, NAMES, PUBLISHED, fs, half_up, pr_curves, save, seed_means
+from figures.style import (COLOURS, DOUBLE, GREY, INK, NAMES, PUBLISHED, contrasts, fs, half_up, pr_curves, read, save,
+                           seed_means)
 
 FINCH = COLOURS['archipelago']
 SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on ArchipelaGO first
@@ -171,3 +174,49 @@ def figures(results, out):
     lines += [r'\bottomrule', r'\end{tabular*}', '']
     with open(out / 'table1.tex', 'w', encoding='utf-8', newline='\n') as handle:
         handle.write('\n'.join(lines))
+
+
+def table2(results, out):
+    """Table 2: the paper's three comparisons in test micro-AUPRC (each published method's gain from its original data to
+    ArchipelaGO; Finch on ArchipelaGO minus Finch on HQ + random, and minus each published method on ArchipelaGO), on
+    every version of the test set, read from each version's contrasts.tsv. table2.tex is the tabular the manuscript
+    inputs (full text width, the reviewed labels shaded: colortbl, with `rowshade` defined by the document);
+    table2_intervals.tex, the SI's copy at natural width, adds the paired 95% cluster-bootstrap intervals."""
+    metric = seed_means(results / 'main')
+    comparators = sorted(PUBLISHED, key=lambda m: -float(metric[m, 'original', 'auprc']['value']))
+    proteins = lambda folder, variant: next(int(r['proteins']) for r in read(results / folder / 'counts.tsv')  # noqa: E731
+                                            if r['variant'] == variant)
+    subsets = {float(r['cutoff']): int(r['proteins']) for r in read(results / 'no_hit' / 'subsets.tsv')}
+    # (name, proteins, results folder, main result) per group: the label versions from strictest to loosest, then the
+    # protein subsets; the groups are separated by a rule, not labelled
+    groups = [[('Experimental labels only', proteins('experimental_test_labels', 'exp'), 'experimental_test_labels', False),
+               ('Annotations masked', proteins('masked_test_labels', 'masked'), 'masked_test_labels', False),
+               ('Reviewed labels', proteins('experimental_test_labels', 'all'), 'main', True),
+               ('All GOA annotations', proteins('all_goa_test_labels', 'all_goa'), 'all_goa_test_labels', False)],
+              [(r'No training hit, E\,$\leq$\,10\textsuperscript{-3}', subsets[1e-3], 'no_hit/E0.001', False),
+               (r'No training hit, E\,$\leq$\,10', subsets[10.0], 'no_hit/E10', False)]]
+    n = len(comparators)
+    for name, intervals in (('table2.tex', False), ('table2_intervals.tex', True)):
+        # full width through tabularx's stretched columns, not tabular*'s stretched gaps, which a shaded row leaves white
+        lines = [r'\begin{tabular}{@{}lr' + 'c' * (2 * n + 1) + '@{}}' if intervals else
+                 r'\begin{tabularx}{\textwidth}{@{}lr' + r'>{\centering\arraybackslash}X' * (2 * n + 1) + '@{}}',
+                 r'\toprule',
+                 rf' & & \multicolumn{{{n}}}{{c}}{{\bfseries Original data $\rightarrow$ ArchipelaGO}} & '
+                 rf'\multicolumn{{{n + 1}}}{{c}}{{\bfseries Finch on ArchipelaGO minus}} \\',
+                 rf'\cmidrule(lr){{3-{2 + n}}}\cmidrule(lr){{{3 + n}-{3 + 2 * n}}}',
+                 r'\bfseries Test set & Proteins & ' + ' & '.join(NAMES[m] for m in comparators) + r' & HQ + random & '
+                 + ' & '.join(NAMES[m] for m in comparators) + r' \\']
+        for group in groups:
+            lines.append(r'\midrule')
+            for version, count, folder, main in group:
+                c = contrasts(results / folder)
+                row = [c['auprc', m, 'archipelago', m, 'original'] for m in comparators] + \
+                      [c['auprc', 'finch', 'archipelago', 'finch', 'hq_random']] + \
+                      [c['auprc', 'finch', 'archipelago', m, 'archipelago'] for m in comparators]
+                cells = [f"{half_up(r['difference'])} ({half_up(r['ci_low'])}--{half_up(r['ci_high'])})" if intervals
+                         else half_up(r['difference']) for r in row]
+                lines.append((r'\rowcolor{rowshade}' if main else '') + f'{version} & {count:,} & ' + ' & '.join(cells)
+                             + r' \\')
+        lines += [r'\bottomrule', r'\end{tabular}' if intervals else r'\end{tabularx}', '']
+        with open(out / name, 'w', encoding='utf-8', newline='\n') as handle:
+            handle.write('\n'.join(lines))

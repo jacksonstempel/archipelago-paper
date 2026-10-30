@@ -3,12 +3,17 @@ one figure, written into <out>/si/. Reads, under <root>/results/:
 
   main/{metrics.tsv,contrasts.tsv}                         every model on every training set (retrain.scoring.score main)
   dataset_sizes.tsv                                        retrain.scoring.sizes
-  experimental_test_labels/{metrics.tsv,contrasts.tsv,counts.tsv}   retrain.scoring.test_labels
+  experimental_test_labels/{metrics.tsv,contrasts.tsv,counts.tsv}   retrain.scoring.test_labels experimental
+  all_goa_test_labels/{metrics.tsv,contrasts.tsv}          retrain.scoring.test_labels all_goa
+  masked_test_labels/{metrics.tsv,contrasts.tsv}           retrain.scoring.masked
   explabels_training/{metrics.tsv,contrasts.tsv}           retrain.scoring.score explabels_training
   no_hit/{subsets.tsv,differences.tsv,E0.001/,E10/}        retrain.scoring.no_hit
   selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
+  training_cost.tsv                                        retrain.scoring.training_cost
+
+Main-text Table 2 with intervals (table2_intervals.tex) is written beside Table 2 by figures/main.py.
 
 Supplementary Table 1 (the annotation sources) is typed in the SI and the label-review prompt is released with the
 reviewed labels; neither is generated here. Nor is the SI's comparison of the two losses on the development set, which
@@ -146,35 +151,7 @@ def tables(results, out):
                      + ' & ' + ' & '.join(r3(v['value']) for v in devs) + r' \\')
     write(out, 'table_transfew.tex', lines)
 
-    # experimental-only test labels
-    folder = results / 'experimental_test_labels'
-    counts = {r['variant']: r for r in read(folder / 'counts.tsv')}
-    experimental = seed_means(folder)
-    experimental_contrast = contrasts(folder)
-    value = {'official': lambda method, ts: float(m(method, ts, 'auprc')['value']),
-             'exp': lambda method, ts: float(experimental[method, ts, 'auprc']['value'])}
-    steps = [(method, a, b) for method in PUBLISHED
-             for a, b in (('original', 'goa'), ('goa', 'hq'), ('hq', 'archipelago'), ('original', 'archipelago'))] + \
-            [('finch', 'goa', 'hq'), ('finch', 'hq', 'hq_random'), ('finch', 'hq', 'archipelago'),
-             ('finch', 'hq_random', 'archipelago')]
-    lines = []
-    for method, a, b in steps:
-        cells = []
-        for labels, table in (('official', contrast), ('exp', experimental_contrast)):
-            r = table['auprc', method, b, method, a]
-            cells.append(f"{r3(value[labels](method, b) - value[labels](method, a), True)} {ci(r['ci_low'], r['ci_high'])}")
-        lines.append(f'{NAMES[method]} & {SETNAME[b]} $-$ {SETNAME[a]} & ' + ' & '.join(cells) + r' \\')
-        if b == 'archipelago' and a == 'original':
-            lines.append(r'\addlinespace')
-    write(out, 'table_explabels_diff.tex', lines)
-    with open(out / 'explabels_counts.tex', 'w', encoding='utf-8', newline='\n') as handle:
-        for variant, key in (('all', 'All'), ('exp', 'Exp')):
-            r = counts[variant]
-            handle.write(f"\\newcommand{{\\Count{key}Proteins}}{{{int(r['proteins']):,}}}\n"
-                         f"\\newcommand{{\\Count{key}Pairs}}{{{int(r['propagated_pairs']):,}}}\n"
-                         f"\\newcommand{{\\Count{key}Clusters}}{{{int(r['clusters']):,}}}\n"
-                         f"\\newcommand{{\\Count{key}Terms}}{{{int(r['terms_with_positive']):,}}}\n")
-        handle.write(f"\\newcommand{{\\CountExpDropped}}{{{int(counts['exp']['proteins_dropped']):,}}}\n")
+    experimental_contrast = label_sets(results, out)
 
     # HQ proteins trained with their experimental labels only
     folder = results / 'explabels_training'
@@ -266,6 +243,56 @@ def tables(results, out):
         lines.append(f'{name} & ' + ' & '.join(differences(selection_contrast, 'finch', a, 'finch', b)) + r' \\')
     write(out, 'table_arms_diff.tex', lines)
     return subsets, nohit
+
+
+def label_sets(results, out):
+    """The gains between training sets with the reviewed (official), masked, experimental-only and all GOA test labels, in
+    that column order: the difference of seed means in test micro-AUPRC with its paired 95% interval
+    (table_explabels_diff.tex); and the counts of the experimental-only labels (explabels_counts.tex). Returns the
+    experimental-only labels' contrasts."""
+    folders = ('main', 'masked_test_labels', 'experimental_test_labels', 'all_goa_test_labels')
+    value = {f: {(m, t): float(r['value']) for (m, t, k), r in seed_means(results / f).items() if k == 'auprc'}
+             for f in folders}
+    table = {f: contrasts(results / f) for f in folders}
+    steps = [(method, a, b) for method in PUBLISHED
+             for a, b in (('original', 'goa'), ('goa', 'hq'), ('hq', 'archipelago'), ('original', 'archipelago'))] + \
+            [('finch', 'goa', 'hq'), ('finch', 'hq', 'hq_random'), ('finch', 'hq', 'archipelago'),
+             ('finch', 'hq_random', 'archipelago')]
+    lines = []
+    for method, a, b in steps:
+        cells = []
+        for f in folders:
+            r = table[f]['auprc', method, b, method, a]
+            cells.append(f"{r3(value[f][method, b] - value[f][method, a], True)} {ci(r['ci_low'], r['ci_high'])}")
+        lines.append(f'{NAMES[method]} & {SETNAME[b]} $-$ {SETNAME[a]} & ' + ' & '.join(cells) + r' \\')
+        if b == 'archipelago' and a == 'original':
+            lines.append(r'\addlinespace')
+    write(out, 'table_explabels_diff.tex', lines)
+    counts = {r['variant']: r for r in read(results / 'experimental_test_labels' / 'counts.tsv')}
+    with open(out / 'explabels_counts.tex', 'w', encoding='utf-8', newline='\n') as handle:
+        for variant, key in (('all', 'All'), ('exp', 'Exp')):
+            r = counts[variant]
+            handle.write(f"\\newcommand{{\\Count{key}Proteins}}{{{int(r['proteins']):,}}}\n"
+                         f"\\newcommand{{\\Count{key}Pairs}}{{{int(r['propagated_pairs']):,}}}\n"
+                         f"\\newcommand{{\\Count{key}Clusters}}{{{int(r['clusters']):,}}}\n"
+                         f"\\newcommand{{\\Count{key}Terms}}{{{int(r['terms_with_positive']):,}}}\n")
+        handle.write(f"\\newcommand{{\\CountExpDropped}}{{{int(counts['exp']['proteins_dropped']):,}}}\n")
+    return table['experimental_test_labels']
+
+
+def cost_table(results, out):
+    """Training cost (table_cost.tex, from retrain.scoring.training_cost): per method, GPU-hours of one run on ArchipelaGO
+    (the mean over its runs), of all its runs on ArchipelaGO, and of all its runs on every training set of the main
+    comparison; methods from the cheapest run."""
+    rows = read(results / 'training_cost.tsv')
+    archipelago = {r['method']: r for r in rows if r['training_set'] == 'archipelago'}
+    one = {m: float(r['gpu_hours']) / int(r['runs']) for m, r in archipelago.items()}
+    lines = []
+    for method in sorted(one, key=one.get):
+        total = sum(float(r['gpu_hours']) for r in rows if r['method'] == method)
+        lines.append(f"{NAMES[method]} & {half_up(one[method], places=2 if one[method] < 1 else 1)} & "
+                     f"{half_up(archipelago[method]['gpu_hours'], places=1)} & {half_up(total, places=1)} \\\\")
+    write(out, 'table_cost.tex', lines)
 
 
 def recipe_tables(results, out):
@@ -383,4 +410,5 @@ def draw(results, out):
     out.mkdir(parents=True, exist_ok=True)
     subsets, nohit = tables(results, out)
     recipe_tables(results, out)
+    cost_table(results, out)
     figure(out, subsets, nohit)
