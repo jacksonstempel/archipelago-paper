@@ -15,7 +15,8 @@ Inputs under the data root: datasets/<training set>, datasets/development (label
 
 For each readout, writes runs/finch/<training set>/seed<k>/<readout>/: readout.pt (state_dict, readout, seed, recipe,
 input_dim, terms, vocabulary, best_step: the format scripts/export_package.py reads), dev_scores.npy and test_scores.npy
-(raw sigmoid scores, rows in development/test order) and history.json. A readout with a seed_offset is trained with seed
+(raw sigmoid scores, rows in development/test order) and history.json (with train_seconds, the time spent training,
+development checks included). A readout with a seed_offset is trained with seed
 k + offset and still written under seed<k>. The test set is predicted only after the reloaded checkpoint reproduces the
 development scores kept during training. The paper's fused-kernel runs took 3 to 25 minutes per readout on one H100;
 training proteins and labels are held on the GPU. Host memory: the dense uint8 label matrix and the FP16 ESM2-15B
@@ -68,6 +69,7 @@ def fit(root, training_set, seed, readout, recipe, device, embedding=None, seed_
         f'{x.shape[1]} dimensions, {data.labels.shape[1]} terms')
     started = time.monotonic()
     result = train(x, data.labels.toarray(), dev_x, dev.labels.toarray(), recipe, trained_seed, device=device, log=log)
+    train_seconds = time.monotonic() - started
 
     out = fit_folder(root, 'finch', training_set, seed) / readout
     out.mkdir(parents=True, exist_ok=True)
@@ -83,7 +85,7 @@ def fit(root, training_set, seed, readout, recipe, device, embedding=None, seed_
     np.save(out / 'test_scores.npy', predict(model, test_x, device=device).astype(np.float32))
     (out / 'history.json').write_text(json.dumps(dict(
         best_step=result['best_step'], steps=result['steps'], reproduced_dev_max_abs=difference,
-        seconds=round(time.monotonic() - started), checks=result['history']), indent=1) + '\n', encoding='utf-8')
+        train_seconds=train_seconds, checks=result['history']), indent=1) + '\n', encoding='utf-8')
     log(f"wrote {out}: best development check at update {result['best_step']:,} of {result['steps']:,}")
 
 

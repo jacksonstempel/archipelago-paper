@@ -164,7 +164,7 @@ def world(root, training_set, k):
     write_fit(folder, best_scores, test_scores, dict(
         method=METHOD, training_set=training_set, world=k, propagated=False, best_dev_bce=best, selected_epoch=best_epoch,
         epochs_run=epoch + 1, training_proteins=n, reproduced_dev_max_abs=reproduced, gpu=torch.cuda.get_device_name(),
-        wall_seconds=time.monotonic() - began,
+        train_seconds=sum(h['seconds'] for h in history), wall_seconds=time.monotonic() - began,
         selection=f'lowest development BCE: epoch {best_epoch} (0-based) of {epoch + 1}; stop after {PATIENCE} epochs '
                   f'without improvement, at most {MAX_EPOCHS}'))
     log(f'world {k} of {training_set} done: epoch {best_epoch} kept of {epoch + 1}, '

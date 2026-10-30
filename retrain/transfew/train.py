@@ -150,6 +150,7 @@ def main():
                f'{len(rare):,} rare terms')
 
     best_bce, bce_epoch, best_auprc, auprc_epoch, history = math.inf, None, -math.inf, None, []
+    started = time.monotonic()
     for epoch in range(args.epochs):
         model.train()
         train_loss = 0.0
@@ -178,6 +179,7 @@ def main():
         common.log(f'epoch {epoch}: train loss {train_loss:.2f}, dev BCE {bce:.3f}, dev micro-AUPRC {auprc:.4f}, '
                    f'about {left:.0f} min left')
     keep(model, raw, out, 'last')
+    train_seconds = time.monotonic() - started  # training with the development check of every epoch
     del xt, yt
 
     xs = torch.as_tensor(np.asarray(x_test, dtype=np.float32)).to(device)
@@ -195,7 +197,7 @@ def main():
                   side=dict(bcebest=dict(epoch=bce_epoch, rule='lowest development BCE'),
                             auprcbest=dict(epoch=auprc_epoch, rule='highest propagated development micro-AUPRC')),
                   frequent_terms=len(freq), rare_terms=len(rare), reproduced_dev_max_abs=reproduced,
-                  wall_seconds=time.monotonic() - began)
+                  train_seconds=train_seconds, wall_seconds=time.monotonic() - began)
     common.write_fit(out, *scores['last'], record, side={name: scores[name] for name in SIDE})
     common.log(f'done: BCE-best epoch {bce_epoch}, AUPRC-best epoch {auprc_epoch}, '
                f'{(time.monotonic() - began) / 60:.0f} min')
