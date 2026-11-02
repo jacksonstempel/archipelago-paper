@@ -18,10 +18,10 @@ from matplotlib.transforms import Affine2D, ScaledTranslation, blended_transform
 from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, read, save, seed_means
 
 HQ, PICKED = '#2b8fd6', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
-H = 3.4  # figure height, inches
-TOP, BOTTOM = H - 0.1, 0.46  # top of a and b; bottom of a's matrix and c
-A_LEFT, A_RIGHT = 0.62, 2.72  # a's bars and matrix (its steps are printed beyond them, to 45% of the width)
-B_LETTER, B_LEFT = 3.24, 3.68  # the letters and left edge of b and c
+H = 3.5  # figure height, inches
+TOP, BOTTOM, A_BOTTOM = H - 0.1, 0.46, 0.66  # top of a and b; bottom of c; bottom of a's matrix
+A_LEFT, A_RIGHT = 0.62, 2.66  # a's bars and matrix (its steps are printed beyond them, to 45% of the width)
+B_LETTER, B_LEFT = 3.3, 3.76  # the letters and left edge of b and c
 B_BOTTOM, C_TOP = 2.24, 1.84
 # panel a: training set, ingredients used (one per cluster, rare function, coverage ranking)
 ARMS = [('hq_random', (0, 0, 0)), ('pool_random', (1, 0, 0)), ('filter_random', (1, 1, 0)),
@@ -143,9 +143,9 @@ def panel_upset(fig, results):
     differences = contrasts(results)
     steps = [(name, float(differences['auprc', 'finch', a, 'finch', b]['difference'])) for name, a, b in STEPS]
     width, matrix_height = A_RIGHT - A_LEFT, 0.9
-    bars_bottom = BOTTOM + matrix_height + 0.16
+    bars_bottom = A_BOTTOM + matrix_height + 0.16
     b = axes(fig, A_LEFT, bars_bottom, width, TOP - bars_bottom)
-    m = axes(fig, A_LEFT, BOTTOM, width, matrix_height, sharex=b)
+    m = axes(fig, A_LEFT, A_BOTTOM, width, matrix_height, sharex=b)
     upset(b, m, gains, steps)
 
 
