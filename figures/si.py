@@ -8,6 +8,7 @@ three figures, written into <out>/si/. Reads, under <root>/results/:
   masked_test_labels/{metrics.tsv,contrasts.tsv}           retrain.scoring.masked
   explabels_training/{metrics.tsv,contrasts.tsv}           retrain.scoring.score explabels_training
   no_hit/{subsets.tsv,differences.tsv,E0.001/,E10/}        retrain.scoring.no_hit
+  distance_groups/gains.tsv                                retrain.scoring.distance_groups
   pr_curves/curves.tsv                                     retrain.scoring.pr_curves
   selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
@@ -386,32 +387,41 @@ def recipe_tables(results, out):
 
 
 def figure(out, subsets, nohit):
-    """The gain against the no-hit cutoff."""
-    fig, axes = plt.subplots(1, 2, figsize=(DOUBLE, 2.5), sharey=True)
-    fig.subplots_adjust(left=0.07, right=0.99, bottom=0.27, top=0.9, wspace=0.08)
+    """The published methods' gain against the no-hit cutoff (Finch's advantage over random proteins is Fig. 3c)."""
+    fig, ax = plt.subplots(figsize=(DOUBLE * 0.62, 2.5))
+    fig.subplots_adjust(left=0.11, right=0.985, bottom=0.27, top=0.97)
     x = np.arange(len(subsets))
     ticks = ['All\n5,000'] + [f"{('$10^{%d}$' % round(np.log10(float(s)))) if float(s) < 0.5 else s}\n{n:,}"
                               for s, n, _ in subsets[1:]]
-    panels = [(axes[0], [(method, 'original', SHADES[method], NAMES[method]) for method in PUBLISHED],
-               'Published methods: ArchipelaGO $-$ original data'),
-              (axes[1], [('finch', 'hq', COLOURS['archipelago'], 'ArchipelaGO $-$ HQ'),
-                         ('finch', 'hq_random', COLOURS['hq_random'], 'ArchipelaGO $-$ (HQ + random)')],
-               'Finch: gain from the selected proteins')]
-    for ax, series, title in panels:
-        for method, base, color, name in series:
-            d = np.array([[float(nohit[c, method, base][k]) for k in ('difference', 'ci_low', 'ci_high')]
-                          for c, _, _ in subsets])
-            ax.fill_between(x, d[:, 1], d[:, 2], color=color, alpha=0.12, lw=0)
-            ax.plot(x, d[:, 0], color=color, lw=1.3, marker='o', ms=2.5, label=name)
-        ax.axhline(0, color=INK, lw=0.6)
-        ax.set_xticks(x, ticks, fontsize=fs(5.5))
-        ax.set_title(title, fontsize=fs(7), fontweight='normal', loc='left')
-        ax.legend(frameon=False, fontsize=fs(6), loc='upper right')
-        ax.set_xlabel('No ultra-sensitive DIAMOND hit to any training protein at E $\\leq$ (proteins left)',
-                      fontsize=fs(6))
-    axes[0].set_ylabel('Gain in test micro-AUPRC')
-    axes[0].set_ylim(-0.01, 0.2)
+    for method in PUBLISHED:
+        d = np.array([[float(nohit[c, method, 'original'][k]) for k in ('difference', 'ci_low', 'ci_high')]
+                      for c, _, _ in subsets])
+        ax.fill_between(x, d[:, 1], d[:, 2], color=SHADES[method], alpha=0.12, lw=0)
+        ax.plot(x, d[:, 0], color=SHADES[method], lw=1.3, marker='o', ms=2.5, label=NAMES[method])
+    ax.axhline(0, color=INK, lw=0.6)
+    ax.set_xticks(x, ticks, fontsize=fs(5.5))
+    ax.legend(frameon=False, fontsize=fs(6), loc='lower left')
+    ax.set_xlabel('No ultra-sensitive DIAMOND hit to any training protein at E $\\leq$ (proteins left)', fontsize=fs(6))
+    ax.set_ylabel('ArchipelaGO minus original data')
+    ax.set_ylim(-0.01, 0.2)
     save(fig, out, 'si_fig_nohit')
+
+
+def distance_table(results, out):
+    """The gains by distance from HQ (table_distance_groups.tex, from retrain.scoring.distance_groups)."""
+    gains = {(r['labels'], r['group'], r['method'], r['training_set'], r['minus_training_set']): r
+             for r in read(results / 'distance_groups' / 'gains.tsv')}
+    lines = []
+    for labels, title in (('masked', 'Masked'), ('reviewed', 'Reviewed'), ('experimental', 'Experimental only')):
+        for g, name in (('0', '1'), ('1', '2'), ('2', '3'), ('3', '4'), ('4', '5'), ('all', 'All')):
+            first = gains[labels, g, 'finch', 'archipelago', 'hq']
+            cells = [paired(r, 3) for r in (first, gains[labels, g, 'finch', 'hq_random', 'hq'],
+                                            gains[labels, g, 'finch', 'archipelago', 'hq_random'],
+                                            *(gains[labels, g, m, 'archipelago', 'hq'] for m in ('deepgose', 'transfew', 'dpfunc')))]
+            lines.append(f"{title if g == '0' else ''} & {name} & {int(first['proteins']):,} & "
+                         f"{r3(first['median_distance'], places=2)} & " + ' & '.join(cells) + r' \\')
+        lines.append(r'\addlinespace')
+    write(out, 'table_distance_groups.tex', lines[:-1])
 
 
 def shared(results, out):
@@ -495,4 +505,5 @@ def draw(results, out):
     recipe_tables(results, out)
     cost_table(results, out)
     figure(out, subsets, nohit)
+    distance_table(results, out)
     shared(results, out)

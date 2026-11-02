@@ -14,8 +14,9 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   all_goa_test_labels/                      test_labels all_goa        Table 2, SI: the test label sets
   masked_test_labels/                       masked              Table 2, SI: the test label sets
   explabels_training/                       score explabels_training   Fig. 4b, SI: HQ with experimental labels only
-  no_hit/subsets.tsv, differences.tsv,      no_hit              Table 2, SI: test proteins without training relatives,
-    E0.001/contrasts.tsv, E10/contrasts.tsv                     and Finch's lead there
+  no_hit/subsets.tsv, differences.tsv,      no_hit              Table 2, Fig. 3c, SI: test proteins without training
+    E<cutoff>/{metrics.tsv,contrasts.tsv}                       relatives, and Finch's lead there
+  distance_groups/gains.tsv                  distance_groups     SI: gains by distance from HQ
   training_cost.tsv                         training_cost       SI: training cost
 
 Fig. 1 reads the counts in figures/sankey_counts.json; Extended Data Fig. 1 is a schematic.

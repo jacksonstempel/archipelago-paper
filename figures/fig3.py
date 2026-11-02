@@ -7,6 +7,8 @@ in ESM2-15B embedding space, for three of panel a's training sets (random comput
 representatives, ArchipelaGO), and the median distance from an HQ protein to its nearest other HQ protein as the
 reference (dashed: HQ's own density is a spike at zero). Reads <root>/results/distances/{densities.tsv,summary.tsv}
 (retrain.scoring.distances).
+c, Finch on ArchipelaGO and on HQ + random on the test proteins left by ever stricter homology filters, with their difference.
+Reads <root>/results/main/metrics.tsv and <root>/results/no_hit/{differences.tsv,E<cutoff>/metrics.tsv} (retrain.scoring.no_hit).
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +17,7 @@ from matplotlib.transforms import Affine2D, ScaledTranslation, blended_transform
 from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, read, save, seed_means
 
 HQ, PICKED = '#2b8fd6', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
-H = 4.0  # figure height, inches
+H = 3.4  # figure height, inches
 # panel a: training set, ingredients used (one per cluster, rare function, coverage ranking)
 ARMS = [('hq_random', (0, 0, 0)), ('pool_random', (1, 0, 0)), ('filter_random', (1, 1, 0)),
         ('coverage_unfiltered', (1, 0, 1)), ('archipelago', (1, 1, 1))]
@@ -92,12 +94,36 @@ def densities(ax, results):
     ax.set_ylabel('Density')
     handles, labels = ax.get_legend_handles_labels()
     order = list(range(1, len(handles))) + [0]  # the training sets in panel a's order, then the HQ reference
-    ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='upper right', frameon=False, fontsize=fs(6.5),
-              handlelength=1.6, borderaxespad=0.1, labelspacing=0.35)
+    ax.legend([handles[i] for i in order], [labels[i] for i in order], loc='upper right', frameon=False, fontsize=fs(6.2),
+              handlelength=1.5, borderaxespad=0.1, labelspacing=0.25)
 
 
-def letter(fig, x, text):
-    fig.text(x / fig.get_figwidth(), 1 - 0.02 / H, text, ha='left', va='top', fontsize=8, fontweight='bold')
+def filters(ax, results):
+    """Finch on ArchipelaGO and on HQ + random on the test proteins left by each homology filter (`none`: every test
+    protein), the difference printed above."""
+    rows = [r for r in read(results / 'no_hit' / 'differences.tsv') if r['method'] == 'finch' and r['base'] == 'hq_random']
+    score = {r['subset']: seed_means(results / 'main' if r['subset'] == 'none' else results / 'no_hit' / f"E{r['subset']}")
+             for r in rows}
+    x = np.arange(len(rows))
+    for s, color, lw, text in (('hq_random', BAR, 1.4, 'HQ + random'), ('archipelago', PICKED, 1.6, 'ArchipelaGO')):
+        ax.plot(x, [float(score[r['subset']]['finch', s, 'auprc']['value']) for r in rows], color=color, lw=lw, marker='o', ms=3.4,
+                mec='white', mew=0.4, label=text, zorder=3)
+    for i, r in enumerate(rows):
+        ax.text(i, float(score[r['subset']]['finch', 'archipelago', 'auprc']['value']) + 0.008,
+                half_up(r['difference'], sign=True), ha='center', va='bottom', fontsize=fs(6))
+    names = ['All'] + [f"$10^{{{round(np.log10(float(r['subset'])))}}}$" if float(r['subset']) < 0.5 else f"{float(r['subset']):g}"
+                       for r in rows[1:]]
+    ax.set_xticks(x, [f"{n}\n{int(r['proteins']):,}" for n, r in zip(names, rows)], fontsize=fs(5.8), linespacing=1.1)
+    ax.set_xlabel('No DIAMOND hit to any training protein at E ≤ (test proteins left)', fontsize=fs(6.5))
+    ax.set_ylabel('Test micro-AUPRC')
+    ax.set_ylim(0.43, 0.66)
+    ax.set_yticks([0.45, 0.50, 0.55, 0.60, 0.65])
+    ax.legend(loc='lower left', frameon=False, fontsize=fs(6.5), handlelength=1.5, borderaxespad=0.1)
+
+
+def letter(fig, x, text, top=0.02):
+    """A panel letter, x inches from the left and `top` inches from the top."""
+    fig.text(x / fig.get_figwidth(), 1 - top / H, text, ha='left', va='top', fontsize=8, fontweight='bold')
 
 
 def axes(fig, left, bottom, width, height, **kw):
@@ -126,6 +152,9 @@ def draw(results, out):
     fig = plt.figure(figsize=(DOUBLE, H))
     letter(fig, 0, 'a')
     panel_upset(fig, results / 'selection', 0, 3.02)
+    left, width = 4.0, DOUBLE - 4.0 - 0.1
     letter(fig, 3.49, 'b')
-    densities(axes(fig, 3.96, 0.42, DOUBLE - 3.96 - 0.1, H - 0.42 - 0.24), results / 'distances')
+    densities(axes(fig, left, 2.3, width, H - 2.3 - 0.08), results / 'distances')
+    letter(fig, 3.49, 'c', top=H - 1.84)
+    filters(axes(fig, left, 0.5, width, 1.32), results)
     save(fig, out, 'fig3_choosing')
