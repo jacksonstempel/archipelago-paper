@@ -167,6 +167,15 @@ python -m retrain.finch.train --training-set original_deepgose --seed 9301  # ea
 python -m retrain.finch.combine --training-set original_deepgose
 ```
 
+**The same network on DPFunc's language model.** The wide hidden layer without ASAM, on each protein's mean of DPFunc's
+ESM-1b residue features:
+
+```bash
+python -m retrain.dpfunc.mean_features              # inputs/embeddings/esm1b_l31 (archipelago, development, test)
+python -m retrain.finch.train --training-set archipelago --seed 9301 --readouts esm1b_l31_adamw   # seeds 9301-9303 (GPU)
+python -m retrain.finch.combine --training-set archipelago --model ladder_hidden_esm1b
+```
+
 ### 5. Scoring, analyses and figures
 
 ```bash

@@ -358,6 +358,7 @@ def recipe_tables(results, out):
     # further models; Finch with ProtT5 layer 24 shows the learning rate and dropout of that network
     lines = []
     for model, name, where in (('ladder_hidden_esm2_3b', 'Wide hidden layer on ESM2-3B', None),
+                               ('ladder_hidden_esm1b', 'Wide hidden layer on ESM-1b', None),
                                ('ladder_hidden_2048', 'Hidden layer of 2,048 units on ESM2-15B', None),
                                ('finch_prott5_l24', 'Finch with ProtT5 layer 24', setting('prott5_l24')),
                                ('deepgose', 'DeepGO-SE', 'published'), ('transfew', 'TransFew', 'published'),
@@ -382,6 +383,8 @@ def recipe_tables(results, out):
                         'Wide hidden layer $-$ linear readout, both on ESM2-3B'),
                        ('ladder_hidden', 'transfew', 'Wide hidden layer on ESM2-15B $-$ TransFew'),
                        ('transfew', 'ladder_linear_esm2_15b', 'TransFew $-$ linear readout on ESM2-15B'),
+                       ('ladder_hidden_esm1b', 'dpfunc', 'Wide hidden layer on ESM-1b $-$ DPFunc'),
+                       ('ladder_linear_esm2_15b', 'dpfunc', 'Linear readout on ESM2-15B $-$ DPFunc'),
                        ('ladder_hidden_2048', 'ladder_hidden', '2,048 units $-$ 8,192 units, both on ESM2-15B'),
                        ('finch', 'finch_prott5_l24', 'Finch $-$ Finch with ProtT5 layer 24')):
         cells = [paired(ladder_contrast[k, a, 'archipelago', b, 'archipelago'], places)

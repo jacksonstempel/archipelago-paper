@@ -82,6 +82,14 @@
       "lr": 3e-05,
       "asam_rho": null
     },
+    "esm1b_l31_adamw": {
+      "encoder": "ESM-1b (esm1b_t33_650M_UR50S), layer 31, DPFunc's residue features averaged over residues, 1,280 dimensions",
+      "embedding": "esm1b_l31",
+      "width": 8192,
+      "dropout": 0.8,
+      "lr": 1e-04,
+      "asam_rho": null
+    },
     "esm2_15b_l48_adamw_2048": {
       "encoder": "ESM2-15B (facebook/esm2_t48_15B_UR50D), layer 48, 5,120 dimensions",
       "embedding": "esm2_15b_l48",
@@ -107,6 +115,7 @@
     "ladder_asam": {"esm2_15b_l48": 1.0},
     "ladder_two_esm2_15b": {"esm2_15b_l48": 0.5, "esm2_15b_l48_second": 0.5},
     "ladder_hidden_esm2_3b": {"esm2_3b_l36_adamw": 1.0},
+    "ladder_hidden_esm1b": {"esm1b_l31_adamw": 1.0},
     "ladder_hidden_2048": {"esm2_15b_l48_adamw_2048": 1.0}
   },
   "variants": {

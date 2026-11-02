@@ -20,8 +20,8 @@ from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, read, save,
 HQ, PICKED = '#2b8fd6', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
 H = 3.4  # figure height, inches
 TOP, BOTTOM = H - 0.1, 0.46  # top of a and b; bottom of a's matrix and c
-A_LEFT, A_RIGHT = 0.62, 2.36  # a's bars and matrix (its steps are printed beyond them, to about 40% of the width)
-B_LETTER, B_LEFT = 2.92, 3.36  # the letters and left edge of b and c
+A_LEFT, A_RIGHT = 0.62, 2.72  # a's bars and matrix (its steps are printed beyond them, to 45% of the width)
+B_LETTER, B_LEFT = 3.24, 3.68  # the letters and left edge of b and c
 B_BOTTOM, C_TOP = 2.24, 1.84
 # panel a: training set, ingredients used (one per cluster, rare function, coverage ranking)
 ARMS = [('hq_random', (0, 0, 0)), ('pool_random', (1, 0, 0)), ('filter_random', (1, 1, 0)),
@@ -104,7 +104,8 @@ def densities(ax, results):
 def filters(ax, results):
     """Finch's gain over HQ alone on the test proteins left by each homology filter (`none`: every test protein), from the
     random and the selected proteins; each value is printed on the far side of its point from zero."""
-    rows = [r for r in read(results / 'no_hit' / 'differences.tsv') if r['method'] == 'finch' and r['base'] == 'hq']
+    rows = [r for r in read(results / 'no_hit' / 'differences.tsv')
+            if r['method'] == 'finch' and r['base'] == 'hq' and r['subset'] != '1e-10']  # at 1e-10 only 62 proteins go
     pairs = [contrasts(results / 'main' if r['subset'] == 'none' else results / 'no_hit' / f"E{r['subset']}") for r in rows]
     x = np.arange(len(rows))
     ax.axhline(0, color='#b5b8bd', lw=0.6, zorder=1)
