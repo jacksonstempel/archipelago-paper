@@ -244,6 +244,7 @@ def figure(n):
     apex = (v0 + v1) / 2
     xg = (cl + xs) / 2 - 0.12  # grey through the turn, then 0.9 in of fade
     zband(ax, (cl + xs) / 2, Y_KEPT, apex, Y_END, Y_H, wb['selected'], C['selected'], fade_from=(CANDIDATE, xg, xg - 0.9))
+    ax.text((apex + cl) / 2 - 0.1, Y_H - 0.06, 'coverage ranking', ha='center', va='top', fontsize=fs(6.3), color=GREY)
     t0, t1 = apex - wb['selected'] / 2, apex + wb['selected'] / 2
     # The fan meets the Selected bar exactly at its corners, then reaches TUCK straight down under it.
     fan = [(t0, Y_END), (t1, Y_END), (v1, Y_BAR), (v1, Y_BAR - TUCK), (v0, Y_BAR - TUCK), (v0, Y_BAR)]

@@ -147,23 +147,26 @@ def figures(results, out):
         ax.text(x, 1.02, letter, transform=ax.transAxes, fontsize=8, fontweight='bold', va='bottom', ha='left')
     save(fig, out, 'fig4_finch')
 
-    # Figure 2. Per published method, original data, HQ and ArchipelaGO side by side; methods by original-data score.
+    # Figure 2. Per published method, original data, HQ with experimental labels only, HQ and ArchipelaGO side by side;
+    # methods by original-data score.
     W = 0.25  # one bar
-    GAP = 0.25 * 0.85  # between the three-bar groups
-    order = [('original', COLOURS['original'], 'Original data'), ('hq', COLOURS['hq'], 'HQ'),
-             ('archipelago', FINCH, 'ArchipelaGO')]
+    GAP = 0.25 * 0.85  # between the four-bar groups
+    order = [('original', COLOURS['original'], 'Original data'), ('hq_explabels', '#b3cdee', 'HQ, experimental labels only'),
+             ('hq', COLOURS['hq'], 'HQ'), ('archipelago', FINCH, 'ArchipelaGO')]
+    scores = {**metric, **{k: r for k, r in seed_means(results / 'explabels_training').items() if k[1] == 'hq_explabels'}}
+    bars = len(order)
     fig, ax = plt.subplots(figsize=(DOUBLE * 0.9, 2.55))
     fig.subplots_adjust(left=0.08, right=0.99, bottom=0.11, top=0.88)  # fixed, so the key can be placed against the axes
     centres = []
-    x = 1.5 * W  # half a group from the axis
+    x = bars / 2 * W  # half a group from the axis
     for m in comparators:
         centres.append(x)
         for k, (s, color, _) in enumerate(order):
-            r = metric[m, s, 'auprc']
-            bar(ax, x + (k - 1) * W, auprc(m, s), color, W * 0.94, float(r['ci_low']), float(r['ci_high']))
-        x += 3 * W + GAP
+            r = scores[m, s, 'auprc']
+            bar(ax, x + (k - (bars - 1) / 2) * W, float(r['value']), color, W * 0.94, float(r['ci_low']), float(r['ci_high']))
+        x += bars * W + GAP
     ax.set_xticks(centres, [NAMES[m] for m in comparators], fontsize=fs(7))
-    ax.set_xlim(-0.15, centres[-1] + 1.5 * W + 0.15)
+    ax.set_xlim(-0.15, centres[-1] + bars / 2 * W + 0.15)
     style_bars(ax)
     # the key: 'Trained on:' above the first group, the swatches right after it
     lead = ax.text(0.0, 1.06, 'Trained on:', transform=blended_transform_factory(ax.transData, ax.transAxes), ha='left',
@@ -171,7 +174,7 @@ def figures(results, out):
     fig.canvas.draw()
     right = ax.transAxes.inverted().transform(lead.get_window_extent().get_points())[1, 0]
     ax.legend([plt.Rectangle((0, 0), 1, 1, color=c) for _, c, _ in order], [t for *_, t in order], loc='center left',
-              bbox_to_anchor=(right + 0.008, 1.06), ncol=3, frameon=False, fontsize=fs(6.5), handlelength=1.8,
+              bbox_to_anchor=(right + 0.008, 1.06), ncol=bars, frameon=False, fontsize=fs(6.5), handlelength=1.8,
               handleheight=0.45, handletextpad=0.4, columnspacing=1.3, borderaxespad=0, borderpad=0)
     save(fig, out, 'fig2_retraining')
 
