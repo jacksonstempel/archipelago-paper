@@ -1,24 +1,25 @@
-"""Figure 2 (every published method retrained), Figure 4 (Finch: the recipe ablation and precision-recall curves) and the
-bodies of Tables 1 and 2, from the results: <root>/results/main/metrics.tsv (test, seed means), <root>/results/ladder/
-metrics.tsv and <root>/results/pr_curves/curves.tsv; Table 2 also reads the contrasts.tsv of every version of the test
-set (main, experimental_test_labels, masked_test_labels, all_goa_test_labels, no_hit/E0.001, no_hit/E10) with the
-label versions' counts.tsv and no_hit/subsets.tsv."""
+"""Figure 2 (every published method retrained), Figure 4 (Finch: the recipe ablation, and Finch against the published
+methods on every training set they share) and the bodies of Tables 1 and 2, from the results: <root>/results/main/
+{metrics,contrasts}.tsv (test, seed means), <root>/results/explabels_training/{metrics,contrasts}.tsv and <root>/results/
+ladder/metrics.tsv; Table 2 also reads the contrasts.tsv of every version of the test set (main,
+experimental_test_labels, masked_test_labels, all_goa_test_labels, no_hit/E0.001, no_hit/E10) with the label versions'
+counts.tsv and no_hit/subsets.tsv."""
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import blended_transform_factory
 
-from figures.style import (COLOURS, DOUBLE, GREY, INK, NAMES, PUBLISHED, contrasts, fs, half_up, pr_curves, read, save,
-                           seed_means)
+from figures.style import COLOURS, DOUBLE, GREY, NAMES, PUBLISHED, contrasts, fs, half_up, read, save, seed_means
 
 FINCH = COLOURS['archipelago']
-SHADES = ['#55595f', '#8f939a', '#bfc2c7']  # the published methods, best on ArchipelaGO first
 # Fig. 4a: the recipe ablation's steps (configs/finch.json, 'ladder'), ending at Finch; its control (two ESM2-15B networks)
 # is not drawn
 LADDER = [('ladder_linear_esm2_3b', 'Linear readout,\nESM2-3B'), ('ladder_linear_esm2_15b', 'ESM2-15B'),
           ('ladder_narrow', '+ hidden\nlayer'), ('ladder_hidden', '+ width,\nheavy\ndropout'), ('ladder_asam', '+ ASAM'),
           ('finch', '+ ProtT5\nnetwork')]
-Y0, Y1 = 0.4, 0.65  # Fig. 4a's axis
-BAND = '#e6e7e9'  # Fig. 4a: the published methods' range on ArchipelaGO
+Y0, Y1 = 0.45, 0.65  # Fig. 4a's axis
+HALO = dict(facecolor='white', edgecolor='none', pad=0.5)  # behind text a method's dashed line passes through
+MARK = {'deepgose': ('o', 4.2), 'transfew': ('s', 3.8), 'dpfunc': ('^', 4.6)}  # Fig. 4b: marker and size of each method
+DOT_INK = '#55595f'  # Fig. 4b: the published methods
 
 
 def bar(ax, x, v, color, w, lo=None, hi=None):
@@ -37,7 +38,7 @@ def style_bars(ax):
 
 def waterfall(ax, auprc):
     """Fig. 4a: test micro-AUPRC from a linear readout on ESM2-3B (a full bar) through one ingredient per step (floating
-    bars from the level before) to Finch (a full bar), each label under its bar; the published methods as a pale band. The
+    bars from the level before) to Finch (a full bar), each label under its bar; the published methods as dashed lines. The
     hidden layer enters in two steps: narrow (1,024 units) with light dropout, then wide (8,192) with heavy dropout."""
     levels = [auprc(m, 'archipelago') for m, _ in LADDER]
     w, gap = 0.62, 0.004  # bar width; room between a bar's bottom and its label
@@ -49,28 +50,28 @@ def waterfall(ax, auprc):
         if y is None:
             ax.text(x, -0.02, text, transform=below_axis, ha='center', va='top', fontsize=fs(6.5), linespacing=1.05)
         else:
-            ax.text(x, y - gap, text, ha='center', va='top', fontsize=fs(6.5), linespacing=1.05, zorder=4)
+            ax.text(x, y - gap, text, ha='center', va='top', fontsize=fs(6.5), linespacing=1.05, zorder=4, bbox=HALO)
 
     ax.bar(0, levels[0] - Y0, w, bottom=Y0, color='#8f939a', lw=0, zorder=3)  # the start, a full bar
-    ax.text(0, levels[0] + 0.003, half_up(levels[0]), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
+    ax.text(0, levels[0] + 0.003, half_up(levels[0]), ha='center', va='bottom', fontsize=fs(6.5), zorder=4, bbox=HALO)
     label(0, None, LADDER[0][1])
     for i in range(1, len(levels)):
         lo, hi = levels[i - 1], levels[i]
         ax.bar(i, hi - lo, w, bottom=lo, color=FINCH, lw=0, zorder=3)
         ax.plot([i - 1 + w / 2, i - w / 2], [lo, lo], color=GREY, lw=0.6, ls=(0, (1.5, 1.5)), zorder=2)  # connector
-        ax.text(i, hi + 0.003, half_up(hi - lo, sign=True), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
+        ax.text(i, hi + 0.003, half_up(hi - lo, sign=True), ha='center', va='bottom', fontsize=fs(6.5), zorder=4, bbox=HALO)
         label(i, lo, LADDER[i][1])
     ax.plot([end - 1 + w / 2, end - w / 2], [levels[-1]] * 2, color=GREY, lw=0.6, ls=(0, (1.5, 1.5)), zorder=2)
     ax.bar(end, levels[-1] - Y0, w, bottom=Y0, color=FINCH, lw=0, zorder=3)  # Finch, a full bar
     ax.text(end, levels[-1] + 0.003, half_up(levels[-1]), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
     label(end, None, 'Finch')
-    # the published methods trained on ArchipelaGO: a pale band over their range, behind the bars
-    lo, hi = min(auprc(m, 'archipelago') for m in PUBLISHED), max(auprc(m, 'archipelago') for m in PUBLISHED)
-    ax.axhspan(lo, hi, color=BAND, lw=0, zorder=1)
-    # its label inside the band, halfway between the wide hidden layer and Finch
-    x = ([m for m, _ in LADDER].index('ladder_hidden') + end) / 2
-    ax.text(x, (lo + hi) / 2, f'Published methods\n({half_up(lo)}–{half_up(hi)})', ha='center', va='center',
-            fontsize=fs(6.5), color=GREY, linespacing=1.05, zorder=4)
+    # the published methods trained on ArchipelaGO, dashed behind the bars. Their labels stand in a column against the Finch
+    # bar, the one stretch free of step labels; DeepGO-SE and TransFew are 0.001 apart, so one sits above their lines and the
+    # other below
+    for m, va, dy in (('deepgose', 'bottom', 0.0012), ('transfew', 'top', -0.0012), ('dpfunc', 'bottom', 0.0012)):
+        v = auprc(m, 'archipelago')
+        ax.axhline(v, color='#8f939a', lw=0.8, ls=(0, (3, 2)), zorder=1)
+        ax.text(end - w / 2 - 0.08, v + dy, f'{NAMES[m]} {half_up(v)}', ha='right', va=va, fontsize=fs(6.5), color=GREY, zorder=4)
     ax.spines['bottom'].set_zorder(5)  # the axis line over the bars' bottoms
     ax.set_xticks([])
     ax.set_xlim(-0.55, end + 0.55)
@@ -79,43 +80,71 @@ def waterfall(ax, auprc):
     ax.set_ylabel('Micro-AUPRC')
 
 
+def shared_rows(results):
+    """Fig. 4b's rows, lowest Finch score first: (label, {published method: micro-AUPRC}, Finch's, Finch's lead over the
+    row's best published method), each published method's original data first."""
+    main, trained = seed_means(results / 'main'), seed_means(results / 'explabels_training')
+    main_pairs, trained_pairs = contrasts(results / 'main'), contrasts(results / 'explabels_training')
+    rows = []
+    for m in PUBLISHED:
+        own = f'original_{m}'
+        rows.append((f"{NAMES[m]}'s\noriginal data", {m: float(main[m, 'original', 'auprc']['value'])},
+                     float(main['finch', own, 'auprc']['value']),
+                     float(main_pairs['auprc', 'finch', own, m, 'original']['difference'])))
+    for s, label, metric, pairs in (('hq_explabels', 'HQ, experimental\nlabels only', trained, trained_pairs),
+                                    ('goa', 'HQ, GOA\nproteins only', main, main_pairs), ('hq', 'HQ', main, main_pairs),
+                                    ('archipelago', 'ArchipelaGO', main, main_pairs)):
+        published = {m: float(metric[m, s, 'auprc']['value']) for m in PUBLISHED}
+        best = max(published, key=published.get)
+        rows.append((label, published, float(metric['finch', s, 'auprc']['value']),
+                     float(pairs['auprc', 'finch', s, best, s]['difference'])))
+    return sorted(rows, key=lambda r: r[2])
+
+
+def dots(ax, rows, comparators):
+    """Fig. 4b: one row per training set, the published methods' dots, Finch's dot with its score, a line from the row's
+    best published method to Finch, and Finch's lead on the right. The original sets stand above a dotted line."""
+    n = len(rows)
+    for i, (_, published, finch, gain) in enumerate(rows):
+        y = n - 1 - i
+        ax.axhline(y, color='#e6e7e9', lw=0.6, zorder=1)
+        ax.plot([max(published.values()), finch], [y, y], color=FINCH, lw=1.4, alpha=0.35, solid_capstyle='butt', zorder=2)
+        for m, v in published.items():
+            near = [o for o in published if o != m and abs(published[o] - v) < 0.004]  # would sit on top of each other
+            shift = 0 if not near else (0.17 if v > published[near[0]] else -0.17)
+            ax.plot(v, y + shift, MARK[m][0], ms=MARK[m][1], mfc=DOT_INK, mec='white', mew=0.5, zorder=3)
+        ax.plot(finch, y, 'o', ms=5.6, mfc=FINCH, mec='white', mew=0.5, zorder=4)
+        ax.text(finch, y + 0.2, half_up(finch), ha='center', va='bottom', fontsize=fs(6.5), zorder=5)
+        ax.text(1.02, y, half_up(gain, sign=True), transform=ax.get_yaxis_transform(), ha='left', va='center', fontsize=fs(6.5))
+    ax.axhline(n - 3.5, color='#b5b8bd', lw=0.6, ls=(0, (2, 2)), zorder=1)
+    ax.set_yticks(range(n), [r[0] for r in rows][::-1], fontsize=fs(6.5), linespacing=1.05)
+    ax.tick_params(axis='y', length=0)
+    ax.spines['left'].set_visible(False)
+    ax.set_ylim(-0.6, n - 0.35)
+    ax.set_xlim(0.38, 0.64)
+    ax.set_xticks(np.arange(0.40, 0.601, 0.05))
+    ax.set_xlabel('Micro-AUPRC')
+    handles = [plt.Line2D([], [], ls='', marker='o', ms=5.6, mfc=FINCH, mec='white', mew=0.5, label='Finch')]
+    handles += [plt.Line2D([], [], ls='', marker=MARK[m][0], ms=MARK[m][1], mfc=DOT_INK, mec='white', mew=0.5, label=NAMES[m])
+                for m in comparators]
+    ax.legend(handles=handles, loc='lower left', bbox_to_anchor=(0.0, 1.0), ncol=4, frameon=False, fontsize=fs(6.5),
+              handletextpad=0.0, columnspacing=0.6, borderaxespad=0.1, borderpad=0)
+
+
 def figures(results, out):
     metric = seed_means(results / 'main')
     auprc = lambda m, s: float(metric[m, s, 'auprc']['value'])  # noqa: E731
     comparators = sorted(PUBLISHED, key=lambda m: -auprc(m, 'original'))  # Fig. 2 and Table 1 order
 
-    # Figure 4. a: the recipe ablation as a waterfall; b: Finch and the published methods, all trained on ArchipelaGO, as
-    # micro-averaged precision-recall curves (averaged over runs at each recall, so each area is the model's micro-AUPRC),
-    # each with its Fmax point.
+    # Figure 4. a: the recipe ablation as a waterfall; b: Finch and the published methods on every training set they share.
     ladder = seed_means(results / 'ladder')
     ladder_auprc = lambda m, s: float(ladder[m, s, 'auprc']['value'])  # noqa: E731
     fig = plt.figure(figsize=(DOUBLE, 3.15))
-    grid = fig.add_gridspec(1, 2, width_ratios=[1.3, 1], wspace=0.2, left=0.06, right=0.985, top=0.93, bottom=0.14)
+    grid = fig.add_gridspec(1, 2, width_ratios=[1.3, 1], wspace=0.42, left=0.06, right=0.945, top=0.91, bottom=0.14)
     a, b = fig.add_subplot(grid[0]), fig.add_subplot(grid[1])
     waterfall(a, ladder_auprc)
-    pr = pr_curves(results)
-    handles = []
-    lines = [(('finch', 'archipelago'), FINCH, 1.5, 'Finch')] + \
-            [((m, 'archipelago'), shade, 1.1, NAMES[m])
-             for m, shade in zip(sorted(PUBLISHED, key=lambda m: -auprc(m, 'archipelago')), SHADES)]
-    for (m, s), color, lw, name in lines:
-        recall, precision = np.array(pr[m, s]).T
-        fmax = half_up(metric[m, s, 'fmax']['value'])
-        handles.append(b.plot(recall, precision, color=color, lw=lw, solid_capstyle='butt', zorder=3 if m == 'finch' else 2,
-                              label=f'{name}  {half_up(auprc(m, s))} | {fmax}')[0])
-        f1 = 2 * recall * precision / np.maximum(recall + precision, 1e-12)
-        k = int(np.argmax(f1))  # the Fmax point on the curve
-        b.scatter(recall[k], precision[k], s=16, color=color, edgecolors=INK, linewidths=0.5, zorder=4)
-    b.legend(handles=handles, loc='lower left', title='AUPRC | Fmax', frameon=False, fontsize=fs(6.5),
-             title_fontsize=fs(6.5), handlelength=1.6, alignment='left', borderaxespad=0.2)
-    b.set_xlim(0, 1)
-    b.set_ylim(0, 1.02)
-    b.set_xticks(np.arange(0, 1.01, 0.2))
-    b.set_yticks(np.arange(0, 1.01, 0.2))
-    b.set_box_aspect(1)
-    b.set_xlabel('Recall')
-    b.set_ylabel('Precision')
-    for ax, letter, x in ((a, 'a', -0.11), (b, 'b', -0.14)):
+    dots(b, shared_rows(results), comparators)
+    for ax, letter, x in ((a, 'a', -0.11), (b, 'b', -0.3)):
         ax.text(x, 1.02, letter, transform=ax.transAxes, fontsize=8, fontweight='bold', va='bottom', ha='left')
     save(fig, out, 'fig4_finch')
 
@@ -124,7 +153,7 @@ def figures(results, out):
     GAP = 0.25 * 0.85  # between the three-bar groups
     order = [('original', COLOURS['original'], 'Original data'), ('hq', COLOURS['hq'], 'HQ'),
              ('archipelago', FINCH, 'ArchipelaGO')]
-    fig, ax = plt.subplots(figsize=(DOUBLE * 0.9, 2.8))
+    fig, ax = plt.subplots(figsize=(DOUBLE * 0.9, 2.55))
     fig.subplots_adjust(left=0.08, right=0.99, bottom=0.11, top=0.88)  # fixed, so the key can be placed against the axes
     centres = []
     x = 1.5 * W  # half a group from the axis

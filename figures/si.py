@@ -1,5 +1,5 @@
 """Tables and figures of the Supplementary Information: LaTeX table bodies (rows only; the SI typesets the headers) and
-one figure, written into <out>/si/. Reads, under <root>/results/:
+three figures, written into <out>/si/. Reads, under <root>/results/:
 
   main/{metrics.tsv,contrasts.tsv}                         every model on every training set (retrain.scoring.score main)
   dataset_sizes.tsv                                        retrain.scoring.sizes
@@ -8,6 +8,7 @@ one figure, written into <out>/si/. Reads, under <root>/results/:
   masked_test_labels/{metrics.tsv,contrasts.tsv}           retrain.scoring.masked
   explabels_training/{metrics.tsv,contrasts.tsv}           retrain.scoring.score explabels_training
   no_hit/{subsets.tsv,differences.tsv,E0.001/,E10/}        retrain.scoring.no_hit
+  pr_curves/curves.tsv                                     retrain.scoring.pr_curves
   selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
@@ -24,12 +25,21 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
-from figures.style import COLOURS, DOUBLE, INK, NAMES, PUBLISHED, contrasts, fs, half_up, read, save, seed_means
+from figures.style import COLOURS, DOUBLE, INK, NAMES, PUBLISHED, contrasts, fs, half_up, pr_curves, read, save, seed_means
 from retrain.finch import config as finch_config
 
 SETS = [('original', 'Original'), ('goa', 'GOA'), ('hq', 'HQ'), ('hq_random', 'HQ + random'), ('archipelago', 'ArchipelaGO')]
 SETNAME = dict(SETS)
 DASH = '--'
+# every training set Finch shares with the published methods, in the order of main-text Fig. 4b: (set, name, the method
+# whose original data it is)
+SHARED = [('original_dpfunc', "DPFunc's original data", 'dpfunc'), ('original_transfew', "TransFew's original data", 'transfew'),
+          ('original_deepgose', "DeepGO-SE's original data", 'deepgose'), ('hq_explabels', 'HQ, experimental labels only', None),
+          ('goa', 'HQ, GOA proteins only', None), ('hq', 'HQ', None), ('archipelago', 'ArchipelaGO', None)]
+SHADES = {'transfew': '#55595f', 'deepgose': '#8f939a', 'dpfunc': '#bfc2c7'}
+# Supplementary Figure 3: an original set wears its method's shade, the HQ family tints of the HQ blue
+SET_LINE = {'original_dpfunc': SHADES['dpfunc'], 'original_transfew': SHADES['transfew'], 'original_deepgose': SHADES['deepgose'],
+            'hq_explabels': '#b3cdee', 'goa': '#7fa9e0', 'hq': COLOURS['hq'], 'archipelago': COLOURS['archipelago']}
 
 
 def r3(value, sign=False, places=3):
@@ -382,8 +392,7 @@ def figure(out, subsets, nohit):
     x = np.arange(len(subsets))
     ticks = ['All\n5,000'] + [f"{('$10^{%d}$' % round(np.log10(float(s)))) if float(s) < 0.5 else s}\n{n:,}"
                               for s, n, _ in subsets[1:]]
-    shades = {'transfew': '#55595f', 'deepgose': '#8f939a', 'dpfunc': '#bfc2c7'}
-    panels = [(axes[0], [(method, 'original', shades[method], NAMES[method]) for method in PUBLISHED],
+    panels = [(axes[0], [(method, 'original', SHADES[method], NAMES[method]) for method in PUBLISHED],
                'Published methods: ArchipelaGO $-$ original data'),
               (axes[1], [('finch', 'hq', COLOURS['archipelago'], 'ArchipelaGO $-$ HQ'),
                          ('finch', 'hq_random', COLOURS['hq_random'], 'ArchipelaGO $-$ (HQ + random)')],
@@ -405,6 +414,80 @@ def figure(out, subsets, nohit):
     save(fig, out, 'si_fig_nohit')
 
 
+def shared(results, out):
+    """Finch and the published methods on every training set they share: table_shared.tex, and the precision-recall curves
+    by training set (si_fig_pr_sets) and by model (si_fig_pr_models), each dot a curve's Fmax point."""
+    main, trained = seed_means(results / 'main'), seed_means(results / 'explabels_training')
+    main_pairs, trained_pairs = contrasts(results / 'main'), contrasts(results / 'explabels_training')
+    value = lambda metric, m, s, k: float(metric[m, s, k]['value'])  # noqa: E731
+    lines = []
+    for s, title, own in SHARED:
+        metric, pairs = (trained, trained_pairs) if s == 'hq_explabels' else (main, main_pairs)
+        ref, ref_set = (own, 'original') if own else (max(PUBLISHED, key=lambda p: value(metric, p, s, 'auprc')), s)
+        for k, label, places in (('auprc', 'Micro-AUPRC', 3), ('fmax', 'Fmax', 3), ('smin', 'Smin', 2)):
+            gain = DASH if s == 'archipelago' else paired(pairs[k, 'finch', 'archipelago', 'finch', s], places)
+            lines.append(f"{title if k == 'auprc' else ''} & {NAMES[ref] if k == 'auprc' else ''} & {label} & "
+                         f"{r3(value(metric, 'finch', s, k), places=places)} & {r3(value(metric, ref, ref_set, k), places=places)} & "
+                         f"{paired(pairs[k, 'finch', s, ref, ref_set], places)} & {gain}" + r' \\')
+        lines.append(r'\addlinespace')
+    write(out, 'table_shared.tex', lines[:-1])
+
+    curves = {key: np.array(v).T for key, v in pr_curves(results).items()}
+
+    def fmax_point(ax, recall, precision, color):
+        k = int(np.argmax(2 * recall * precision / np.maximum(recall + precision, 1e-12)))
+        ax.scatter(recall[k], precision[k], s=9, color=color, edgecolors=INK, linewidths=0.4, zorder=5)
+
+    def square(ax):
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1.02)
+        ax.set_xticks(np.arange(0, 1.01, 0.2))
+        ax.set_yticks(np.arange(0, 1.01, 0.2))
+        ax.tick_params(labelsize=fs(6))
+        ax.set_box_aspect(1)
+
+    fig, grid = plt.subplots(2, 4, figsize=(DOUBLE, 3.75), sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.065, right=0.995, bottom=0.095, top=0.955, wspace=0.08, hspace=0.2)
+    grid[0, 3].set_visible(False)  # the top row holds the three original sets, the bottom row the sets all methods share
+    for ax, (s, title, own) in zip([grid[0, 0], grid[0, 1], grid[0, 2], *grid[1]], SHARED):
+        metric = trained if s == 'hq_explabels' else main
+        series = [('finch', s, COLOURS['archipelago'], 1.4)] + \
+                 [(p, 'original' if own else s, SHADES[p], 1.0) for p in ([own] if own else PUBLISHED)]
+        for m, training_set, color, lw in series:
+            recall, precision = curves[m, training_set]
+            ax.plot(recall, precision, color=color, lw=lw, solid_capstyle='butt', zorder=4 if m == 'finch' else 3,
+                    label=f"{NAMES[m]} {r3(value(metric, m, training_set, 'auprc'))} | {r3(value(metric, m, training_set, 'fmax'))}")
+            fmax_point(ax, recall, precision, color)
+        ax.legend(loc='lower left', title='AUPRC | Fmax', frameon=False, fontsize=fs(5.5), title_fontsize=fs(5.5),
+                  handlelength=0.9, handletextpad=0.3, alignment='left', borderaxespad=0.1, labelspacing=0.2)
+        ax.set_title(title, fontsize=fs(6.5), fontweight='normal', loc='left', pad=2.5)
+        square(ax)
+        ax.tick_params(axis='x', labelbottom=True)
+    for ax in (grid[0, 0], grid[1, 0]):
+        ax.set_ylabel('Precision', fontsize=fs(7))
+    for ax in grid[1]:
+        ax.set_xlabel('Recall', fontsize=fs(7))
+    save(fig, out, 'si_fig_pr_sets')
+
+    fig, grid = plt.subplots(1, 4, figsize=(DOUBLE, 2.15), sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.065, right=0.995, bottom=0.17, top=0.8, wspace=0.08)
+    for ax, m in zip(grid, ('finch', 'deepgose', 'transfew', 'dpfunc')):
+        for s, title, own in SHARED:
+            if m == 'finch' or own in (None, m):
+                recall, precision = curves[m, 'original' if own and m != 'finch' else s]
+                ax.plot(recall, precision, color=SET_LINE[s], lw=1.4 if s == 'archipelago' else 1.0, solid_capstyle='butt',
+                        label=title)
+                fmax_point(ax, recall, precision, SET_LINE[s])
+        ax.set_title(NAMES[m], fontsize=fs(6.5), fontweight='normal', loc='left', pad=2.5)
+        ax.set_xlabel('Recall', fontsize=fs(7))
+        square(ax)
+    grid[0].set_ylabel('Precision', fontsize=fs(7))
+    handles, labels = grid[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper center', ncol=4, frameon=False, fontsize=fs(6), handlelength=1.6, columnspacing=1.2,
+               labelspacing=0.25, borderaxespad=0.1)
+    save(fig, out, 'si_fig_pr_models')
+
+
 def draw(results, out):
     out = out / 'si'
     out.mkdir(parents=True, exist_ok=True)
@@ -412,3 +495,4 @@ def draw(results, out):
     recipe_tables(results, out)
     cost_table(results, out)
     figure(out, subsets, nohit)
+    shared(results, out)

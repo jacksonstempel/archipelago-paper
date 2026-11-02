@@ -158,6 +158,15 @@ The paper's bank reused earlier ColabFold runs, most of them folded with faster 
 folds); a bank built from scratch therefore differs slightly. `afdb fetch --chosen` downloads exactly the paper's
 AlphaFold Database entries when the paper's choice list is present (data/README.md).
 
+**Finch on each method's original data.** Finch is trained on the three original sets with its recipe and weights
+unchanged, as in section 3, once the sets exist:
+
+```bash
+python scripts/embed.py --set original_deepgose --encoder esm2_15b_l48     # and prott5_l21; original_transfew, original_dpfunc
+python -m retrain.finch.train --training-set original_deepgose --seed 9301  # each set, seeds 9301-9303 (GPU)
+python -m retrain.finch.combine --training-set original_deepgose
+```
+
 ### 5. Scoring, analyses and figures
 
 ```bash
@@ -165,7 +174,7 @@ python -m retrain.scoring.score main                 # every model of Table 1 an
 python -m retrain.scoring.score selection            # Finch on the Fig. 3a control sets and the dose sets
 python -m retrain.scoring.score ladder               # the recipe ablation of Fig. 4a, its variants, Finch, published methods
 python -m retrain.scoring.score explabels_training    # models trained on HQ with experimental labels only
-python -m retrain.scoring.pr_curves                  # precision-recall curves (Fig. 4b)
+python -m retrain.scoring.pr_curves                  # precision-recall curves on every shared training set (SI)
 python -m retrain.scoring.distances                  # distances of the added proteins to HQ (Fig. 3b; GPU)
 python -m retrain.scoring.test_labels experimental   # scoring against experimental-only test labels
 python -m retrain.scoring.test_labels all_goa        # ... with every GOA assertion the label review considered

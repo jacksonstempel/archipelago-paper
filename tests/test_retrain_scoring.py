@@ -104,6 +104,24 @@ def test_contrasts_are_paired_differences_of_seed_means(tmp_path):
             assert (r['ci_low'], r['ci_high']) == pytest.approx((low, high))
 
 
+def test_contrasts_set_finch_beside_each_method_on_its_original_data(tmp_path):
+    rng = np.random.default_rng(3)
+    metrics = ['auprc', 'fmax', 'f1', 'smin']
+    models = [('finch', 'original_dpfunc'), ('dpfunc', 'original')]
+    np.savez(tmp_path / 'replicates.npz', metrics=np.array(metrics),
+             **{f'{m}/{s}/mean': rng.random((50, len(metrics))) for m, s in models})
+    point = {('finch', 'original_dpfunc'): 0.45, ('dpfunc', 'original'): 0.40}
+    with open(tmp_path / 'metrics.tsv', 'w', newline='') as handle:
+        writer = csv.writer(handle, delimiter='\t', lineterminator='\n')
+        writer.writerow(['method', 'training_set', 'seed', 'split', 'metric', 'value'])
+        writer.writerows([m, s, 'mean', 'test', k, repr(v)] for (m, s), v in point.items() for k in metrics)
+    rows = score.contrasts(tmp_path)
+    assert len(rows) == len(score.CONTRAST_METRICS)  # no shared set, no shared model: only the cross pair
+    r = next(r for r in rows if r['metric'] == 'auprc')
+    assert (r['method'], r['training_set'], r['minus_method'], r['minus_training_set']) == ('finch', 'original_dpfunc', 'dpfunc', 'original')
+    assert r['difference'] == pytest.approx(0.05)
+
+
 def masked_case():
     """Scores with ties and on the thresholds (multiples of 1/40), labels, information accretion."""
     rng = np.random.default_rng(2)

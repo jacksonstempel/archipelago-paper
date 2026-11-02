@@ -19,9 +19,10 @@ Steps:
    folder found; a fit with record.json and both score files). TransFew's further checkpoints (side files bcebest,
    auprcbest) are scored as the methods transfew_bcebest and transfew_auprcbest. A missing fit stops the export.
 3. archipelago-score CONFIG --out <root>/results/RUN (which must not exist yet).
-4. <root>/results/RUN/contrasts.tsv: for every metric (auprc, fmax, f1, smin), every pair of training sets of one model and
-   every pair of models on one training set: the difference of the seed means and its paired 95% cluster-bootstrap
-   interval (2.5th and 97.5th percentiles of the replicate differences in replicates.npz).
+4. <root>/results/RUN/contrasts.tsv: for every metric (auprc, fmax, f1, smin), every pair of training sets of one model,
+   every pair of models on one training set, and Finch on each published method's original data minus that method on it
+   (whose set is called `original`): the difference of the seed means and its paired 95% cluster-bootstrap interval (2.5th
+   and 97.5th percentiles of the replicate differences in replicates.npz).
 """
 import argparse
 import csv
@@ -41,9 +42,10 @@ from retrain.finch import config as finch_config
 
 PUBLISHED = ('deepgose', 'dpfunc', 'transfew')
 BASELINES = ('naive', 'diamond_knn', 'embedding_knn')
+ORIGINAL = {m: f'original_{m}' for m in PUBLISHED}  # each published method's original data, as a training set of Finch
 SIDE = {'transfew': ('bcebest', 'auprcbest')}  # further checkpoints, scored as <method>_<name>
 RUNS = {  # run: {method: training sets}
-    'main': {'finch': ('goa', 'hq', 'hq_random', 'archipelago'),
+    'main': {'finch': (*ORIGINAL.values(), 'goa', 'hq', 'hq_random', 'archipelago'),
              **{m: ('original', 'goa', 'hq', 'archipelago') for m in PUBLISHED},
              **{m: ('goa', 'hq', 'archipelago') for m in BASELINES}},
     'selection': {'finch': ('hq', 'hq_random', 'pool_random', 'filter_random', 'coverage_unfiltered', 'archipelago',
@@ -159,6 +161,8 @@ def contrasts(results):
              for a, b in itertools.permutations([s for mm, s in models if mm == m], 2)]
     pairs += [((m1, s), (m2, s)) for s in sorted({s for _, s in models})
               for m1, m2 in itertools.permutations([m for m, ss in models if ss == s], 2)]
+    pairs += [(('finch', own), (m, 'original')) for m, own in ORIGINAL.items()
+              if ('finch', own) in models and (m, 'original') in models]
     rows = []
     for metric in CONTRAST_METRICS:
         column = names.index(metric)
