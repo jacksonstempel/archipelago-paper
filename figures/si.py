@@ -1,16 +1,13 @@
 """Tables and figures of the Supplementary Information: LaTeX table bodies (rows only; the SI typesets the headers) and
-three figures, written into <out>/si/. Reads, under <root>/results/:
+two figures, written into <out>/si/. Reads, under <root>/results/:
 
   main/{metrics.tsv,contrasts.tsv}                         every model on every training set (retrain.scoring.score main)
   dataset_sizes.tsv                                        retrain.scoring.sizes
-  experimental_test_labels/{metrics.tsv,contrasts.tsv,counts.tsv}   retrain.scoring.test_labels experimental
-  all_goa_test_labels/{metrics.tsv,contrasts.tsv}          retrain.scoring.test_labels all_goa
-  masked_test_labels/{metrics.tsv,contrasts.tsv}           retrain.scoring.masked
+  experimental_test_labels/counts.tsv                      retrain.scoring.test_labels experimental
   explabels_training/{metrics.tsv,contrasts.tsv}           retrain.scoring.score explabels_training
-  no_hit/{subsets.tsv,differences.tsv,E0.001/,E10/}        retrain.scoring.no_hit
-  distance_groups/gains.tsv                                retrain.scoring.distance_groups
+  no_hit/{subsets.tsv,differences.tsv,E<cutoff>/}          retrain.scoring.no_hit
   pr_curves/curves.tsv                                     retrain.scoring.pr_curves
-  selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
+  selection/contrasts.tsv                                  retrain.scoring.score selection
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
   training_cost.tsv                                        retrain.scoring.training_cost
@@ -18,8 +15,7 @@ three figures, written into <out>/si/. Reads, under <root>/results/:
 Main-text Table 2 with intervals (table2_intervals.tex) is written beside Table 2 by figures/main.py.
 
 Supplementary Table 1 (the annotation sources) is typed in the SI and the label-review prompt is released with the
-reviewed labels; neither is generated here. Nor is the SI's comparison of the two losses on the development set, which
-comes from the learning-rate and dropout search that chose the recipe (not part of this repository).
+reviewed labels; neither is generated here.
 """
 import json
 
@@ -29,7 +25,8 @@ import numpy as np
 from figures.style import COLOURS, DOUBLE, INK, NAMES, PUBLISHED, contrasts, fs, half_up, pr_curves, read, save, seed_means
 from retrain.finch import config as finch_config
 
-SETS = [('original', 'Original'), ('goa', 'GOA'), ('hq', 'HQ'), ('hq_random', 'HQ + random'), ('archipelago', 'ArchipelaGO')]
+SETS = [('original', 'Original'), ('hq_explabels', 'HQ, experimental labels only'), ('goa', 'HQ, GOA proteins only'), ('hq', 'HQ'),
+        ('hq_random', 'HQ + random'), ('archipelago', 'ArchipelaGO')]
 SETNAME = dict(SETS)
 DASH = '--'
 # every training set Finch shares with the published methods, in the order of main-text Fig. 4b: (set, name, the method
@@ -38,7 +35,7 @@ SHARED = [('original_dpfunc', "DPFunc's original data", 'dpfunc'), ('original_tr
           ('original_deepgose', "DeepGO-SE's original data", 'deepgose'), ('hq_explabels', 'HQ, experimental labels only', None),
           ('goa', 'HQ, GOA proteins only', None), ('hq', 'HQ', None), ('archipelago', 'ArchipelaGO', None)]
 SHADES = {'transfew': '#55595f', 'deepgose': '#8f939a', 'dpfunc': '#bfc2c7'}
-# Supplementary Figure 3: an original set wears its method's shade, the HQ family tints of the HQ blue
+# Supplementary Figure 2: an original set wears its method's shade, the HQ family tints of the HQ blue
 SET_LINE = {'original_dpfunc': SHADES['dpfunc'], 'original_transfew': SHADES['transfew'], 'original_deepgose': SHADES['deepgose'],
             'hq_explabels': '#aad2ef', 'goa': '#75b6e4', 'hq': COLOURS['hq'], 'archipelago': COLOURS['archipelago']}
 
@@ -73,14 +70,15 @@ def write(out, name, lines):
 def tables(results, out):
     """Every table body of the SI but those of the recipe ablation."""
     main = {split: seed_means(results / 'main', split) for split in ('test', 'development')}
+    main['test'].update({k: v for k, v in seed_means(results / 'explabels_training').items() if k[1] == 'hq_explabels'})
     m = lambda method, ts, metric, split='test': main[split].get((method, ts, metric))  # noqa: E731
-    contrast = contrasts(results / 'main')
+    contrast = {**contrasts(results / 'explabels_training'), **contrasts(results / 'main')}
 
     # Supplementary Table 2: composition of the training sets and the benchmark
     sizes = {r['dataset']: r for r in read(results / 'dataset_sizes.tsv')}
     lines = []
     for key, name in (('original_transfew', 'TransFew original data'), ('original_deepgose', 'DeepGO-SE original data'),
-                      ('original_dpfunc', 'DPFunc original data'), ('goa', 'GOA'), ('hq', 'HQ'),
+                      ('original_dpfunc', 'DPFunc original data'), ('goa', 'HQ, GOA proteins only'), ('hq', 'HQ'),
                       ('hq_random', 'HQ + random'), ('archipelago', 'ArchipelaGO'), ('development', 'Development set'),
                       ('test', 'Test set')):
         r = sizes[key]
@@ -117,73 +115,33 @@ def tables(results, out):
 
     lines = []
     for method in PUBLISHED:
-        for a, b in (('hq', 'original'), ('archipelago', 'hq'), ('archipelago', 'original')):
+        for a, b in (('hq_explabels', 'original'), ('hq', 'hq_explabels'), ('hq', 'goa'), ('hq', 'original'),
+                     ('archipelago', 'hq'), ('archipelago', 'original')):
             lines.append(f'{NAMES[method]} & {SETNAME[a]} $-$ {SETNAME[b]} & '
                          + ' & '.join(differences(contrast, method, a, method, b)) + r' \\')
         lines.append(r'\addlinespace')
-    for a, b in (('hq', 'goa'), ('hq_random', 'hq'), ('archipelago', 'hq'), ('archipelago', 'hq_random')):
+    for a, b in (('hq_random', 'hq'), ('archipelago', 'hq'), ('archipelago', 'hq_random')):
         lines.append(f'Finch & {SETNAME[a]} $-$ {SETNAME[b]} & '
                      + ' & '.join(differences(contrast, 'finch', a, 'finch', b)) + r' \\')
     lines.append(r'\addlinespace')
-    for ts in ('hq', 'archipelago'):
-        for method in PUBLISHED:
-            lines.append(f'Finch $-$ {NAMES[method]} & on {SETNAME[ts]} & '
-                         + ' & '.join(differences(contrast, 'finch', ts, method, ts)) + r' \\')
+    for method in PUBLISHED:
+        lines.append(f'Finch $-$ {NAMES[method]} & on ArchipelaGO & '
+                     + ' & '.join(differences(contrast, 'finch', 'archipelago', method, 'archipelago')) + r' \\')
     write(out, 'table_contrasts.tex', lines)
-    lines = []
-    for method in PUBLISHED:  # the GOA steps of the published methods
-        for a, b in (('goa', 'original'), ('hq', 'goa')):
-            lines.append(f'{NAMES[method]} & {SETNAME[a]} $-$ {SETNAME[b]} & '
-                         + ' & '.join(differences(contrast, method, a, method, b)) + r' \\')
-    write(out, 'table_contrasts_goa.tex', lines)
-
-    # development against test
-    lines = []
-    for method in ['finch', 'transfew', 'deepgose', 'dpfunc', 'embedding_knn', 'diamond_knn', 'naive']:
-        first = True
-        for ts, name in SETS:
-            t, d = m(method, ts, 'auprc'), m(method, ts, 'auprc', 'development')
-            if t is None or d is None:
-                continue
-            lines.append(f"{NAMES[method] if first else ''} & {name} & {r3(d['value'])} & {r3(t['value'])} & "
-                         f"{r3(float(t['value']) - float(d['value']), True)} \\\\")
-            first = False
-    write(out, 'table_devtest.tex', lines)
 
     # TransFew's checkpoint rule: last epoch (as published), lowest development BCE, highest development AUPRC
     lines = []
     variants = ('transfew', 'transfew_bcebest', 'transfew_auprcbest')
     for ts, name in SETS:
-        if m('transfew', ts, 'auprc') is None:
-            continue
         values = [m(v, ts, 'auprc') for v in variants]
+        if None in values:
+            continue
         devs = [m(v, ts, 'auprc', 'development') for v in variants]
         lines.append(f'{name} & ' + ' & '.join(f"{r3(v['value'])} {ci(v['ci_low'], v['ci_high'])}" for v in values)
                      + ' & ' + ' & '.join(r3(v['value']) for v in devs) + r' \\')
     write(out, 'table_transfew.tex', lines)
 
-    experimental_contrast = label_sets(results, out)
-
-    # HQ proteins trained with their experimental labels only
-    folder = results / 'explabels_training'
-    trained = seed_means(folder)
-    trained_contrast = contrasts(folder)
-    lines = []
-    for method in ['finch'] + PUBLISHED:
-        cells = []
-        for ts in ('original', 'hq_explabels', 'hq', 'archipelago'):
-            v = trained.get((method, ts, 'auprc'))
-            cells.append(f"{r3(v['value'])} {ci(v['ci_low'], v['ci_high'])}" if v else DASH)
-        lines.append(f'{NAMES[method]} & ' + ' & '.join(cells) + r' \\')
-    write(out, 'table_ablate_hq.tex', lines)
-    lines = []
-    for method in ['finch'] + PUBLISHED:
-        cells = []
-        for a, b in (('hq_explabels', 'hq'), ('original', 'hq_explabels')):
-            d = trained_contrast.get(('auprc', method, b, method, a))
-            cells.append(f"{r3(d['difference'], True)} {ci(d['ci_low'], d['ci_high'])}" if d else DASH)
-        lines.append(f'{NAMES[method]} & ' + ' & '.join(cells) + r' \\')
-    write(out, 'table_ablate_hq_diff.tex', lines)
+    label_counts(results, out)
 
     # test proteins without training relatives
     folder = results / 'no_hit'
@@ -201,41 +159,8 @@ def tables(results, out):
         lines.append(f'{cutname[cut]} & {n:,} & {k:,} & ' + ' & '.join(cells) + r' \\')
     write(out, 'table_nohit.tex', lines)
 
-    # Finch's lead over DeepGO-SE and TransFew, all trained on ArchipelaGO, on two of the no-hit subsets and with
-    # experimental-only labels
-    size = {cut: f'{n:,}' for cut, n, _ in subsets}
-    lines = []
-    for table, name, n in ((contrasts(folder / 'E0.001'), r'No hit at \Eval{10^{-3}}', size['0.001']),
-                           (contrasts(folder / 'E10'), r'No hit at \Eval{10}', size['10']),
-                           (experimental_contrast, 'Experimental-only labels', r'\CountExpProteins{}')):
-        for method in ('deepgose', 'transfew'):
-            cells = [paired(table[k, 'finch', 'archipelago', method, 'archipelago'], places)
-                     for k, places in (('auprc', 3), ('fmax', 3), ('smin', 2))]
-            lines.append((f'{name} & {n}' if method == 'deepgose' else ' & ') + f' & {NAMES[method]} & '
-                         + ' & '.join(cells) + r' \\')
-    write(out, 'table_lead.tex', lines)
-
     # selection rules and number of picks (Finch)
-    folder = results / 'selection'
-    selection = {split: seed_means(folder, split) for split in ('test', 'development')}
-    selection_contrast = contrasts(folder)
-    arms = [('hq', 'HQ (no proteins added)'), ('hq_random', '+ 150,000 random computational proteins (HQ + random)'),
-            ('pool_random', '+ 150,000 random cluster representatives'),
-            ('filter_random', '+ 150,000 random representatives passing the rare-function filter'),
-            ('coverage_unfiltered', '+ the first 150,000 of the coverage ranking, without the filter'),
-            ('archipelago', '+ the first 150,000 of the coverage ranking (ArchipelaGO)'),
-            ('archipelago_300k', '+ the first 300,000 of the coverage ranking'),
-            ('archipelago_600k', '+ the first 600,000 of the coverage ranking')]
-    lines = []
-    for key, name in arms:
-        t = lambda k: selection['test']['finch', key, k]  # noqa: E731
-        cells = [f"{r3(t('auprc')['value'])} {ci(t('auprc')['ci_low'], t('auprc')['ci_high'])}"]
-        cells += [r3(t(k)['value']) for k in ('fmax', 'f1')]
-        cells += [f"{float(t('smin')['value']):.2f}", r3(selection['development']['finch', key, 'auprc']['value'])]
-        if key == 'archipelago_300k':
-            lines.append(r'\midrule')
-        lines.append(f'{name} & ' + ' & '.join(cells) + r' \\')
-    write(out, 'table_arms.tex', lines)
+    selection_contrast = contrasts(results / 'selection')
     lines = []
     for (a, b), name in ((('hq_random', 'hq'), 'HQ + random $-$ HQ'), (('pool_random', 'hq'), 'Random representatives $-$ HQ'),
                          (('filter_random', 'hq'), 'Filtered random representatives $-$ HQ'),
@@ -245,44 +170,16 @@ def tables(results, out):
                           'Rare-function filter (filtered $-$ unfiltered random representatives)'),
                          (('archipelago', 'filter_random'),
                           'Coverage ranking (ArchipelaGO $-$ filtered random representatives)'),
-                         (('coverage_unfiltered', 'pool_random'),
-                          'Coverage ranking without the filter ($-$ random representatives)'),
-                         (('archipelago', 'coverage_unfiltered'),
-                          'Filter alongside the ranking (ArchipelaGO $-$ ranking alone)'),
-                         (('archipelago', 'hq_random'), 'All three (ArchipelaGO $-$ HQ + random)'),
                          (('archipelago_300k', 'archipelago'), '300,000 $-$ 150,000 picks'),
-                         (('archipelago_600k', 'archipelago'), '600,000 $-$ 150,000 picks'),
-                         (('archipelago_600k', 'archipelago_300k'), '600,000 $-$ 300,000 picks')):
+                         (('archipelago_600k', 'archipelago'), '600,000 $-$ 150,000 picks')):
         if (a, b) in (('pool_random', 'hq_random'), ('archipelago_300k', 'archipelago')):
             lines.append(r'\midrule')
         lines.append(f'{name} & ' + ' & '.join(differences(selection_contrast, 'finch', a, 'finch', b)) + r' \\')
     write(out, 'table_arms_diff.tex', lines)
-    return subsets, nohit
 
 
-def label_sets(results, out):
-    """The gains between training sets with the reviewed (official), masked, experimental-only and all GOA test labels, in
-    that column order: the difference of seed means in test micro-AUPRC with its paired 95% interval
-    (table_explabels_diff.tex); and the counts of the experimental-only labels (explabels_counts.tex). Returns the
-    experimental-only labels' contrasts."""
-    folders = ('main', 'masked_test_labels', 'experimental_test_labels', 'all_goa_test_labels')
-    value = {f: {(m, t): float(r['value']) for (m, t, k), r in seed_means(results / f).items() if k == 'auprc'}
-             for f in folders}
-    table = {f: contrasts(results / f) for f in folders}
-    steps = [(method, a, b) for method in PUBLISHED
-             for a, b in (('original', 'goa'), ('goa', 'hq'), ('hq', 'archipelago'), ('original', 'archipelago'))] + \
-            [('finch', 'goa', 'hq'), ('finch', 'hq', 'hq_random'), ('finch', 'hq', 'archipelago'),
-             ('finch', 'hq_random', 'archipelago')]
-    lines = []
-    for method, a, b in steps:
-        cells = []
-        for f in folders:
-            r = table[f]['auprc', method, b, method, a]
-            cells.append(f"{r3(value[f][method, b] - value[f][method, a], True)} {ci(r['ci_low'], r['ci_high'])}")
-        lines.append(f'{NAMES[method]} & {SETNAME[b]} $-$ {SETNAME[a]} & ' + ' & '.join(cells) + r' \\')
-        if b == 'archipelago' and a == 'original':
-            lines.append(r'\addlinespace')
-    write(out, 'table_explabels_diff.tex', lines)
+def label_counts(results, out):
+    """The counts of the experimental-only test labels (explabels_counts.tex)."""
     counts = {r['variant']: r for r in read(results / 'experimental_test_labels' / 'counts.tsv')}
     with open(out / 'explabels_counts.tex', 'w', encoding='utf-8', newline='\n') as handle:
         for variant, key in (('all', 'All'), ('exp', 'Exp')):
@@ -292,7 +189,6 @@ def label_sets(results, out):
                          f"\\newcommand{{\\Count{key}Clusters}}{{{int(r['clusters']):,}}}\n"
                          f"\\newcommand{{\\Count{key}Terms}}{{{int(r['terms_with_positive']):,}}}\n")
         handle.write(f"\\newcommand{{\\CountExpDropped}}{{{int(counts['exp']['proteins_dropped']):,}}}\n")
-    return table['experimental_test_labels']
 
 
 def cost_table(results, out):
@@ -311,9 +207,9 @@ def cost_table(results, out):
 
 
 def recipe_tables(results, out):
-    """The Finch recipe ablation (Fig. 4a) and further models, all trained on ArchipelaGO: test AUPRC, Fmax and Smin,
-    development AUPRC, for the ablation the paired gain over the step it builds on, and trainable parameters in
-    millions; then the paired comparisons cited in the main text."""
+    """The Finch recipe ablation (Fig. 4a) and the other models the main text compares, all trained on ArchipelaGO: test
+    AUPRC, Fmax and Smin, development AUPRC, for the ablation the paired gain over the step it builds on, and trainable
+    parameters in millions; then the paired comparisons cited in the main text."""
     folder = results / 'ladder'
     ladder = {split: seed_means(folder, split) for split in ('test', 'development')}
     ladder_contrast = contrasts(folder)
@@ -344,7 +240,7 @@ def recipe_tables(results, out):
             ('ladder_hidden', '+ width 8,192 and heavy dropout', 'ladder_narrow', None),
             ('ladder_asam', '+ ASAM', 'ladder_hidden', None),
             ('finch', '+ ProtT5 network, averaged (Finch)', 'ladder_asam', 'Methods'),
-            ('ladder_two_esm2_15b', 'Control: + a second ESM2-15B network, averaged', 'ladder_asam', 'as step 4')):
+            ('ladder_two_esm2_15b', 'Control: + a second ESM2-15B network, averaged', 'ladder_asam', 'as + ASAM')):
         if model == 'ladder_two_esm2_15b':
             lines.append(r'\midrule')
         step = DASH
@@ -353,82 +249,31 @@ def recipe_tables(results, out):
             step = f"{r3(d['difference'], True)} {ci(d['ci_low'], d['ci_high'])}"
         lines.append(f"{name} & {where or setting(next(iter(models[model])))} & {scores(model)} & {step} & "
                      f"{millions(sum(parameters[model].values()))} \\\\")
-    write(out, 'table_recipe.tex', lines)
-
-    # further models; Finch with ProtT5 layer 24 shows the learning rate and dropout of that network
-    lines = []
-    for model, name, where in (('ladder_hidden_esm2_3b', 'Wide hidden layer on ESM2-3B', None),
-                               ('ladder_hidden_esm1b', 'Wide hidden layer on ESM-1b', None),
-                               ('ladder_hidden_2048', 'Hidden layer of 2,048 units on ESM2-15B', None),
-                               ('finch_prott5_l24', 'Finch with ProtT5 layer 24', setting('prott5_l24')),
-                               ('deepgose', 'DeepGO-SE', 'published'), ('transfew', 'TransFew', 'published'),
-                               ('dpfunc', 'DPFunc', 'published')):
+    lines.append(r'\midrule')
+    for model, name in (('ladder_hidden_esm2_3b', 'Wide hidden layer on ESM2-3B'), ('ladder_hidden_esm1b', 'Wide hidden layer on ESM-1b')):
+        lines.append(f"{name} & {setting(next(iter(models[model])))} & {scores(model)} & {DASH} & "
+                     f"{millions(sum(parameters[model].values()))} \\\\")
+    lines.append(r'\midrule')
+    for model in ('deepgose', 'transfew', 'dpfunc'):
         parts = parameters[model].values()
-        count = millions(sum(parts))
-        if model == 'deepgose':  # one part per world of the ensemble
-            lines.append(r'\midrule')
-            count = f'{millions(sum(parts) / len(parts))} per model, {count} for six'
-        lines.append(f"{name} & {where or setting(next(iter(models[model])))} & {scores(model)} & {count} \\\\")
-    write(out, 'table_variants.tex', lines)
+        count = f'{millions(sum(parts) / len(parts))} per model' if model == 'deepgose' else millions(sum(parts))  # one part per world
+        lines.append(f"{NAMES[model]} & published & {scores(model)} & {DASH} & {count} \\\\")
+    write(out, 'table_recipe.tex', lines)
 
     # the paired comparisons cited in the main text
     lines = []
     for a, b, name in (('ladder_linear_esm2_15b', 'deepgose', 'Linear readout on ESM2-15B $-$ DeepGO-SE'),
                        ('ladder_narrow', 'deepgose', 'Hidden layer of 1,024 units on ESM2-15B $-$ DeepGO-SE'),
                        ('ladder_narrow', 'transfew', 'Hidden layer of 1,024 units on ESM2-15B $-$ TransFew'),
-                       ('ladder_hidden', 'deepgose', 'Wide hidden layer on ESM2-15B $-$ DeepGO-SE'),
                        ('ladder_hidden_esm2_3b', 'deepgose', 'Wide hidden layer on ESM2-3B $-$ DeepGO-SE'),
-                       ('deepgose', 'ladder_linear_esm2_3b', 'DeepGO-SE $-$ linear readout on ESM2-3B'),
-                       ('ladder_hidden_esm2_3b', 'ladder_linear_esm2_3b',
-                        'Wide hidden layer $-$ linear readout, both on ESM2-3B'),
                        ('ladder_hidden', 'transfew', 'Wide hidden layer on ESM2-15B $-$ TransFew'),
-                       ('transfew', 'ladder_linear_esm2_15b', 'TransFew $-$ linear readout on ESM2-15B'),
                        ('ladder_hidden_esm1b', 'dpfunc', 'Wide hidden layer on ESM-1b $-$ DPFunc'),
                        ('ladder_linear_esm2_15b', 'dpfunc', 'Linear readout on ESM2-15B $-$ DPFunc'),
-                       ('ladder_hidden_2048', 'ladder_hidden', '2,048 units $-$ 8,192 units, both on ESM2-15B'),
                        ('finch', 'finch_prott5_l24', 'Finch $-$ Finch with ProtT5 layer 24')):
         cells = [paired(ladder_contrast[k, a, 'archipelago', b, 'archipelago'], places)
                  for k, places in (('auprc', 3), ('fmax', 3), ('smin', 2))]
         lines.append(f'{name} & ' + ' & '.join(cells) + r' \\')
     write(out, 'table_pairs.tex', lines)
-
-
-def figure(out, subsets, nohit):
-    """The published methods' gain against the no-hit cutoff (Finch's advantage over random proteins is Fig. 3c)."""
-    fig, ax = plt.subplots(figsize=(DOUBLE * 0.62, 2.5))
-    fig.subplots_adjust(left=0.11, right=0.985, bottom=0.27, top=0.97)
-    x = np.arange(len(subsets))
-    ticks = ['All\n5,000'] + [f"{('$10^{%d}$' % round(np.log10(float(s)))) if float(s) < 0.5 else s}\n{n:,}"
-                              for s, n, _ in subsets[1:]]
-    for method in PUBLISHED:
-        d = np.array([[float(nohit[c, method, 'original'][k]) for k in ('difference', 'ci_low', 'ci_high')]
-                      for c, _, _ in subsets])
-        ax.fill_between(x, d[:, 1], d[:, 2], color=SHADES[method], alpha=0.12, lw=0)
-        ax.plot(x, d[:, 0], color=SHADES[method], lw=1.3, marker='o', ms=2.5, label=NAMES[method])
-    ax.axhline(0, color=INK, lw=0.6)
-    ax.set_xticks(x, ticks, fontsize=fs(5.5))
-    ax.legend(frameon=False, fontsize=fs(6), loc='lower left')
-    ax.set_xlabel('No ultra-sensitive DIAMOND hit to any training protein at E $\\leq$ (proteins left)', fontsize=fs(6))
-    ax.set_ylabel('ArchipelaGO minus original data')
-    ax.set_ylim(-0.01, 0.2)
-    save(fig, out, 'si_fig_nohit')
-
-
-def distance_table(results, out):
-    """The gains by distance from HQ (table_distance_groups.tex, from retrain.scoring.distance_groups)."""
-    gains = {(r['labels'], r['group'], r['method'], r['training_set'], r['minus_training_set']): r
-             for r in read(results / 'distance_groups' / 'gains.tsv')}
-    lines = []
-    for labels, title in (('masked', 'Masked'), ('reviewed', 'Reviewed'), ('experimental', 'Experimental only')):
-        for g, name in (('0', '1'), ('1', '2'), ('2', '3'), ('3', '4'), ('4', '5'), ('all', 'All')):
-            first = gains[labels, g, 'finch', 'archipelago', 'hq']
-            cells = [paired(r, 3) for r in (first, gains[labels, g, 'finch', 'hq_random', 'hq'],
-                                            gains[labels, g, 'finch', 'archipelago', 'hq_random'],
-                                            *(gains[labels, g, m, 'archipelago', 'hq'] for m in ('deepgose', 'transfew', 'dpfunc')))]
-            lines.append(f"{title if g == '0' else ''} & {name} & {int(first['proteins']):,} & "
-                         f"{r3(first['median_distance'], places=2)} & " + ' & '.join(cells) + r' \\')
-        lines.append(r'\addlinespace')
-    write(out, 'table_distance_groups.tex', lines[:-1])
 
 
 def shared(results, out):
@@ -442,10 +287,9 @@ def shared(results, out):
         metric, pairs = (trained, trained_pairs) if s == 'hq_explabels' else (main, main_pairs)
         ref, ref_set = (own, 'original') if own else (max(PUBLISHED, key=lambda p: value(metric, p, s, 'auprc')), s)
         for k, label, places in (('auprc', 'Micro-AUPRC', 3), ('fmax', 'Fmax', 3), ('smin', 'Smin', 2)):
-            gain = DASH if s == 'archipelago' else paired(pairs[k, 'finch', 'archipelago', 'finch', s], places)
             lines.append(f"{title if k == 'auprc' else ''} & {NAMES[ref] if k == 'auprc' else ''} & {label} & "
                          f"{r3(value(metric, 'finch', s, k), places=places)} & {r3(value(metric, ref, ref_set, k), places=places)} & "
-                         f"{paired(pairs[k, 'finch', s, ref, ref_set], places)} & {gain}" + r' \\')
+                         f"{paired(pairs[k, 'finch', s, ref, ref_set], places)}" + r' \\')
         lines.append(r'\addlinespace')
     write(out, 'table_shared.tex', lines[:-1])
 
@@ -508,9 +352,7 @@ def shared(results, out):
 def draw(results, out):
     out = out / 'si'
     out.mkdir(parents=True, exist_ok=True)
-    subsets, nohit = tables(results, out)
+    tables(results, out)
     recipe_tables(results, out)
     cost_table(results, out)
-    figure(out, subsets, nohit)
-    distance_table(results, out)
     shared(results, out)

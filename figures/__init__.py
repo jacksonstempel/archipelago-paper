@@ -3,20 +3,19 @@
 Files read, under <root>/results/ (each written by the retrain.scoring stage named):
 
   main/metrics.tsv, main/contrasts.tsv      score main          Tables 1 and 2, Figs. 2 and 4b, SI tables
-  ladder/metrics.tsv, ladder/contrasts.tsv  score ladder        Fig. 4a, SI tables of the recipe ablation, further
-                                                                models and paired comparisons
-  parameters.json                           parameters          SI tables of the recipe ablation and further models
+  ladder/metrics.tsv, ladder/contrasts.tsv  score ladder        Fig. 4a, SI tables of the recipe ablation and paired
+                                                                comparisons
+  parameters.json                           parameters          SI table of the recipe ablation
   pr_curves/curves.tsv                      pr_curves           SI: precision-recall curves
   selection/metrics.tsv, contrasts.tsv      score selection     Fig. 3a, SI tables of the selection rules and picks
   distances/densities.tsv, summary.tsv      distances           Fig. 3b
   dataset_sizes.tsv                         sizes               Supplementary Table 2
-  experimental_test_labels/                 test_labels experimental   Table 2, SI: the test label sets
-  all_goa_test_labels/                      test_labels all_goa        Table 2, SI: the test label sets
-  masked_test_labels/                       masked              Table 2, SI: the test label sets
+  experimental_test_labels/                 test_labels experimental   Table 2, SI: the test versions
+  all_goa_test_labels/                      test_labels all_goa        Table 2
+  masked_test_labels/                       masked              Table 2
   explabels_training/                       score explabels_training   Fig. 4b, SI: HQ with experimental labels only
   no_hit/subsets.tsv, differences.tsv,      no_hit              Table 2, Fig. 3c, SI: test proteins without training
-    E<cutoff>/{metrics.tsv,contrasts.tsv}                       relatives, and Finch's lead there
-  distance_groups/gains.tsv                  distance_groups     SI: gains by distance from HQ
+    E<cutoff>/{metrics.tsv,contrasts.tsv}                       relatives
   training_cost.tsv                         training_cost       SI: training cost
 
 Fig. 1 reads the counts in figures/sankey_counts.json; Extended Data Fig. 1 is a schematic.
