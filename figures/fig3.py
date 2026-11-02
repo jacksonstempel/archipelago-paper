@@ -23,7 +23,7 @@ ARMS = [('hq_random', (0, 0, 0)), ('pool_random', (1, 0, 0)), ('filter_random', 
 STEPS = [('One per\ncluster', 'pool_random', 'hq_random'), ('Rare\nfunction', 'filter_random', 'pool_random'),
          ('Coverage\nranking', 'archipelago', 'filter_random')]
 BAR, DOT_ON, DOT_OFF, STRIPE = '#8f939a', '#3b3e44', '#dcdde0', '#f3f3f1'
-TOP, MS = 0.062, 6  # bar axis top; matrix dot size
+TOP, MS = 0.07, 6  # bar axis top (holds the top bar's interval); matrix dot size
 # panel b: three of panel a's training sets, in its order, with line colour and key label (the two sets that differ only
 # by the rare-function filter lie on the curves of the sets without it)
 LINES = [('hq_random', '#c3c6cb', 'Random'), ('pool_random', '#7d8188', 'One per cluster'),
