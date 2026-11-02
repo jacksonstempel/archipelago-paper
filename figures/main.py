@@ -22,11 +22,9 @@ MARK = {'deepgose': ('o', 4.2), 'transfew': ('s', 3.8), 'dpfunc': ('^', 4.6)}  #
 DOT_INK = '#55595f'  # Fig. 4b: the published methods
 
 
-def bar(ax, x, v, color, w, lo=None, hi=None):
+def bar(ax, x, v, color, w):
     ax.bar(x, v, w, color=color, lw=0, zorder=2)
-    if lo is not None:  # thin 95% cluster-bootstrap interval, I-shaped; the value label sits above its top
-        ax.errorbar(x, (lo + hi) / 2, yerr=(hi - lo) / 2, color='#3b3e44', elinewidth=0.6, capsize=1.6, capthick=0.6, zorder=3)
-    ax.text(x, (v if hi is None else hi) + 0.01, half_up(v), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
+    ax.text(x, v + 0.01, half_up(v), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
 
 
 def style_bars(ax):
@@ -162,8 +160,7 @@ def figures(results, out):
     for m in comparators:
         centres.append(x)
         for k, (s, color, _) in enumerate(order):
-            r = scores[m, s, 'auprc']
-            bar(ax, x + (k - (bars - 1) / 2) * W, float(r['value']), color, W * 0.94, float(r['ci_low']), float(r['ci_high']))
+            bar(ax, x + (k - (bars - 1) / 2) * W, float(scores[m, s, 'auprc']['value']), color, W * 0.94)
         x += bars * W + GAP
     ax.set_xticks(centres, [NAMES[m] for m in comparators], fontsize=fs(7))
     ax.set_xlim(-0.15, centres[-1] + bars / 2 * W + 0.15)

@@ -194,9 +194,10 @@ def tables(results, out):
                '0.01': r'$10^{-2}$', '0.1': r'$10^{-1}$', '1': '1', '10': '10'}
     lines = []
     for cut, n, k in subsets:
-        cells = [f"{r3(nohit[cut, method, base]['difference'], True)} "
-                 f"{ci(nohit[cut, method, base]['ci_low'], nohit[cut, method, base]['ci_high'])}"
-                 for method, base in [('finch', 'hq'), ('finch', 'hq_random')] + [(p, 'original') for p in PUBLISHED]]
+        random_gain = (contrast if cut == 'none' else contrasts(folder / f'E{cut}'))['auprc', 'finch', 'hq_random', 'finch', 'hq']
+        rows = [nohit[cut, 'finch', 'hq'], nohit[cut, 'finch', 'hq_random'], random_gain,
+                *(nohit[cut, p, 'original'] for p in PUBLISHED)]
+        cells = [f"{r3(r['difference'], True)} {ci(r['ci_low'], r['ci_high'])}" for r in rows]
         lines.append(f'{cutname[cut]} & {n:,} & {k:,} & ' + ' & '.join(cells) + r' \\')
     write(out, 'table_nohit.tex', lines)
 
@@ -236,7 +237,10 @@ def tables(results, out):
         lines.append(f'{name} & ' + ' & '.join(cells) + r' \\')
     write(out, 'table_arms.tex', lines)
     lines = []
-    for (a, b), name in ((('pool_random', 'hq_random'), 'One per cluster (random representatives $-$ HQ + random)'),
+    for (a, b), name in ((('hq_random', 'hq'), 'HQ + random $-$ HQ'), (('pool_random', 'hq'), 'Random representatives $-$ HQ'),
+                         (('filter_random', 'hq'), 'Filtered random representatives $-$ HQ'),
+                         (('coverage_unfiltered', 'hq'), 'Ranking alone $-$ HQ'), (('archipelago', 'hq'), 'ArchipelaGO $-$ HQ'),
+                         (('pool_random', 'hq_random'), 'One per cluster (random representatives $-$ HQ + random)'),
                          (('filter_random', 'pool_random'),
                           'Rare-function filter (filtered $-$ unfiltered random representatives)'),
                          (('archipelago', 'filter_random'),
@@ -249,7 +253,7 @@ def tables(results, out):
                          (('archipelago_300k', 'archipelago'), '300,000 $-$ 150,000 picks'),
                          (('archipelago_600k', 'archipelago'), '600,000 $-$ 150,000 picks'),
                          (('archipelago_600k', 'archipelago_300k'), '600,000 $-$ 300,000 picks')):
-        if a == 'archipelago_300k':
+        if (a, b) in (('pool_random', 'hq_random'), ('archipelago_300k', 'archipelago')):
             lines.append(r'\midrule')
         lines.append(f'{name} & ' + ' & '.join(differences(selection_contrast, 'finch', a, 'finch', b)) + r' \\')
     write(out, 'table_arms_diff.tex', lines)
