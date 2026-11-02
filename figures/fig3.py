@@ -19,7 +19,7 @@ from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, read, save,
 
 HQ, PICKED = '#2b8fd6', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
 H = 3.5  # figure height, inches
-TOP, BOTTOM, A_BOTTOM = H - 0.1, 0.46, 0.66  # top of a and b; bottom of c; bottom of a's matrix
+TOP, BOTTOM, A_BOTTOM = H - 0.1, 0.46, 0.22  # top of a and b; bottom of c; bottom of a's matrix
 A_LEFT, A_RIGHT = 0.62, 2.66  # a's bars and matrix (its steps are printed beyond them, to 45% of the width)
 B_LETTER, B_LEFT = 3.3, 3.76  # the letters and left edge of b and c
 B_BOTTOM, C_TOP = 2.24, 1.84
@@ -142,7 +142,7 @@ def panel_upset(fig, results):
     gains = [float(metric['finch', s, 'auprc']['value']) - float(metric['finch', 'hq', 'auprc']['value']) for s, _ in ARMS]
     differences = contrasts(results)
     steps = [(name, float(differences['auprc', 'finch', a, 'finch', b]['difference'])) for name, a, b in STEPS]
-    width, matrix_height = A_RIGHT - A_LEFT, 0.9
+    width, matrix_height = A_RIGHT - A_LEFT, 1.0
     bars_bottom = A_BOTTOM + matrix_height + 0.16
     b = axes(fig, A_LEFT, bars_bottom, width, TOP - bars_bottom)
     m = axes(fig, A_LEFT, A_BOTTOM, width, matrix_height, sharex=b)
