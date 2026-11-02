@@ -7,7 +7,8 @@ two figures, written into <out>/si/. Reads, under <root>/results/:
   explabels_training/{metrics.tsv,contrasts.tsv}           retrain.scoring.score explabels_training
   no_hit/{subsets.tsv,differences.tsv,E<cutoff>/}          retrain.scoring.no_hit
   pr_curves/curves.tsv                                     retrain.scoring.pr_curves
-  selection/contrasts.tsv                                  retrain.scoring.score selection
+  selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
+  term_strata/gains.tsv                                    retrain.scoring.term_strata
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
   training_cost.tsv                                        retrain.scoring.training_cost
@@ -62,6 +63,11 @@ def paired(d, places):
     return f"{s if s.startswith('$-$') else '+' + s} [{bound(d['ci_low'], places)}, {bound(d['ci_high'], places)}]"
 
 
+def sd(value):
+    """A run-to-run standard deviation; models with one fit or one ensemble have none."""
+    return DASH if value in ('', None) else f'{float(value):.4f}'
+
+
 def write(out, name, lines):
     with open(out / name, 'w', encoding='utf-8', newline='\n') as handle:
         handle.write('\n'.join(lines) + '\n')
@@ -70,7 +76,9 @@ def write(out, name, lines):
 def tables(results, out):
     """Every table body of the SI but those of the recipe ablation."""
     main = {split: seed_means(results / 'main', split) for split in ('test', 'development')}
-    main['test'].update({k: v for k, v in seed_means(results / 'explabels_training').items() if k[1] == 'hq_explabels'})
+    # not DIAMOND-kNN: that run scores it at the screen's cutoff only, and the paper reports it without a cutoff
+    main['test'].update({k: v for k, v in seed_means(results / 'explabels_training').items()
+                         if k[1] == 'hq_explabels' and k[0] != 'diamond_knn'})
     m = lambda method, ts, metric, split='test': main[split].get((method, ts, metric))  # noqa: E731
     contrast = {**contrasts(results / 'explabels_training'), **contrasts(results / 'main')}
 
@@ -98,7 +106,7 @@ def tables(results, out):
             a = m(method, ts, 'auprc')
             if a is None:
                 continue
-            cells = [f"{r3(a['value'])} {ci(a['ci_low'], a['ci_high'])}"]
+            cells = [f"{r3(a['value'])} {ci(a['ci_low'], a['ci_high'])}", sd(a['seed_sd'])]
             cells += [r3(m(method, ts, k)['value']) for k in ('fmax', 'f1', 'protein_fmax')]
             cells.append(f"{float(m(method, ts, 'smin')['value']):.2f}")
             lines.append(f"{NAMES[method] if first else ''} & {name} & " + ' & '.join(cells) + r' \\')
@@ -161,6 +169,10 @@ def tables(results, out):
 
     # selection rules and number of picks (Finch)
     selection_contrast = contrasts(results / 'selection')
+    runs = {}
+    for r in read(results / 'selection' / 'metrics.tsv'):
+        if r['method'] == 'finch' and r['split'] == 'test' and r['metric'] == 'auprc' and r['seed'].isdigit():
+            runs.setdefault(r['training_set'], {})[r['seed']] = float(r['value'])
     lines = []
     for (a, b), name in ((('hq_random', 'hq'), 'HQ + random $-$ HQ'), (('pool_random', 'hq'), 'Random representatives $-$ HQ'),
                          (('filter_random', 'hq'), 'Filtered random representatives $-$ HQ'),
@@ -174,8 +186,19 @@ def tables(results, out):
                          (('archipelago_600k', 'archipelago'), '600,000 $-$ 150,000 picks')):
         if (a, b) in (('pool_random', 'hq_random'), ('archipelago_300k', 'archipelago')):
             lines.append(r'\midrule')
-        lines.append(f'{name} & ' + ' & '.join(differences(selection_contrast, 'finch', a, 'finch', b)) + r' \\')
+        cells = differences(selection_contrast, 'finch', a, 'finch', b)
+        cells.insert(1, sd(np.std([runs[a][s] - runs[b][s] for s in sorted(runs[a])], ddof=1)))  # the same seed in both
+        lines.append(f'{name} & ' + ' & '.join(cells) + r' \\')
     write(out, 'table_arms_diff.tex', lines)
+
+    # the main gains on common and rare terms
+    strata = {(r['stratum'], r['method'], r['training_set'], r['minus_training_set']): r
+              for r in read(results / 'term_strata' / 'gains.tsv')}
+    lines = []
+    for method, a, b in [(p, 'archipelago', 'original') for p in PUBLISHED] + [('finch', 'archipelago', 'hq_random')]:
+        lines.append(f'{NAMES[method]} & {SETNAME[a]} $-$ {SETNAME[b]} & '
+                     + ' & '.join(paired(strata[s, method, a, b], 3) for s in ('all', 'common', 'rare')) + r' \\')
+    write(out, 'table_term_strata.tex', lines)
 
 
 def label_counts(results, out):
@@ -227,7 +250,7 @@ def recipe_tables(results, out):
 
     def scores(model):
         t = lambda k: ladder['test'][model, 'archipelago', k]  # noqa: E731
-        return (f"{r3(t('auprc')['value'])} {ci(t('auprc')['ci_low'], t('auprc')['ci_high'])} & "
+        return (f"{r3(t('auprc')['value'])} {ci(t('auprc')['ci_low'], t('auprc')['ci_high'])} & {sd(t('auprc')['seed_sd'])} & "
                 f"{r3(t('fmax')['value'])} & {float(t('smin')['value']):.2f} & "
                 f"{r3(ladder['development'][model, 'archipelago', 'auprc']['value'])}")
 

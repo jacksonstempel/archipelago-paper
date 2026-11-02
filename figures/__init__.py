@@ -16,6 +16,7 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   explabels_training/                       score explabels_training   Fig. 4b, SI: HQ with experimental labels only
   no_hit/subsets.tsv, differences.tsv,      no_hit              Table 2, Fig. 3c, SI: test proteins without training
     E<cutoff>/{metrics.tsv,contrasts.tsv}                       relatives
+  term_strata/gains.tsv                     term_strata         SI: the main gains on common and rare terms
   training_cost.tsv                         training_cost       SI: training cost
 
 Fig. 1 reads the counts in figures/sankey_counts.json; Extended Data Fig. 1 is a schematic.

@@ -188,6 +188,7 @@ python -m retrain.scoring.distances                  # distances of the added pr
 python -m retrain.scoring.test_labels experimental   # scoring against experimental-only test labels
 python -m retrain.scoring.test_labels all_goa        # ... with every GOA assertion the label review considered
 python -m retrain.scoring.masked                     # ... with the reviewed GOA assertions masked (GPU)
+python -m retrain.scoring.term_strata                # the main gains on common and rare terms (GPU)
 python -m retrain.scoring.no_hit                     # test proteins without training relatives (Fig. 3c; DIAMOND)
 python -m retrain.scoring.sizes                      # sizes of every training set
 python -m retrain.scoring.parameters                 # trainable parameters of the models on ArchipelaGO (CPU)

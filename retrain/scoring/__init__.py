@@ -8,6 +8,7 @@
                                              assertion the label review considered (all_goa)
     python -m retrain.scoring.masked         scoring with the reviewed GOA assertions masked
     python -m retrain.scoring.no_hit         scoring of test proteins without training relatives
+    python -m retrain.scoring.term_strata    the main gains on common and rare terms
     python -m retrain.scoring.sizes          sizes of the training sets and the benchmark
     python -m retrain.scoring.parameters     trainable parameters of the models trained on ArchipelaGO
     python -m retrain.scoring.training_cost  GPU-hours of the training runs
