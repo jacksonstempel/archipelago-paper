@@ -42,7 +42,7 @@ def upset(b, m, gains, steps, intervals):
     for i, v in enumerate(gains):
         b.bar(i, v, 0.62, color=BAR, lw=0, zorder=2)
         lo, hi = intervals[i]
-        b.plot([i, i], [lo, hi], color=DOT_ON, lw=0.6, solid_capstyle='butt', zorder=3, clip_on=False)
+        b.errorbar(i, (lo + hi) / 2, yerr=(hi - lo) / 2, color=DOT_ON, elinewidth=0.6, capsize=2, capthick=0.6, zorder=3)
         b.text(i, hi + TOP * 0.015, half_up(v, sign=True), ha='center', va='bottom', fontsize=fs(7.5), zorder=4)
     b.set_ylim(0, TOP)
     b.set_xlim(-0.6, len(ARMS) - 0.4)

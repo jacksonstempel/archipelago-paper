@@ -23,8 +23,8 @@ BAND = '#e6e7e9'  # Fig. 4a: the published methods' range on ArchipelaGO
 
 def bar(ax, x, v, color, w, lo=None, hi=None):
     ax.bar(x, v, w, color=color, lw=0, zorder=2)
-    if lo is not None:  # thin 95% cluster-bootstrap interval; the value label sits above its top
-        ax.plot([x, x], [lo, hi], color='#3b3e44', lw=0.6, solid_capstyle='butt', zorder=3)
+    if lo is not None:  # thin 95% cluster-bootstrap interval, I-shaped; the value label sits above its top
+        ax.errorbar(x, (lo + hi) / 2, yerr=(hi - lo) / 2, color='#3b3e44', elinewidth=0.6, capsize=1.6, capthick=0.6, zorder=3)
     ax.text(x, (v if hi is None else hi) + 0.01, half_up(v), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
 
 
