@@ -19,7 +19,7 @@ plt.rcParams.update({
 })
 INK, GREY = '#1d1f22', '#5f636a'
 # training sets: original data, HQ, HQ + random, ArchipelaGO
-COLOURS = {'original': '#8f939a', 'hq': '#4985d0', 'hq_random': '#6fc3a0', 'archipelago': '#7565db'}
+COLOURS = {'original': '#8f939a', 'hq': '#2b8fd6', 'hq_random': '#6fc3a0', 'archipelago': '#7565db'}
 NAMES = {'transfew': 'TransFew', 'deepgose': 'DeepGO-SE', 'dpfunc': 'DPFunc', 'finch': 'Finch', 'naive': 'Naive',
          'embedding_knn': 'Embedding-kNN', 'diamond_knn': 'DIAMOND-kNN'}
 PUBLISHED = ['transfew', 'deepgose', 'dpfunc']

@@ -39,7 +39,7 @@ SHARED = [('original_dpfunc', "DPFunc's original data", 'dpfunc'), ('original_tr
 SHADES = {'transfew': '#55595f', 'deepgose': '#8f939a', 'dpfunc': '#bfc2c7'}
 # Supplementary Figure 3: an original set wears its method's shade, the HQ family tints of the HQ blue
 SET_LINE = {'original_dpfunc': SHADES['dpfunc'], 'original_transfew': SHADES['transfew'], 'original_deepgose': SHADES['deepgose'],
-            'hq_explabels': '#b3cdee', 'goa': '#7fa9e0', 'hq': COLOURS['hq'], 'archipelago': COLOURS['archipelago']}
+            'hq_explabels': '#aad2ef', 'goa': '#75b6e4', 'hq': COLOURS['hq'], 'archipelago': COLOURS['archipelago']}
 
 
 def r3(value, sign=False, places=3):

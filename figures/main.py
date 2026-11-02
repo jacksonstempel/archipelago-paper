@@ -151,7 +151,7 @@ def figures(results, out):
     # methods by original-data score.
     W = 0.25  # one bar
     GAP = 0.25 * 0.85  # between the four-bar groups
-    order = [('original', COLOURS['original'], 'Original data'), ('hq_explabels', '#b3cdee', 'HQ, experimental labels only'),
+    order = [('original', COLOURS['original'], 'Original data'), ('hq_explabels', '#aad2ef', 'HQ, experimental labels only'),
              ('hq', COLOURS['hq'], 'HQ'), ('archipelago', FINCH, 'ArchipelaGO')]
     scores = {**metric, **{k: r for k, r in seed_means(results / 'explabels_training').items() if k[1] == 'hq_explabels'}}
     bars = len(order)

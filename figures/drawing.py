@@ -8,7 +8,7 @@ from matplotlib.path import Path as Curve
 from figures.style import GREY, INK, fs
 
 MONO = ['Consolas', 'DejaVu Sans Mono', 'Courier New']
-C = {'hq': '#4985d0', 'selected': '#7565db'}  # HQ blue, ArchipelaGO violet
+C = {'hq': '#2b8fd6', 'selected': '#7565db'}  # HQ blue, ArchipelaGO violet
 LINE, FILL = '#9da2a9', '#f4f5f6'
 GAP = 0.035  # space between an arrowhead's tip and the thing it points at
 

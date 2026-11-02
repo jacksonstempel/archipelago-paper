@@ -14,7 +14,7 @@ from matplotlib.transforms import Affine2D, ScaledTranslation, blended_transform
 
 from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, read, save, seed_means
 
-HQ, PICKED = '#4985d0', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
+HQ, PICKED = '#2b8fd6', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
 H = 4.0  # figure height, inches
 # panel a: training set, ingredients used (one per cluster, rare function, coverage ranking)
 ARMS = [('hq_random', (0, 0, 0)), ('pool_random', (1, 0, 0)), ('filter_random', (1, 1, 0)),
