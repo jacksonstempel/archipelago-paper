@@ -37,11 +37,13 @@ def at(ax, x, y, dx=0.0, dy=0.0):
             + ScaledTranslation(dx, dy, ax.figure.dpi_scale_trans))
 
 
-def upset(b, m, gains, steps):
+def upset(b, m, gains, steps, intervals):
     """The bars of the gain over HQ alone (axes b) over the ingredient matrix (axes m, sharing b's x)."""
     for i, v in enumerate(gains):
         b.bar(i, v, 0.62, color=BAR, lw=0, zorder=2)
-        b.text(i, v + TOP * 0.015, half_up(v, sign=True), ha='center', va='bottom', fontsize=fs(7.5), zorder=4)
+        lo, hi = intervals[i]
+        b.plot([i, i], [lo, hi], color=DOT_ON, lw=0.6, solid_capstyle='butt', zorder=3, clip_on=False)
+        b.text(i, hi + TOP * 0.015, half_up(v, sign=True), ha='center', va='bottom', fontsize=fs(7.5), zorder=4)
     b.set_ylim(0, TOP)
     b.set_xlim(-0.6, len(ARMS) - 0.4)
     b.set_yticks([0, 0.02, 0.04, 0.06])
@@ -95,7 +97,7 @@ def densities(ax, results):
 
 
 def letter(fig, x, text):
-    fig.text(x / fig.get_figwidth(), 1 - 0.02 / H, text, ha='left', va='top', fontsize=fs(8.5), fontweight='bold')
+    fig.text(x / fig.get_figwidth(), 1 - 0.02 / H, text, ha='left', va='top', fontsize=8, fontweight='bold')
 
 
 def axes(fig, left, bottom, width, height, **kw):
@@ -108,13 +110,16 @@ def panel_upset(fig, results, left, right):
     metric = seed_means(results)
     gains = [float(metric['finch', s, 'auprc']['value']) - float(metric['finch', 'hq', 'auprc']['value']) for s, _ in ARMS]
     differences = contrasts(results)
+    # paired 95% cluster-bootstrap interval of each set's gain over HQ; a missing contrast raises a KeyError
+    intervals = [(float(differences['auprc', 'finch', s, 'finch', 'hq']['ci_low']),
+                  float(differences['auprc', 'finch', s, 'finch', 'hq']['ci_high'])) for s, _ in ARMS]
     steps = [(name, float(differences['auprc', 'finch', a, 'finch', b]['difference'])) for name, a, b in STEPS]
     bars_left = left + 0.62
     matrix_bottom, matrix_height = 0.2, 0.95
     bars_bottom = matrix_bottom + matrix_height + 0.16
     b = axes(fig, bars_left, bars_bottom, right - bars_left, H - 0.22 - 0.02 - bars_bottom)
     m = axes(fig, bars_left, matrix_bottom, right - bars_left, matrix_height, sharex=b)
-    upset(b, m, gains, steps)
+    upset(b, m, gains, steps, intervals)
 
 
 def draw(results, out):

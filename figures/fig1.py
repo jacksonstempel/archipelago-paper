@@ -248,7 +248,7 @@ def figure(n):
     # The fan meets the Selected bar exactly at its corners, then reaches TUCK straight down under it.
     fan = [(t0, Y_END), (t1, Y_END), (v1, Y_BAR), (v1, Y_BAR - TUCK), (v0, Y_BAR - TUCK), (v0, Y_BAR)]
     shade(ax, fan, 1, Y_END, Y_BAR, C['selected'], tint(C['selected'], 0.8))
-    ax.text(apex, Y_BAR + 0.09, f'×{ZOOM}', ha='center', va='bottom', fontsize=fs(6.3), color=C['selected'], zorder=3)
+    ax.text(apex, Y_BAR + 0.09, f'×{ZOOM}', ha='center', va='bottom', fontsize=fs(6.3), color='black', zorder=3)
     strip(ax, v0 - SEAM, v1, Y_BAR, Y_BAR - BAR, C['selected'], z=3)  # under the HQ part's edge: no seam between the two
     strip(ax, left1, v0, Y_BAR, Y_BAR - BAR, C['hq'], z=3)
     for x0, w, name, key in ((left1, wa['hq'], 'HQ', 'hq'), (v0, wa['selected'], 'Selected', 'selected')):

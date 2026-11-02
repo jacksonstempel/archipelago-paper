@@ -21,9 +21,11 @@ Y0, Y1 = 0.4, 0.65  # Fig. 4a's axis
 BAND = '#e6e7e9'  # Fig. 4a: the published methods' range on ArchipelaGO
 
 
-def bar(ax, x, v, color, w):
+def bar(ax, x, v, color, w, lo=None, hi=None):
     ax.bar(x, v, w, color=color, lw=0, zorder=2)
-    ax.text(x, v + 0.01, half_up(v), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
+    if lo is not None:  # thin 95% cluster-bootstrap interval; the value label sits above its top
+        ax.plot([x, x], [lo, hi], color='#3b3e44', lw=0.6, solid_capstyle='butt', zorder=3)
+    ax.text(x, (v if hi is None else hi) + 0.01, half_up(v), ha='center', va='bottom', fontsize=fs(6.5), zorder=4)
 
 
 def style_bars(ax):
@@ -114,7 +116,7 @@ def figures(results, out):
     b.set_xlabel('Recall')
     b.set_ylabel('Precision')
     for ax, letter, x in ((a, 'a', -0.11), (b, 'b', -0.14)):
-        ax.text(x, 1.02, letter, transform=ax.transAxes, fontsize=fs(8), fontweight='bold', va='bottom', ha='left')
+        ax.text(x, 1.02, letter, transform=ax.transAxes, fontsize=8, fontweight='bold', va='bottom', ha='left')
     save(fig, out, 'fig4_finch')
 
     # Figure 2. Per published method, original data, HQ and ArchipelaGO side by side; methods by original-data score.
@@ -129,7 +131,8 @@ def figures(results, out):
     for m in comparators:
         centres.append(x)
         for k, (s, color, _) in enumerate(order):
-            bar(ax, x + (k - 1) * W, auprc(m, s), color, W * 0.94)
+            r = metric[m, s, 'auprc']
+            bar(ax, x + (k - 1) * W, auprc(m, s), color, W * 0.94, float(r['ci_low']), float(r['ci_high']))
         x += 3 * W + GAP
     ax.set_xticks(centres, [NAMES[m] for m in comparators], fontsize=fs(7))
     ax.set_xlim(-0.15, centres[-1] + 1.5 * W + 0.15)

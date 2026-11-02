@@ -25,7 +25,7 @@ def canvas(w, h):
 def header(ax, x, y, letter, name):
     """Panel heading: bold letter, then the name."""
     renderer = ax.figure.canvas.get_renderer()
-    t = ax.text(x, y, letter, ha='left', va='bottom', fontsize=fs(8.5), fontweight='bold', color=INK)
+    t = ax.text(x, y, letter, ha='left', va='bottom', fontsize=8, fontweight='bold', color=INK)
     right = ax.transData.inverted().transform((t.get_window_extent(renderer).x1, 0))[0]
     ax.text(right + 0.07, y, name, ha='left', va='bottom', fontsize=fs(8.5), color=INK)
 
