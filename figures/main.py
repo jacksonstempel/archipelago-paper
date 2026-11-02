@@ -228,9 +228,9 @@ def table2(results, out):
                (r'No training hit, E\,$\leq$\,10', subsets[10.0], 'no_hit/E10', False)]]
     n = len(comparators)
     for name, intervals in (('table2.tex', False), ('table2_intervals.tex', True)):
-        # full width through tabularx's stretched columns, not tabular*'s stretched gaps, which a shaded row leaves white
+        # full width through tabularx's stretched first column, not tabular*'s stretched gaps, which a shaded row leaves white
         lines = [r'\begin{tabular}{@{}lr' + 'c' * (2 * n + 1) + '@{}}' if intervals else
-                 r'\begin{tabularx}{\textwidth}{@{}lr' + r'>{\centering\arraybackslash}X' * (2 * n + 1) + '@{}}',
+                 r'\begin{tabularx}{\textwidth}{@{}Xr' + 'c' * (2 * n + 1) + '@{}}',
                  r'\toprule',
                  rf' & & \multicolumn{{{n}}}{{c}}{{\bfseries Original data $\rightarrow$ ArchipelaGO}} & '
                  rf'\multicolumn{{{n + 1}}}{{c}}{{\bfseries Finch on ArchipelaGO minus}} \\',
@@ -246,7 +246,7 @@ def table2(results, out):
                       [c['auprc', 'finch', 'archipelago', m, 'archipelago'] for m in comparators]
                 cells = [f"{half_up(r['difference'])} ({half_up(r['ci_low'])}--{half_up(r['ci_high'])})" if intervals
                          else half_up(r['difference']) for r in row]
-                lines.append((r'\rowcolor{rowshade}' if main else '') + f'{version} & {count:,} & ' + ' & '.join(cells)
+                lines.append((r'\rowcolor{rowshade}[0pt][0pt]' if main else '') + f'{version} & {count:,} & ' + ' & '.join(cells)
                              + r' \\')
         lines += [r'\bottomrule', r'\end{tabular}' if intervals else r'\end{tabularx}', '']
         with open(out / name, 'w', encoding='utf-8', newline='\n') as handle:
