@@ -103,7 +103,7 @@ def shared_rows(results):
 
 def dots(ax, rows, comparators):
     """Fig. 4b: one row per training set, the published methods' dots, Finch's dot with its score, a line from the row's
-    best published method to Finch, and Finch's lead on the right. The original sets stand above a dotted line."""
+    best published method to Finch, and Finch's lead on the right."""
     n = len(rows)
     for i, (_, published, finch, gain) in enumerate(rows):
         y = n - 1 - i
@@ -116,7 +116,6 @@ def dots(ax, rows, comparators):
         ax.plot(finch, y, 'o', ms=5.6, mfc=FINCH, mec='white', mew=0.5, zorder=4)
         ax.text(finch, y + 0.2, half_up(finch), ha='center', va='bottom', fontsize=fs(6.5), zorder=5)
         ax.text(1.02, y, half_up(gain, sign=True), transform=ax.get_yaxis_transform(), ha='left', va='center', fontsize=fs(6.5))
-    ax.axhline(n - 3.5, color='#b5b8bd', lw=0.6, ls=(0, (2, 2)), zorder=1)
     ax.set_yticks(range(n), [r[0] for r in rows][::-1], fontsize=fs(6.5), linespacing=1.05)
     ax.tick_params(axis='y', length=0)
     ax.spines['left'].set_visible(False)
