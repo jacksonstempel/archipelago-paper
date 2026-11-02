@@ -7,8 +7,9 @@ in ESM2-15B embedding space, for three of panel a's training sets (random comput
 representatives, ArchipelaGO), and the median distance from an HQ protein to its nearest other HQ protein as the
 reference (dashed: HQ's own density is a spike at zero). Reads <root>/results/distances/{densities.tsv,summary.tsv}
 (retrain.scoring.distances).
-c, Finch on ArchipelaGO and on HQ + random on the test proteins left by ever stricter homology filters, with their difference.
-Reads <root>/results/main/metrics.tsv and <root>/results/no_hit/{differences.tsv,E<cutoff>/metrics.tsv} (retrain.scoring.no_hit).
+c, Finch's gain over HQ alone from the selected and from the random proteins, on the test proteins left by ever stricter
+homology filters, with paired intervals. Reads <root>/results/main/contrasts.tsv and <root>/results/no_hit/{differences.tsv,
+E<cutoff>/contrasts.tsv} (retrain.scoring.no_hit).
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,7 +18,10 @@ from matplotlib.transforms import Affine2D, ScaledTranslation, blended_transform
 from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, read, save, seed_means
 
 HQ, PICKED = '#2b8fd6', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
-H = 3.4  # figure height, inches
+H = 3.7  # figure height, inches
+TOP_ROW, LOW_ROW = (2.3, H - 0.1), (0.46, 1.9)  # bottom and top, inches: a's bars with b, a's matrix with c
+A_LEFT, A_RIGHT = 0.62, 2.4  # a's bars and matrix (its steps are printed beyond them)
+B_LETTER, B_LEFT = 2.98, 3.44  # the letters and left edge of b and c
 # panel a: training set, ingredients used (one per cluster, rare function, coverage ranking)
 ARMS = [('hq_random', (0, 0, 0)), ('pool_random', (1, 0, 0)), ('filter_random', (1, 1, 0)),
         ('coverage_unfiltered', (1, 0, 1)), ('archipelago', (1, 1, 1))]
@@ -99,26 +103,31 @@ def densities(ax, results):
 
 
 def filters(ax, results):
-    """Finch on ArchipelaGO and on HQ + random on the test proteins left by each homology filter (`none`: every test
-    protein), the difference printed above."""
-    rows = [r for r in read(results / 'no_hit' / 'differences.tsv') if r['method'] == 'finch' and r['base'] == 'hq_random']
-    score = {r['subset']: seed_means(results / 'main' if r['subset'] == 'none' else results / 'no_hit' / f"E{r['subset']}")
-             for r in rows}
+    """Finch's gain over HQ alone on the test proteins left by each homology filter (`none`: every test protein), from the
+    random and the selected proteins, with paired intervals: each value is printed beyond its interval, above for the
+    selected proteins and below for the random."""
+    rows = [r for r in read(results / 'no_hit' / 'differences.tsv') if r['method'] == 'finch' and r['base'] == 'hq']
+    pairs = [contrasts(results / 'main' if r['subset'] == 'none' else results / 'no_hit' / f"E{r['subset']}") for r in rows]
     x = np.arange(len(rows))
-    for s, color, lw, text in (('hq_random', BAR, 1.4, 'HQ + random'), ('archipelago', PICKED, 1.6, 'ArchipelaGO')):
-        ax.plot(x, [float(score[r['subset']]['finch', s, 'auprc']['value']) for r in rows], color=color, lw=lw, marker='o', ms=3.4,
-                mec='white', mew=0.4, label=text, zorder=3)
-    for i, r in enumerate(rows):
-        ax.text(i, float(score[r['subset']]['finch', 'archipelago', 'auprc']['value']) + 0.008,
-                half_up(r['difference'], sign=True), ha='center', va='bottom', fontsize=fs(6))
+    ax.axhline(0, color='#b5b8bd', lw=0.6, zorder=1)
+    for s, color, lw, text, above in (('hq_random', BAR, 1.3, 'Random', False), ('archipelago', PICKED, 1.5, 'ArchipelaGO', True)):
+        y, lo, hi = (np.array([float(p['auprc', 'finch', s, 'finch', 'hq'][c]) for p in pairs])
+                     for c in ('difference', 'ci_low', 'ci_high'))
+        ax.errorbar(x, y, yerr=(y - lo, hi - y), color=color, lw=lw, elinewidth=0.6, capsize=1.6, capthick=0.6, marker='o', ms=3.4,
+                    mec='white', mew=0.4, label=text, zorder=3)
+        for i in x:
+            ax.text(i, hi[i] + 0.002 if above else lo[i] - 0.002, half_up(y[i], sign=True).replace('-', '−'), ha='center',
+                    va='bottom' if above else 'top', fontsize=fs(5.8), zorder=4,
+                    bbox=dict(facecolor='white', edgecolor='none', pad=0.4))
     names = ['All'] + [f"$10^{{{round(np.log10(float(r['subset'])))}}}$" if float(r['subset']) < 0.5 else f"{float(r['subset']):g}"
                        for r in rows[1:]]
     ax.set_xticks(x, [f"{n}\n{int(r['proteins']):,}" for n, r in zip(names, rows)], fontsize=fs(5.8), linespacing=1.1)
     ax.set_xlabel('No DIAMOND hit to any training protein at E ≤ (test proteins left)', fontsize=fs(6.5))
-    ax.set_ylabel('Test micro-AUPRC')
-    ax.set_ylim(0.43, 0.66)
-    ax.set_yticks([0.45, 0.50, 0.55, 0.60, 0.65])
-    ax.legend(loc='lower left', frameon=False, fontsize=fs(6.5), handlelength=1.5, borderaxespad=0.1)
+    ax.set_ylabel('Micro-AUPRC gain\nover HQ alone')
+    ax.set_xlim(-0.5, len(rows) - 0.5)
+    ax.set_ylim(-0.036, 0.08)
+    ax.set_yticks([-0.02, 0, 0.02, 0.04, 0.06])
+    ax.legend(loc='upper right', frameon=False, fontsize=fs(6.2), handlelength=1.5, borderaxespad=0.1, labelspacing=0.25)
 
 
 def letter(fig, x, text, top=0.02):
@@ -131,8 +140,8 @@ def axes(fig, left, bottom, width, height, **kw):
     return fig.add_axes([left / w, bottom / H, width / w, height / H], **kw)
 
 
-def panel_upset(fig, results, left, right):
-    """Panel a between `left` (its letter) and `right` (its bars' right edge; the steps are printed beyond it)."""
+def panel_upset(fig, results):
+    """Panel a: its bars in the upper row, its matrix in the lower."""
     metric = seed_means(results)
     gains = [float(metric['finch', s, 'auprc']['value']) - float(metric['finch', 'hq', 'auprc']['value']) for s, _ in ARMS]
     differences = contrasts(results)
@@ -140,21 +149,23 @@ def panel_upset(fig, results, left, right):
     intervals = [(float(differences['auprc', 'finch', s, 'finch', 'hq']['ci_low']),
                   float(differences['auprc', 'finch', s, 'finch', 'hq']['ci_high'])) for s, _ in ARMS]
     steps = [(name, float(differences['auprc', 'finch', a, 'finch', b]['difference'])) for name, a, b in STEPS]
-    bars_left = left + 0.62
-    matrix_bottom, matrix_height = 0.2, 0.95
-    bars_bottom = matrix_bottom + matrix_height + 0.16
-    b = axes(fig, bars_left, bars_bottom, right - bars_left, H - 0.22 - 0.02 - bars_bottom)
-    m = axes(fig, bars_left, matrix_bottom, right - bars_left, matrix_height, sharex=b)
+    width = A_RIGHT - A_LEFT
+    b = axes(fig, A_LEFT, TOP_ROW[0], width, TOP_ROW[1] - TOP_ROW[0])
+    m = axes(fig, A_LEFT, LOW_ROW[0], width, LOW_ROW[1] - LOW_ROW[0], sharex=b)
     upset(b, m, gains, steps, intervals)
 
 
 def draw(results, out):
     fig = plt.figure(figsize=(DOUBLE, H))
     letter(fig, 0, 'a')
-    panel_upset(fig, results / 'selection', 0, 3.02)
-    left, width = 4.0, DOUBLE - 4.0 - 0.1
-    letter(fig, 3.49, 'b')
-    densities(axes(fig, left, 2.3, width, H - 2.3 - 0.08), results / 'distances')
-    letter(fig, 3.49, 'c', top=H - 1.84)
-    filters(axes(fig, left, 0.5, width, 1.32), results)
+    panel_upset(fig, results / 'selection')
+    width = DOUBLE - B_LEFT - 0.08
+    letter(fig, B_LETTER, 'b')
+    upper = axes(fig, B_LEFT, TOP_ROW[0], width, TOP_ROW[1] - TOP_ROW[0])
+    densities(upper, results / 'distances')
+    letter(fig, B_LETTER, 'c', top=H - LOW_ROW[1] - 0.08)
+    lower = axes(fig, B_LEFT, LOW_ROW[0], width, LOW_ROW[1] - LOW_ROW[0])
+    filters(lower, results)
+    for ax in (upper, lower):
+        ax.yaxis.set_label_coords(-0.09, 0.5)  # b's and c's labels in one column
     save(fig, out, 'fig3_choosing')
