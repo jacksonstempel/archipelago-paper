@@ -106,9 +106,14 @@ def transfew(b, rows):
              for name, gt in replicate.transfew_groundtruth(b.replication).items()}
 
     def restricted(gt, path, subset_terms, accessions=None):
-        path.write_text(''.join(line for line in open(gt)
-                                if (subset_terms is None or line.rstrip('\n').split('\t')[1] in subset_terms)
-                                and (accessions is None or line.split('\t')[0] in accessions)))
+        """The ground truth of these proteins within the term subset; with a subset, proteins left with only the root
+        term are left out."""
+        lines = [line for line in open(gt) if (subset_terms is None or line.rstrip('\n').split('\t')[1] in subset_terms)
+                 and (accessions is None or line.split('\t')[0] in accessions)]
+        if subset_terms is not None:
+            counted = {line.split('\t')[0] for line in lines if line.rstrip('\n').split('\t')[1] != 'GO:0003674'}
+            lines = [line for line in lines if line.split('\t')[0] in counted]
+        path.write_text(''.join(lines))
         return path
     for term_set, subset_terms in (('all', None), ('shared', b.shared)):
         pairs = [(t, j) for t, j in zip(terms_all, columns_all) if subset_terms is None or t in subset_terms]
@@ -153,11 +158,16 @@ def dpfunc(b, rows):
     column = {t: j for j, t in enumerate(b.vocabulary)}
     obo = str(b.root / 'datasets/ontology/go-basic.obo')
 
+    go = evaluation.Ontology(obo, with_rels=True)
+
+    def evaluable(terms):  # a true term the official evaluation counts: in the GO file, not the root
+        return any(t != 'GO:0003674' and go.has_term(t) for t in terms)
+
     def score(split, keep, scores, subset_terms):
         # with a term subset, proteins without a true term in it are left out (the official fmax averages recall over
-        # proteins and needs a true term for each; DeepGO-SE's code and CAFA-evaluator leave such proteins out too)
+        # proteins and needs a true term for each; DeepGO-SE's code skips such proteins too)
         recs = [r for r in b.records[split] if r['record'] in keep
-                and (subset_terms is None or truth[r['record']] & subset_terms)]
+                and (subset_terms is None or evaluable(truth[r['record']] & subset_terms))]
         names = [t for t in b.vocabulary if subset_terms is None or t in subset_terms]
         cols = [column[t] for t in names]
         frame = pd.DataFrame(dict(

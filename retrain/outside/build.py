@@ -83,7 +83,8 @@ def main():
     archipelago = load(main_root, 'archipelago', labels=False)
     proteins = dict(zip(archipelago.seq_ids, archipelago.sequences))
     exact, hits, _ = relatives(root, proteins, work / 'screen_archipelago')
-    kept = [h for h in archipelago.seq_ids if h not in exact | hits]
+    removed = exact | hits
+    kept = [h for h in archipelago.seq_ids if h not in removed]
     record['archipelago'] = dict(proteins=len(proteins), identical_to_validation_or_test=len(exact), diamond_hit=len(hits),
                                  removed=len(exact | hits), kept_by_screen=len(kept))
     keep = set(kept)
