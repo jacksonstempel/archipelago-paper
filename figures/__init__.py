@@ -12,7 +12,7 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   dataset_sizes.tsv                         sizes               Supplementary Table 2
   experimental_test_labels/                 test_labels experimental   Table 2, SI: the test versions
   all_goa_test_labels/                      test_labels all_goa        Table 2
-  masked_test_labels/                       masked              Table 2
+  masked_test_labels/                       test_labels masked         Table 2
   explabels_training/                       score explabels_training   Fig. 4b, SI: HQ with experimental labels only
   no_hit/subsets.tsv, differences.tsv,      no_hit              Table 2, Fig. 3c, SI: test proteins without training
     E<cutoff>/{metrics.tsv,contrasts.tsv}                       relatives

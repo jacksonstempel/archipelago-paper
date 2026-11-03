@@ -38,14 +38,19 @@ The Hugging Face dataset, as downloaded (Parquet, one folder per table):
 | `training/` | the 237,797 ArchipelaGO proteins | `protein_id`, `accessions`, `sequence`, `part` (`hq` or `selected`), `selection_rank` (1 to 150,000 for selected proteins), `go_terms` (propagated labels) |
 | `training_annotations/` | their asserted (direct) annotations | `protein_id`, `go_id`, `evidence_class`, `evidence`, `source`, `assigned_by` |
 | `benchmark/development`, `benchmark/test` | 2,500 and 5,000 proteins | `protein_id`, `accessions`, `sequence`, `cluster` (homology cluster), `go_terms` |
+| `benchmark_experimental/`, `benchmark_masked/`, `benchmark_all_goa/` | the other label versions | as `benchmark`; `benchmark_masked` adds `masked_terms` |
 | `benchmark_annotations/` | their asserted annotations, including the accepted review labels | as `training_annotations` |
 | `benchmark_reviews/` | every reviewed non-experimental annotation of the benchmark, accepted or not, with its reasoning | `protein_id`, `go_id`, `decision` (`accept` or `do_not_accept`), the reasoning and sources |
+| `benchmark_no_hit/` | the 5,000 test proteins | `protein_id`, `no_hit_up_to` (the largest E-value cutoff at which the protein has no training hit) |
 | `go_terms/` | the 8,739 vocabulary terms | `go_id`, `name`, `column` (output column), `parents`, `information_accretion`, protein counts |
+| `reference_scores/` | the paper's models on every benchmark version | one row per version, model and training set |
 | `ontology/go-basic.obo.gz` | the GO release of every label | |
+| `fasta/` | the sequences of the training, development and test proteins | |
 
-`python -m retrain.datasets.release` turns these into `datasets/{ontology,hq,archipelago,development,test}`. The test
-set's reviews are read directly by the scoring with other test labels (`retrain.scoring.test_labels all_goa`,
-`retrain.scoring.masked`); in the test annotations, the accepted ones have the source `literature review (this work)`.
+`python -m retrain.datasets.release` turns these into `datasets/{ontology,hq,archipelago,development,test}`. The scoring with
+other test labels (`retrain.scoring.test_labels`) rebuilds each version from the test annotations and reviews, checks it
+against the released table, and scores it from a bundle of the release; in the test annotations, the accepted reviews
+have the source `literature review (this work)`.
 
 ### Files not in the public release
 

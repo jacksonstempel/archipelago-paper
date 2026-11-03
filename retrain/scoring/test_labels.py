@@ -1,23 +1,26 @@
-"""Scoring against other test labels (main-text Table 2, Supplementary Information): every model of the main run scored
-on test labels rebuilt from the test annotations.
+"""Scoring against the other versions of the test labels (main-text Table 2, Supplementary Information): every model of the
+main run scored with the scorer's --labels.
 
     python -m retrain.scoring.test_labels LABELS [--data DIR] [--device cuda|cpu]
 
 LABELS is one of
   experimental  only the test annotations with an experimental evidence code (EXP, IDA, IPI, IMP, IGI, IEP, HTP, HDA, HMP,
                 HGI, HEP); test proteins left without a label are dropped (clusters unchanged)
-                -> results/experimental_test_labels/
-  all_goa       the test annotations other than the label review's, plus every GOA assertion the review considered,
-                accepted or not (release/benchmark_reviews/test.parquet); every test protein is kept
-                -> results/all_goa_test_labels/
+  masked        positives: the test annotations other than the label review's; the pairs that every GOA assertion the
+                review considered, accepted or not (release/benchmark_reviews/test.parquet), adds with its parent terms count
+                as neither positive nor negative; every test protein is kept
+  all_goa       the test annotations other than the label review's, plus every GOA assertion the review considered, accepted
+                or not; every test protein is kept
+-> results/<LABELS>_test_labels/
 
-Annotations are propagated exactly as the test labels were built (alt_id and replaced_by mapping, is_a closure, the
-vocabulary; a term that maps to no live term adds no label). Checks: all annotation rows together give the official test
-labels exactly, and the review's rows among them are exactly its accepted assertions. Writes the scorer's output,
-contrasts.tsv (as retrain.scoring.score) and counts.tsv
-(annotation rows, proteins, propagated pairs, clusters and terms with a positive, for the official labels, `all`, and the
-new ones, `exp` or `all_goa`). Needs the main run's fits. The labels with the reviewed assertions masked are scored by
-retrain.scoring.masked.
+Each version is rebuilt here from the test annotations, propagated exactly as the test labels were built (alt_id and
+replaced_by mapping, is_a closure, the vocabulary; a term that maps to no live term adds no label), and must equal the
+released table (release/benchmark_<LABELS>/test.parquet). Further checks: all annotation rows together give the official
+test labels exactly, and the review's rows among them are exactly its accepted assertions. The scorer reads a bundle written
+from the release (scoring/release_data/); its development rows use the version's development labels, and F1 uses the
+threshold selected against the reviewed ones, as in the paper. Writes the scorer's output, contrasts.tsv (as
+retrain.scoring.score) and counts.tsv (annotation rows, proteins, propagated and masked pairs, clusters and terms with a
+positive, for the official labels, `all`, and the version, `exp`, `masked` or `all_goa`). Needs the main run's fits.
 """
 import argparse
 import csv
@@ -25,12 +28,14 @@ import csv
 import numpy as np
 import pyarrow.parquet as pq
 
+from archipelago.benchmark import from_release, version_files
+from archipelago.io import read_labels
 from retrain.common import Ontology, add_argument, data_root, load, log, read_annotations
-from retrain.scoring.score import bundle, contrasts, fits, run_scorer, test_subset
+from retrain.scoring.score import contrasts, fits, run_scorer, write_config
 
 EXPERIMENTAL = {'EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP', 'HTP', 'HDA', 'HMP', 'HGI', 'HEP'}
 REVIEW_SOURCE = 'literature review (this work)'  # the source of the review's accepted assertions in annotations.tsv
-FOLDER = {'exp': 'experimental_test_labels', 'all_goa': 'all_goa_test_labels'}
+VARIANT = {'experimental': 'exp', 'masked': 'masked', 'all_goa': 'all_goa'}  # the name of each version in counts.tsv
 
 
 def annotation_sets(root):
@@ -64,6 +69,13 @@ def annotation_sets(root):
     return test, ontology.vocabulary, pairs, propagate
 
 
+def version_labels(pairs, propagate, labels):
+    """(labels, masked pairs) of a version: boolean matrices (test proteins x vocabulary)."""
+    positive = propagate(pairs[{'experimental': 'exp', 'masked': 'other', 'all_goa': 'all_goa'}[labels]])
+    masked = propagate(pairs['all_goa']) & ~positive if labels == 'masked' else np.zeros_like(positive)
+    return positive, masked
+
+
 def write_counts(path, counts):
     with open(path, 'w', newline='') as handle:
         writer = csv.DictWriter(handle, fieldnames=list(counts[0]), delimiter='\t', lineterminator='\n')
@@ -73,33 +85,37 @@ def write_counts(path, counts):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('labels', choices=['experimental', 'all_goa'])
+    parser.add_argument('labels', choices=list(VARIANT))
     parser.add_argument('--device', choices=['cuda', 'cpu'])
     add_argument(parser)
     a = parser.parse_args()
     root = data_root(a.data)
-    variant = {'experimental': 'exp', 'all_goa': 'all_goa'}[a.labels]
-    out = root / 'results' / FOLDER[variant]
+    out = root / 'results' / f'{a.labels}_test_labels'
     if out.exists():
         raise FileExistsError(f'{out} exists')
     test, vocabulary, pairs, propagate = annotation_sets(root)
-    official, y = propagate(pairs['all']), propagate(pairs[variant])
-    if variant == 'exp' and (y & ~official).any():
-        raise ValueError('experimental labels outside the official test labels')
-    if variant == 'all_goa' and (official & ~y).any():
-        raise ValueError('the labels with every reviewed assertion lack official test labels')
+    official = propagate(pairs['all'])
+    y, masked = version_labels(pairs, propagate, a.labels)
+
+    data = root / 'scoring' / 'release_data'
+    if not data.exists():
+        from_release(root / 'release', data)
+    labels_file, mask_file = version_files(a.labels, 'test')
+    if ((read_labels(data / labels_file, test.seq_ids, vocabulary) > 0) != y).any():
+        raise ValueError(f'the released {a.labels} test labels differ from their definition')
+    if mask_file and ((read_labels(data / mask_file, test.seq_ids, vocabulary) > 0) != masked).any():
+        raise ValueError(f'the released {a.labels} mask differs from its definition')
+
     counts = []
-    for name, labels in (('all', official), (variant, y)):
+    for name, labels, left_out in (('all', official, np.zeros_like(official)), (VARIANT[a.labels], y, masked)):
         keep = np.flatnonzero(labels.any(1))
-        counts.append(dict(variant=name, rows=len(pairs[name]), proteins=len(keep),
+        counts.append(dict(variant=name, rows=len(pairs[{'masked': 'other'}.get(name, name)]), proteins=len(keep),
                            proteins_dropped=len(test.seq_ids) - len(keep),
                            clusters=len({test.columns['cluster'][i] for i in keep}), propagated_pairs=int(labels.sum()),
-                           terms_with_positive=int(labels.any(0).sum())))
+                           masked_pairs=int(left_out.sum()), terms_with_positive=int(labels.any(0).sum())))
         log(counts[-1])
-    data = bundle(root)
-    rows = [(test.seq_ids[i], vocabulary[j]) for i, j in zip(*np.nonzero(y))]
-    config = test_subset(root, data, root / 'scoring' / FOLDER[variant], {h for h, _ in rows}, rows, fits(root, 'main'))
-    run_scorer(root, config, out, a.device)
+    config = write_config(root / 'scoring' / f'{a.labels}_test_labels.json', data, fits(root, 'main'))
+    run_scorer(root, config, out, a.device, labels=a.labels)
     contrasts(out)
     write_counts(out / 'counts.tsv', counts)
 

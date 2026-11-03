@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper below."
+title: "archipelago-paper: reproduction of the ArchipelaGO paper"
+type: software
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/jacksonstempel/archipelago-paper"
+authors:
+  - family-names: Stempel
+    given-names: Jackson C.
+    email: jstempel@vols.utk.edu
+    affiliation: "UT/ORNL Center for Molecular Biophysics, Oak Ridge National Laboratory"
+  - family-names: Amburn
+    given-names: Jason Andrew
+    affiliation: "Bredesen Center for Interdisciplinary Research and Graduate Education, University of Tennessee, Knoxville"
+  - family-names: Smith
+    given-names: Jeremy C.
+    affiliation: "UT/ORNL Center for Molecular Biophysics, Oak Ridge National Laboratory"
+preferred-citation:
+  type: article
+  title: "ArchipelaGO: better training data for protein function prediction"
+  status: in-preparation
+  year: 2026
+  authors:
+    - family-names: Stempel
+      given-names: Jackson C.
+    - family-names: Amburn
+      given-names: Jason Andrew
+    - family-names: Smith
+      given-names: Jeremy C.

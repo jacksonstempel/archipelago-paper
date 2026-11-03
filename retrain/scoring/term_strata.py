@@ -4,9 +4,9 @@ A stratum is the pairs of its terms; every protein and cluster is kept.
 
     python -m retrain.scoring.term_strata [--data DIR] [--device cuda|cpu]
 
-A score is computed with the masked metrics' code (retrain.scoring.masked): the scorer's 10,000 resamples of the test clusters
-give the paired 95% intervals, and a resample that draws every cluster once gives the point estimate. A model's value is the
-mean over its seeds.
+A score is an exact micro-AUPRC over the pairs of a stratum (replicate_auprc): the scorer's 10,000 resamples of the test
+clusters give the paired 95% intervals, and a resample that draws every cluster once gives the point estimate. A model's value
+is the mean over its seeds.
 
 Writes results/term_strata/gains.tsv (stratum, terms, positives, method, training_set, minus_training_set, value, minus_value,
 difference, ci_low, ci_high). Needs results/main. One minute on one GPU.
@@ -19,7 +19,6 @@ import torch
 from archipelago.evaluate import cluster_draws
 from archipelago.go import Propagation, read_parents
 from retrain.common import add_argument, data_root, load, log
-from retrain.scoring.masked import replicate_auprc
 from retrain.scoring.score import PUBLISHED, bundle, fits
 from retrain.scoring.test_labels import annotation_sets
 
@@ -27,6 +26,38 @@ COMMON = 1000
 MODELS = [('finch', s) for s in ('hq', 'hq_random', 'archipelago')] + [(m, s) for m in PUBLISHED for s in ('original', 'hq', 'archipelago')]
 DIFFERENCES = [(m, 'archipelago', 'original') for m in PUBLISHED] + [(m, 'archipelago', 'hq') for m in ('finch', *PUBLISHED)] + \
               [('finch', 'archipelago', 'hq_random'), ('finch', 'hq_random', 'hq')]
+
+
+def replicate_auprc(s, y, keep, cluster, draws, chunk=1000):
+    """Micro-AUPRC of propagated scores s against labels y over the pairs in keep in every bootstrap replicate. cluster:
+    the cluster index of each protein (tensor); draws: (clusters x replicates, float64) the times each cluster was drawn.
+    Each positive takes the weighted precision at the end of its tied-score group: the pairs are counted per cluster in
+    segments that end at the positives' group ends, so the weighted sums are (segments x clusters) @ (clusters x
+    replicates)."""
+    device, terms = s.device, s.shape[1]
+    flat = torch.nonzero(keep.reshape(-1)).squeeze(1)
+    order = torch.argsort(s.reshape(-1)[flat], descending=True, stable=True)
+    flat = flat[order]
+    sv, yv = s.reshape(-1)[flat], y.reshape(-1)[flat]
+    ends = torch.nonzero(torch.cat([sv[1:] != sv[:-1], torch.ones(1, dtype=torch.bool, device=device)])).squeeze(1)
+    group_end = ends[torch.searchsorted(ends, torch.arange(len(sv), device=device))]
+    segment_ends = torch.unique(group_end[yv])  # sorted
+    last = int(segment_ends[-1]) + 1  # pairs after the last positive's group do not enter the AUPRC
+    segment = torch.searchsorted(segment_ends, torch.arange(last, device=device))
+    of = cluster[flat[:last] // terms]
+    k, segments = draws.shape[0], len(segment_ends)
+    every = torch.bincount(segment * k + of, minlength=segments * k).reshape(segments, k).double()
+    at = yv[:last]
+    positive = torch.sparse_coo_tensor(torch.stack([segment[at], of[at]]),
+                                       torch.ones(int(at.sum()), dtype=torch.float64, device=device),
+                                       (segments, k), check_invariants=True).coalesce()  # repeated entries summed
+    out = []
+    for a in range(0, draws.shape[1], chunk):
+        w = draws[:, a:a + chunk]
+        p = torch.sparse.mm(positive, w)
+        tp, n = torch.cumsum(p, 0), torch.cumsum(every @ w, 0)
+        out.append(torch.where(n > 0, p * tp / n.clamp_min(1e-12), torch.zeros_like(p)).sum(0) / p.sum(0))
+    return torch.cat(out).cpu().numpy()
 
 
 def main():

@@ -94,55 +94,26 @@ def fits(root, run):
     return out
 
 
-def write_config(path, data, models, test_files=None):
-    """A scorer config at `path`: paths relative to it. test_files optionally replaces each test file
-    ({(method, training set, seed): path})."""
+def write_config(path, data, models):
+    """A scorer config at `path`: paths relative to it."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     rel = lambda p: os.path.relpath(p, path.parent).replace(os.sep, '/')  # noqa: E731
     listed = [dict(method=m, training_set=t, seeds={
-        seed: {'development': rel(files['development']),
-               'test': rel((test_files or {}).get((m, t, seed), files['test']))} for seed, files in seeds.items()})
+        seed: {'development': rel(files['development']), 'test': rel(files['test'])} for seed, files in seeds.items()})
         for m, t, seeds in models]
     path.write_text(json.dumps(dict(data=rel(data), models=listed), indent=1) + '\n')
     return path
 
 
-def test_subset(root, data, folder, keep, test_labels, models):
-    """A scorer bundle and config in `folder` that score `models` on the test proteins `keep` (a set of seq_ids) with the
-    test label rows `test_labels` ([(seq_id, go_id)]); everything else as in `data`. Each test prediction is a symbolic
-    link with a .ids.txt row list (the full test order), so the scorer takes the subset's rows by identifier."""
-    folder = Path(folder)
-    if folder.exists():
-        raise FileExistsError(f'{folder} exists')
-    subset = folder / 'data'
-    shutil.copytree(data, subset)
-    with open(data / 'benchmark' / 'test.tsv', newline='') as handle:
-        table = list(csv.reader(handle, delimiter='\t'))
-    with open(subset / 'benchmark' / 'test.tsv', 'w', newline='\n') as handle:
-        handle.writelines('\t'.join(row) + '\n' for row in [table[0]] + [r for r in table[1:] if r[0] in keep])
-    with open(subset / 'benchmark' / 'test_labels.tsv', 'w', newline='\n') as handle:
-        handle.write('protein_id\tgo_id\n')
-        handle.writelines(f'{h}\t{g}\n' for h, g in test_labels if h in keep)
-    order = '\n'.join(r[0] for r in table[1:]) + '\n'
-    links = {}
-    for method, training_set, seeds in models:
-        for seed, files in seeds.items():
-            link = folder / 'predictions' / method / training_set / f'seed{seed}' / 'test_scores.npy'
-            link.parent.mkdir(parents=True)
-            os.symlink(Path(files['test']).resolve(), link)
-            with open(link.with_suffix('.ids.txt'), 'w', newline='\n') as handle:
-                handle.write(order)
-            links[method, training_set, seed] = link
-    return write_config(folder / 'config.json', subset, models, links)
-
-
-def run_scorer(root, config, out, device=None):
-    """The scorer (archipelago.scorer) on `config`, results in `out` (which must not exist)."""
+def run_scorer(root, config, out, device=None, labels=None, proteins=None):
+    """The scorer (archipelago.scorer) on `config`, results in `out` (which must not exist); labels: a benchmark version,
+    proteins: a file listing the test proteins to score."""
     command = [sys.executable, '-m', 'archipelago.scorer', str(config), '--out', str(out),
                '--cache', str(Path(root) / 'cache' / 'scoring')]
-    if device:
-        command += ['--device', device]
+    for option, value in (('--device', device), ('--labels', labels), ('--proteins', proteins)):
+        if value:
+            command += [option, str(value)]
     log('RUN', ' '.join(command))
     subprocess.run(command, check=True)
 
