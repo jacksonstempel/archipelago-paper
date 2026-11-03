@@ -1,6 +1,7 @@
 """A data root for Finch on a published method's own benchmark.
 
     python -m retrain.outside.build {deepgose,transfew,dpfunc} --data DIR --replication REP --archipelago MAIN [--addback NAME]
+        [--screen-original]
 
 REP is the method's replication root (retrain.replicate.build), MAIN the paper's data root (datasets/archipelago from the
 released dataset, and Finch's embeddings of it in inputs/embeddings/<encoder>/archipelago). DIR receives:
@@ -25,6 +26,10 @@ released dataset, and Finch's embeddings of it in inputs/embeddings/<encoder>/ar
                           diamond or none); arm B has none by construction, so `none` means none in either training set
   outside/shared_terms.json   the terms with training positives in both arms
 
+--screen-original: also datasets/original_<method>_screened, the authors' training split without the proteins the same
+screen links to the test set (counts in build.json); train Finch on it as on original_<method>, score it with
+retrain.outside.score --screened-original (the paper: TransFew and DPFunc).
+
 --addback NAME: the paper's runs added back the proteins ArchipelaGO left out only because of the paper's own benchmark
 (its 2,500 development and 5,000 test proteins and the 4,063 HQ proteins related to them), labelled as HQ training
 proteins are labelled (not with the reviewed benchmark labels); MAIN must hold them as datasets/NAME with their
@@ -46,6 +51,8 @@ import scipy.sparse as sp
 from retrain.common import Ontology, add_argument, data_root, load, log, read_annotations, screen, write_dataset
 
 ARM_B = 'archipelago_screened'
+ARM_A = 'original_{}'
+ARM_A_SCREENED = 'original_{}_screened'  # --screen-original: arm A without the test proteins' relatives
 ENCODERS = ('esm2_15b_l48', 'prott5_l21')
 RELATIONS = {'deepgose': 'all', 'transfew': ('part_of',), 'dpfunc': ('part_of',)}  # besides is_a
 
@@ -120,12 +127,33 @@ def label_matrix(ontology, ancestors, pairs, row_of):
     return m.astype(np.uint8)
 
 
+def screened_original(root, method, arm, exact, hits):
+    """Arm A screened: the authors' training proteins without a relative of the method's test proteins under arm B's
+    screen (identical sequence, or a DIAMOND very-sensitive hit, test set only); labels and annotations as arm A. Writes
+    datasets/original_<method>_screened; returns its counts."""
+    from retrain.common import Ontology, read_annotations, write_dataset
+    removed = (exact | hits) & set(arm.seq_ids)
+    keep = [i for i, h in enumerate(arm.seq_ids) if h not in removed]
+    ids = [arm.seq_ids[i] for i in keep]
+    kept = set(ids)
+    annotations = [r for r in read_annotations(root / 'datasets' / ARM_A.format(method)) if r[0] in kept]
+    write_dataset(root, ARM_A_SCREENED.format(method), ids, [arm.accessions[i].split(',') if arm.accessions[i] else []
+                                                             for i in keep],
+                  [arm.sequences[i] for i in keep], annotations, arm.labels[keep], Ontology(root),
+                  columns={k: [v[i] for i in keep] for k, v in arm.columns.items()})
+    return dict(training_proteins=len(arm.seq_ids), removed=len(removed), identical_to_test=len(exact & removed),
+                diamond_hit_only=len(removed - exact), kept=len(ids))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('method', choices=['deepgose', 'transfew', 'dpfunc'])
     parser.add_argument('--replication', required=True, help="the method's replication root (retrain.replicate.build)")
     parser.add_argument('--archipelago', required=True, help="the paper's data root (datasets/archipelago and its embeddings)")
     parser.add_argument('--addback', help="a dataset of MAIN added to ArchipelaGO's training proteins before the screen")
+    parser.add_argument('--screen-original', action='store_true',
+                        help='also datasets/original_<method>_screened: the training split without the relatives of the test '
+                             'proteins under the same screen as archipelago_screened (the paper: TransFew and DPFunc)')
     add_argument(parser)
     a = parser.parse_args()
     root, replication, main_root = data_root(a.data), Path(a.replication), Path(a.archipelago)
@@ -172,7 +200,9 @@ def main():
                   columns={'part': [part[h] for h in final]})
 
     original = load(root, arm_a)
-    _, _, found = relatives(root, dict(zip(original.seq_ids, original.sequences)), work / 'screen_original')
+    exact_a, hits_a, found = relatives(root, dict(zip(original.seq_ids, original.sequences)), work / 'screen_original')
+    if a.screen_original:
+        record['original_screened'] = screened_original(root, a.method, original, exact_a, hits_a)
     test = load(root, 'test', labels=False)
     with open(work / 'relatives.tsv', 'w') as handle:
         handle.write('seq_id\trelative_in_original\n')

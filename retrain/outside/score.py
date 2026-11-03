@@ -1,7 +1,7 @@
 """Score Finch's two arms on a published method's own test set with that paper's own evaluation code.
 
     python -m retrain.outside.score {deepgose,transfew,dpfunc} --data DIR --replication REP [--seeds 9301 9302 9303]
-        [--paper-aupr] -> DIR/outside/results/{scores.tsv, summary.tsv}
+        [--paper-aupr] [--screened-original] -> DIR/outside/results/{scores.tsv, summary.tsv}
 
 The protocols are retrain.replicate.score's (REP holds the authors' files under external/), on Finch's raw scores
 (retrain.finch.combine) of both arms:
@@ -235,8 +235,13 @@ def main():
     parser.add_argument('--seeds', nargs='+', type=int, default=[9301, 9302, 9303])
     parser.add_argument('--paper-aupr', action='store_true',
                         help="also the paper's own protein-centric trapezoid AUPR (the papers' protocol check)")
+    parser.add_argument('--screened-original', action='store_true',
+                        help='also Finch on original_<method>_screened (retrain.outside.build --screen-original), arm '
+                             'original_screened')
     add_argument(parser)
     a = parser.parse_args()
+    if a.screened_original:
+        ARMS['original_screened'] = 'original_{}_screened'
     import pandas as pd
     b = Benchmark(a.method, data_root(a.data), a.replication, a.seeds, a.paper_aupr)
     rows = []

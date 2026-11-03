@@ -304,6 +304,8 @@ def bootstrap(a):
                                       micro_Fmax_sd=sd(fm)))
                     log(method, table[-1])
                 for x, y in CONTRASTS:
+                    if x not in stats or y not in stats:
+                        continue
                     for metric in ('micro_AUPRC', 'micro_Fmax'):
                         (px, rx), (py, ry) = stats[x][metric], stats[y][metric]
                         low, high = np.percentile(rx - ry, [2.5, 97.5])

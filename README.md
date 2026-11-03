@@ -262,7 +262,7 @@ threshold); the test set is scored with the paper's own code. Both training sets
 validation set (and the authors' splits with its test set), hence `--allow-shared-proteins`.
 
 ```bash
-python -m retrain.outside.build deepgose --data out/deepgose --replication rep/deepgose --archipelago <data root> [--addback NAME]
+python -m retrain.outside.build deepgose --data out/deepgose --replication rep/deepgose --archipelago <data root> [--addback NAME] [--screen-original]
 python scripts/embed.py --set original_deepgose --encoder esm2_15b_l48 --data out/deepgose   # and development, test; prott5_l21
 python -m retrain.finch.train --training-set original_deepgose --seed 9301 --allow-shared-proteins --data out/deepgose
 python -m retrain.finch.train --training-set archipelago_screened --seed 9301 --allow-shared-proteins --data out/deepgose   # seeds 9301-9303 (GPU)
@@ -273,7 +273,10 @@ python -m retrain.outside.score deepgose --data out/deepgose --replication rep/d
 `retrain.outside.build` needs the main data root's `datasets/archipelago` and its Finch embeddings
 (`inputs/embeddings/{esm2_15b_l48,prott5_l21}/archipelago`, e.g. from the release as in data/README.md). The results are
 reported for all test proteins and for those without a relative in either training set, and for the full vocabulary and
-the terms with training positives in both arms.
+the terms with training positives in both arms. `--screen-original` adds a third training set, the method's split without
+the test proteins' relatives under the same screen (`original_<method>_screened`; the paper: TransFew and DPFunc), trained
+like `original_<method>` and scored with `retrain.outside.score --screened-original`; `compare` and `masked` include it
+when its Finch runs exist.
 
 One table per benchmark with every model (both Finch arms, the method's own retrain, the authors' model) and paired
 bootstrap intervals, and the check of Supplementary Table 16 with the test proteins' current GOA annotations masked

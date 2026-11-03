@@ -39,15 +39,15 @@ from pathlib import Path
 import numpy as np
 
 from retrain.common import add_argument, data_root, log
-from retrain.outside.build import ARM_B
+from retrain.outside.build import ARM_A, ARM_A_SCREENED, ARM_B
 from retrain.replicate import score as replicate
 
-ARM_A = 'original_{}'
 ROOT_TERM = 'GO:0003674'
 FINCH = (9301, 9302, 9303)
 OWN = {'deepgose': ((0,), 'scores.npy'), 'transfew': ((0, 1, 2), 'scores.npy'), 'dpfunc': ((0, 1, 2), 'scores_raw.npy')}
 RELEASED = {'deepgose': 'replicate/released/test_scores.npy', 'dpfunc': 'replicate/released/test_scores_raw.npy'}
-CONTRASTS = (('finch_B', 'finch_A'), ('finch_A', 'method'), ('finch_B', 'method'))
+CONTRASTS = (('finch_B', 'finch_A'), ('finch_A', 'method'), ('finch_B', 'method'),
+             ('finch_B', 'finch_A_screened'), ('finch_A', 'finch_A_screened'))  # the last two where A-screened was trained
 
 
 def read_tsv(path):
@@ -76,6 +76,8 @@ class Bench:
                        'finch_B': [('finch', ARM_B, s) for s in FINCH],
                        'method': [('own', None, s) for s in OWN[method][0]],
                        'released': [('released', None, 0)]}
+        if (self.path / 'runs/finch' / ARM_A_SCREENED.format(method)).exists():  # arm A screened (TransFew, DPFunc)
+            self.models['finch_A_screened'] = [('finch', ARM_A_SCREENED.format(method), s) for s in FINCH]
 
     def raw(self, kind, name, seed):
         """{seq_id: test score row} of one model run."""
@@ -403,6 +405,8 @@ def main():
                                       micro_AUPRC_mean=au.mean(), micro_AUPRC_sd=au.std(ddof=1) if len(au) > 1 else 0.0))
                     log(a.method, table[-1])
                 for x, y in CONTRASTS:
+                    if x not in stats or y not in stats:
+                        continue
                     for metric in ('Fmax', 'micro_AUPRC'):
                         (px, rx), (py, ry) = stats[x][metric], stats[y][metric]
                         low, high = np.percentile(rx - ry, [2.5, 97.5])
