@@ -247,7 +247,9 @@ The splits: DeepGO-SE 38,533 / 1,901 / 2,845 records (training, validation, test
 Test_novel is 858 of them), DPFunc 31,463 / 682 / 401. Scoring follows each paper's protocol (docstring of
 `retrain.replicate.score`): DeepGO-SE's `compute_metrics`, TransFew's CAFA-evaluator 1.2.1 call (`pip install
 cafaeval==1.2.1`), DPFunc's `new_compute_performance_deepgoplus`; the authors' released DeepGO-SE models and TransFew
-predictions reproduce their papers' numbers this way. Costs on H100s: DeepGO-SE about 2 GPU-hours for the ten worlds,
+predictions reproduce their papers' numbers this way. The paper reports each method's Fmax (and Smin) by its own protocol
+and, in place of the papers' protein-centric trapezoid AUPR, our micro-AUPRC on the matrices that protocol scores
+(`retrain.replicate.micro`); `--paper-aupr` adds the papers' AUPR, the check against their tables. Costs on H100s: DeepGO-SE about 2 GPU-hours for the ten worlds,
 TransFew 0.2 per seed, DPFunc about 0.8 per seed.
 
 **Finch on the published methods' benchmarks.** Finch is trained on each method's training split and on ArchipelaGO
