@@ -15,7 +15,7 @@ Python 3.10 or later. Install PyTorch for your hardware first (a CUDA build for 
 
 ```bash
 pip install -e .                 # the pipeline (installs the archipelago package)
-pip install -e .[embed,figures]  # embeddings and the figure scripts; add deepgose, transfew or dpfunc per published method
+pip install -e .[finch,embed,figures]  # Finch's training (GPU), embeddings, figures; add deepgose, transfew or dpfunc
 pip install -e .[test]           # the tests: python -m pytest
 ```
 
@@ -36,11 +36,12 @@ command takes `--data DIR` (or reads `ARCHIPELAGO_DATA`) and prints its options 
 plain command; `examples/slurm/stage.sbatch` is an example of running one as a Slurm job. Times are for the paper's
 hardware (NVIDIA H100 80 GB GPUs; CPU stages on 16 to 64 cores).
 
-The paper's computations were run with this code's predecessors on a cluster; the pipeline here is the same computation,
-cleaned for release and checked on small inputs, not rerun end to end. Finch's readouts were trained with fused GPU
-kernels (BF16 linear layers, FP32 master weights) implementing the recipe that `retrain/finch/recipe.py` implements in
-plain PyTorch, so retrained numbers match the paper up to run-to-run noise, not bit for bit. The same holds for the
-published methods (GPU nondeterminism) and for the structure bank (below).
+The code here is the code that produced the paper's numbers, with the cluster's paths, logging and bookkeeping removed.
+Finch's training is the paper's own engine (`retrain/finch/engine.py`: CUDA graphs and Triton kernels, BF16 linear
+layers with FP32 master weights); retraining run 9301 on ArchipelaGO with this repository and the released data
+reproduced the paper's checkpoints and development and test scores bit for bit (one H100, PyTorch 2.10.0 with CUDA 12.6,
+Triton 3.6.0). The published methods are not bit-reproducible (GPU nondeterminism), and the structure bank differs where
+noted below.
 
 ### 1. Datasets
 
@@ -111,8 +112,9 @@ python -m retrain.finch.combine --training-set archipelago --model finch_prott5_
 ```
 
 Embedding: ESM2-15B about 77 GPU-hours for the 9.9 million candidates, a few GPU-hours for the training sets; ProtT5 and
-ESM2-3B are faster. Finch: the paper's runs, with fused kernels, took 3 to 25 minutes per readout on one H100 (about 3
-GPU-hours for every training set and seed of the main comparison). Baselines: minutes.
+ESM2-3B are faster. Finch needs a CUDA GPU and Triton (extra `finch`): 3 to 25 minutes per readout on one H100 (on
+ArchipelaGO about 11 minutes for the ESM2-15B readout and 9 for the ProtT5 readout; about 3 GPU-hours for every training
+set and seed of the main comparison). Baselines: minutes.
 
 ### 4. The published methods
 

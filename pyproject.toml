@@ -15,6 +15,7 @@ dependencies = ["archipelago[predict,score] @ git+https://github.com/jacksonstem
                 "scipy>=1.11", "pandas>=2.0", "pyarrow>=14", "requests"]
 
 [project.optional-dependencies]
+finch = ["triton"]
 embed = ["transformers>=4.39", "sentencepiece"]
 # per published method (versions the paper's runs used where they were recorded)
 deepgose = ["fair-esm==2.0.0", "triton"]
