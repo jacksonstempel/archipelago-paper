@@ -46,11 +46,33 @@ The Hugging Face dataset, as downloaded (Parquet, one folder per table):
 | `reference_scores/` | the paper's models on every benchmark version | one row per version, model and training set |
 | `ontology/go-basic.obo.gz` | the GO release of every label | |
 | `fasta/` | the sequences of the training, development and test proteins | |
+| `embeddings/<encoder>/{training,development,test}.npy` | the embeddings the paper's Finch was trained on, `esm2_15b_l48` and `prott5_l21` | float16, rows in the order of `training` and `benchmark` |
 
 `python -m retrain.datasets.release` turns these into `datasets/{ontology,hq,archipelago,development,test}`. The scoring with
 other test labels (`retrain.scoring.test_labels`) rebuilds each version from the test annotations and reviews, checks it
 against the released table, and scores it from a bundle of the release; in the test annotations, the accepted reviews
 have the source `literature review (this work)`.
+
+The released embeddings can stand in for `scripts/embed.py` on `archipelago`, `development` and `test`, so that Finch and
+Embedding-kNN can be trained on ArchipelaGO without running the language models. This writes them in the
+working format (`<root>` is the data root):
+
+```python
+import shutil
+from pathlib import Path
+
+import pyarrow.parquet as pq
+
+root = Path("<root>")
+for encoder in ("esm2_15b_l48", "prott5_l21"):
+    (root / "inputs/embeddings" / encoder).mkdir(parents=True, exist_ok=True)
+    for name, table, file in (("archipelago", "training/train", "training"), ("development", "benchmark/development",
+                              "development"), ("test", "benchmark/test", "test")):
+        stem = root / "inputs/embeddings" / encoder / name
+        shutil.copyfile(root / "release/embeddings" / encoder / f"{file}.npy", f"{stem}.npy")
+        ids = pq.read_table(root / "release" / f"{table}.parquet", columns=["protein_id"])["protein_id"].to_pylist()
+        Path(f"{stem}.ids.txt").write_text("\n".join(ids) + "\n", encoding="utf-8")
+```
 
 ### Files not in the public release
 
