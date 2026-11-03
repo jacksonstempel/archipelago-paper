@@ -178,6 +178,7 @@ def published_postprocessing(ontology, scores):
 def train(root, ontology, training_set, seed, folder):
     from retrain.dpfunc.model import FocalLoss
     terms = len(ontology.vocabulary)
+    started = time.monotonic()  # train_seconds: from reading the inputs to the end of the last epoch, as the paper's
     train_split = Split(root, dataset_of(training_set), terms)
     dev = Split(root, 'development', terms)
     ontology.assert_closed(train_split.labels)
@@ -185,7 +186,7 @@ def train(root, ontology, training_set, seed, folder):
     loader = train_split.loader(shuffle=True)
     model = new_model(terms, 'cuda')
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
-    loss_fn, history, kept, started = FocalLoss(), [], [], time.monotonic()
+    loss_fn, history, kept = FocalLoss(), [], []
     log(f'DPFunc on {training_set}, seed {seed}: {len(loader.dataset):,} proteins, {EPOCHS} epochs')
     for epoch in range(1, EPOCHS + 1):
         model.train()

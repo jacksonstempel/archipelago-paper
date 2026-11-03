@@ -1,21 +1,23 @@
 """Test proteins without training relatives: every model of the main run scored on the test proteins that have no DIAMOND
 hit in any training set at progressively looser E-value cutoffs (Supplementary Information).
 
-    python -m retrain.scoring.no_hit [--data DIR] [--threads 32] [--device cuda|cpu]
+    python -m retrain.scoring.no_hit [--data DIR] [--search] [--threads 32] [--device cuda|cpu]
 
-1. One DIAMOND database of every distinct training protein of the main comparisons (goa, hq, hq_random, archipelago and the
-   published methods' original data); the 5,000 test proteins searched against it (blastp --ultra-sensitive,
-   E <= 10,000, at most 25 targets per query, the screen's fixed database size): results/no_hit/test_hits.tsv.
-2. For each cutoff c in 1e-10, 1e-6, 1e-3, 0.01, 0.1, 1, 10: the test proteins whose best hit has E > c (or that have no
-   hit), listed in scoring/no_hit_E<c>.txt and scored with the scorer's --proteins (the main run's fits):
-   results/no_hit/E<c>/, with contrasts.tsv as retrain.scoring.score writes it. Sizes in results/no_hit/subsets.tsv. The
-   released benchmark holds the paper's subsets as the table benchmark_no_hit.
+1. The subsets: for each cutoff c in 1e-10, 1e-6, 1e-3, 0.01, 0.1, 1, 10, the test proteins without a hit at E <= c. By
+   default they are the paper's, from the released table release/benchmark_no_hit (no_hit_up_to >= c): 4,938, 4,781,
+   4,307, 3,346, 2,463, 1,489 and 723 proteins. The paper's search ran on every distinct training protein of the main
+   comparisons and of one further method whose original training data (374,070 proteins, 316,033 in no other set) is
+   not part of this release, so --search, which repeats it on the sets here (goa, hq, hq_random, archipelago and the
+   published methods' original data; blastp --ultra-sensitive, E <= 10,000, at most 25 targets per query, the screen's
+   fixed database size; results/no_hit/test_hits.tsv), keeps more test proteins: up to 972 instead of 723 at E <= 10. It
+   says how its subsets differ from the released ones.
+2. Each subset, listed in scoring/no_hit_E<c>.txt, is scored with the scorer's --proteins (the main run's fits):
+   results/no_hit/E<c>/, with contrasts.tsv as retrain.scoring.score writes it. Sizes in results/no_hit/subsets.tsv.
 3. results/no_hit/differences.tsv: per subset (`none` = all test proteins, from results/main), model and earlier training
    set, the test micro-AUPRC of ArchipelaGO minus that set (seed means) with its paired 95% cluster-bootstrap interval.
 
-Needs results/main (python -m retrain.scoring.score main) and DIAMOND (2.2.4 in the paper) on PATH or in $DIAMOND.
-The paper's union also held the original training data of one further method that is not part of this release, so the
-subsets built here can keep a few test proteins more than the paper's.
+Needs results/main (python -m retrain.scoring.score main); --search needs DIAMOND (2.2.4 in the paper) on PATH or in
+$DIAMOND.
 """
 import argparse
 import csv
@@ -57,6 +59,18 @@ def search(root, out, threads):
     return best
 
 
+def released_subsets(root):
+    """{cutoff: the test proteins without a hit at E <= cutoff} from the released table (the paper's subsets)."""
+    import pyarrow.parquet as pq
+    table = pq.read_table(Path(root) / 'release' / 'benchmark_no_hit' / 'test.parquet',
+                          columns=['protein_id', 'no_hit_up_to']).to_pydict()
+    listed = {v for v in table['no_hit_up_to'] if v is not None}
+    if not listed <= set(CUTOFFS):
+        raise ValueError(f'benchmark_no_hit lists cutoffs {sorted(listed)}, expected {CUTOFFS}')
+    return {c: {h for h, v in zip(table['protein_id'], table['no_hit_up_to']) if v is not None and v >= c}
+            for c in CUTOFFS}
+
+
 def seed_means(results):
     """({(method, training set): test AUPRC seed mean}, {(method, training set): replicate AUPRC of the seed mean})."""
     with open(results / 'metrics.tsv', newline='') as handle:
@@ -70,6 +84,8 @@ def seed_means(results):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--search', action='store_true',
+                        help="search the training sets here instead of reading the paper's subsets (see above)")
     parser.add_argument('--threads', type=int, default=32)
     parser.add_argument('--device', choices=['cuda', 'cpu'])
     add_argument(parser)
@@ -77,14 +93,27 @@ def main():
     root = data_root(a.data)
     out = root / 'results' / 'no_hit'
     out.mkdir(parents=True, exist_ok=False)
-    best = search(root, out, a.threads)
+    released = released_subsets(root) if (root / 'release' / 'benchmark_no_hit').exists() else None
+    if a.search:
+        best = search(root, out, a.threads)
+        subsets_of = {c: {h for h in load(root, 'test', labels=False, sequences=False).seq_ids
+                          if best.get(h, float('inf')) > c} for c in CUTOFFS}
+        for c in CUTOFFS:
+            log(f"E <= {c:g}: {len(subsets_of[c]):,} test proteins without a hit here"
+                + ('' if released is None else f", {len(released[c]):,} in the paper's subset, "
+                   f"{len(subsets_of[c] - released[c]):,} not in it, {len(released[c] - subsets_of[c]):,} of it missing"))
+    elif released is None:
+        raise SystemExit("release/benchmark_no_hit is missing: download the dataset (data/README.md) or pass --search")
+    else:
+        subsets_of = released
+        log("the paper's subsets, from release/benchmark_no_hit")
     data = bundle(root)
     config = write_config(root / 'scoring' / 'no_hit.json', data, fits(root, 'main'))
     with open(data / 'benchmark' / 'test.tsv', newline='') as handle:
         table = list(csv.DictReader(handle, delimiter='\t'))
     subsets = [('none', len(table), len({r['cluster'] for r in table}), root / 'results' / 'main')]
     for cutoff in CUTOFFS:
-        keep = {r['protein_id'] for r in table if best.get(r['protein_id'], float('inf')) > cutoff}
+        keep = {r['protein_id'] for r in table if r['protein_id'] in subsets_of[cutoff]}
         clusters = len({r['cluster'] for r in table if r['protein_id'] in keep})
         name = f'{cutoff:g}'
         log(f'E <= {name}: {len(keep):,} test proteins without a hit, {clusters:,} clusters')

@@ -19,11 +19,14 @@ that stopped keeps its work folder, and colabfold_batch skips the folds it finis
 (`pip install "colabfold[alphafold]==1.6.3"` with a CUDA JAX) and MMseqs2 release 18. ColabFold is MIT licensed; the
 AlphaFold2 parameters (downloaded by ColabFold on first use) are CC BY 4.0.
 
-The paper's bank used this recipe but, to save compute, reused folds made earlier in the project from the same MSAs:
-folds with the standard kernels, 1,762 with ColabFold's fused (Pallas) kernels and 34,095 with the fused kernels and
-bucket padding (a fast path whose folds agree with standard-kernel folds at 97.3% Foldseek 3Di identity); the last ~944
-targets were also folded with that fast path. A bank rebuilt here uses the standard kernels for every target, so some
-structures differ slightly from the paper's.
+The paper's bank used these fold settings, but most of its 38,787 ColabFold structures were made earlier in the project
+by other code, and not all from MSAs of this search: 3,828 were folded with the standard kernels, 1,762 with ColabFold's
+fused (Pallas) kernels and 33,197 with a fast path (fused kernels and bucket padding) that needs a modified ColabFold
+installation; 33,732 of their MSAs came from MMseqs2's GPU search mode, 4,769 from ColabFold's MSA server or a CPU search
+and 286 from a CPU search with other settings. This code runs neither the fast path nor the GPU search, so a bank rebuilt
+here differs from the paper's for many of these proteins: folds from GPU-search and CPU-search MSAs of the same protein
+had a median Foldseek 3Di identity of 0.94 (24 proteins), and fast-path and standard folds from the same MSA a median of
+1.0 (10th percentile 0.94; 1,343 proteins).
 """
 import argparse
 import gzip

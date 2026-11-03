@@ -3,10 +3,17 @@ and training set of the main comparison, the number of runs and their summed tra
 
     python -m retrain.scoring.training_cost [--data DIR]
 
-The time is each fit's recorded `train_seconds`: the time spent training, including the trainer's own evaluations on the
-development set, but not reading the inputs or predicting. Every fit trains on one GPU. One run of Finch is its two
-networks (runs/finch/<set>/seed<k>/<readout>/history.json); one run of DeepGO-SE is its ensemble, for which ten worlds are
-trained (runs/deepgose/<set>/seed0/members/world<k>/record.json); TransFew and DPFunc: each fit's record.json.
+The time is what each trainer records, as the paper's table took it; every fit trains on one GPU, and every window
+includes the trainer's own evaluations on the development set:
+- Finch: one run is its two networks, each from the start of training to the predicted test set (saving and the reload
+  check included, reading the inputs not): `train_seconds` of runs/finch/<set>/seed<k>/<readout>/history.json;
+- DeepGO-SE: one run is its ensemble, for which ten worlds are trained, each from reading its inputs to the predicted test
+  set: the sum of `wall_seconds` of runs/deepgose/<set>/seed0/members/world<k>/record.json;
+- TransFew: from reading the inputs to the predicted test set: `wall_seconds` of each fit's record.json;
+- DPFunc: from reading the inputs to the end of the last epoch (prediction not included): `train_seconds` of each fit's
+  record.json.
+The paper's ArchipelaGO Finch runs of one seed shared their GPUs with a second fit, so their recorded time is longer
+than a run on its own GPU.
 """
 import argparse
 import json
@@ -20,12 +27,12 @@ from retrain.scoring.score import PUBLISHED, RUNS
 def run_seconds(run, method):
     """The training seconds of one run (a fit folder seed<k>)."""
     if method == 'finch':
-        parts = [run / readout / 'history.json' for readout in config()['weights']]
+        parts, key = [run / readout / 'history.json' for readout in config()['weights']], 'train_seconds'
     elif method == 'deepgose':
-        parts = [run / 'members' / f'world{k}' / 'record.json' for k in range(WORLDS)]
+        parts, key = [run / 'members' / f'world{k}' / 'record.json' for k in range(WORLDS)], 'wall_seconds'
     else:
-        parts = [run / 'record.json']
-    return sum(json.loads(p.read_text())['train_seconds'] for p in parts)
+        parts, key = [run / 'record.json'], {'transfew': 'wall_seconds', 'dpfunc': 'train_seconds'}[method]
+    return sum(json.loads(p.read_text())[key] for p in parts)
 
 
 def main():

@@ -20,8 +20,8 @@ Steps:
    auprcbest) are scored as the methods transfew_bcebest and transfew_auprcbest. A missing fit stops the export.
 3. archipelago-score CONFIG --out <root>/results/RUN (which must not exist yet).
 4. <root>/results/RUN/contrasts.tsv: for every metric (auprc, fmax, f1, smin), every pair of training sets of one model,
-   every pair of models on one training set, and Finch on each published method's original data minus that method on it
-   (whose set is called `original`): the difference of the seed means and its paired 95% cluster-bootstrap interval (2.5th
+   every pair of models on one training set, Finch on each published method's original data minus that method on it
+   (whose set is called `original`), and Finch on ArchipelaGO minus DeepGO-SE on its original data: the difference of the seed means and its paired 95% cluster-bootstrap interval (2.5th
    and 97.5th percentiles of the replicate differences in replicates.npz).
 """
 import argparse
@@ -134,6 +134,8 @@ def contrasts(results):
               for m1, m2 in itertools.permutations([m for m, ss in models if ss == s], 2)]
     pairs += [(('finch', own), (m, 'original')) for m, own in ORIGINAL.items()
               if ('finch', own) in models and (m, 'original') in models]
+    if ('finch', 'archipelago') in models and ('deepgose', 'original') in models:  # DeepGO-SE's total, as the paper splits it
+        pairs.append((('finch', 'archipelago'), ('deepgose', 'original')))
     rows = []
     for metric in CONTRAST_METRICS:
         column = names.index(metric)

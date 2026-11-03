@@ -4,9 +4,9 @@
                                              then contrasts.tsv
     python -m retrain.scoring.pr_curves      precision-recall curves of Fig. 4b
     python -m retrain.scoring.distances      distances of the added proteins to HQ (Fig. 3a)
-    python -m retrain.scoring.test_labels LABELS   scoring against other test labels: experimental-only, or every GOA
-                                             assertion the label review considered (all_goa)
-    python -m retrain.scoring.masked         scoring with the reviewed GOA assertions masked
+    python -m retrain.scoring.test_labels LABELS   scoring against other test labels: experimental-only, every GOA
+                                             assertion the label review considered (all_goa), or with the reviewed GOA
+                                             assertions masked (masked)
     python -m retrain.scoring.no_hit         scoring of test proteins without training relatives
     python -m retrain.scoring.term_strata    the main gains on common and rare terms
     python -m retrain.scoring.sizes          sizes of the training sets and the benchmark

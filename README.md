@@ -151,7 +151,8 @@ python -m retrain.transfew.train <training set> <seed>         # seeds 0-2; 10 m
 
 ```bash
 python -m retrain.dpfunc.original                   # datasets/original_dpfunc (DIAMOND)
-python -m retrain.structures.afdb requests && python -m retrain.structures.afdb search && python -m retrain.structures.afdb fetch
+python -m retrain.structures.afdb requests && python -m retrain.structures.afdb fetch --chosen   # the paper's choice
+# without inputs/structures/chosen.tsv: python -m retrain.structures.afdb search && python -m retrain.structures.afdb fetch
 python -m retrain.structures.colabfold msa --databases DIR && python -m retrain.structures.colabfold fold
 python -m retrain.structures.assemble
 python -m retrain.dpfunc.embed                      # ESM-1b layer 31 per residue (GPU, about 4 GPU-hours)
@@ -162,9 +163,12 @@ python -m retrain.dpfunc.train --training-set <training set> --seed <seed>   # s
 
 Structures: an AlphaFold Database model of the exact sequence where one exists (84% of the paper's proteins),
 otherwise an AlphaFold2 structure predicted with ColabFold (alphafold2_ptm, model 1, seed 0, 3 recycles, no templates).
-The paper's bank reused earlier ColabFold runs, most of them folded with faster kernels (97.3% 3Di identity to standard
-folds); a bank built from scratch therefore differs slightly. `afdb fetch --chosen` downloads exactly the paper's
-AlphaFold Database entries when the paper's choice list is present (data/README.md).
+`afdb fetch --chosen` downloads exactly the paper's AlphaFold Database entries from the paper's choice list
+(data/README.md); a free search chooses differently for some proteins (the paper's bank preferred models already on
+disk and kept 102 version-4 fragments of long human proteins). Most of the paper's 38,787 ColabFold structures were made
+earlier in the project by other code, with faster kernels (a modified ColabFold) and mostly from MSAs of MMseqs2's GPU
+search, neither of which this repository runs; a bank rebuilt here therefore differs from the paper's for many of those
+proteins (`retrain/structures/colabfold.py` gives the counts).
 
 **Finch on each method's original data.** Finch is trained on the three original sets with its recipe and weights
 unchanged, as in section 3, once the sets exist:
