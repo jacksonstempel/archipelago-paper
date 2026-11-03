@@ -16,7 +16,7 @@ dependencies = ["archipelago[predict,score] @ git+https://github.com/jacksonstem
 
 [project.optional-dependencies]
 finch = ["triton"]
-embed = ["transformers>=4.39", "sentencepiece"]
+embed = ["transformers>=5.9", "sentencepiece", "triton"]  # the paper: 5.9.0 for ESM2, 4.57.6 for ProtT5 (scripts/embed.py)
 # per published method (versions the paper's runs used where they were recorded)
 deepgose = ["fair-esm==2.0.0", "triton"]
 transfew = ["transformers==4.39.3", "torch_geometric==2.5.3", "sentence-transformers==2.7.0", "obonet", "networkx"]

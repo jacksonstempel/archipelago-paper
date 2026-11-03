@@ -80,8 +80,8 @@ candidates; the dataset builders use the paper's rankings instead when they are 
 ### 3. Finch and the baselines
 
 ```bash
-python scripts/embed.py --set <set> --encoder esm2_15b_l48     # every training set, development and test (GPU)
-python scripts/embed.py --set <set> --encoder prott5_l21
+python scripts/embed.py --set archipelago development test --encoder esm2_15b_l48   # together, as the paper (GPU)
+python scripts/embed.py --set archipelago development test --encoder prott5_l21     # then each further training set
 python -m retrain.finch.train --training-set archipelago --seed 9301    # each training set, seeds 9301-9303 (GPU)
 python -m retrain.finch.combine --training-set archipelago               # the 0.725 / 0.275 weighted mean
 python -m retrain.baselines.naive --training-sets goa hq archipelago
@@ -105,8 +105,8 @@ itself is not part of this repository). Finch with its ProtT5 readout on ProtT5'
 same weights, is listed under `variants`:
 
 ```bash
-python scripts/embed.py --set <set> --encoder esm2_3b_l36      # archipelago, development and test (GPU)
-python scripts/embed.py --set <set> --encoder prott5_l24       # the same sets, for the variant
+python scripts/embed.py --set archipelago development test --encoder esm2_3b_l36   # (GPU)
+python scripts/embed.py --set archipelago development test --encoder prott5_l24    # the same sets, for the variant
 python -m retrain.finch.train --training-set archipelago --seed 9301 \
     --readouts esm2_3b_l36_linear esm2_15b_l48_linear esm2_15b_l48_narrow esm2_15b_l48_adamw esm2_15b_l48_second \
     esm2_3b_l36_adamw prott5_l24                                    # seeds 9301-9303
@@ -115,7 +115,10 @@ python -m retrain.finch.combine --training-set archipelago --model finch_prott5_
 ```
 
 Embedding: ESM2-15B about 77 GPU-hours for the 9.9 million candidates, a few GPU-hours for the training sets; ProtT5 and
-ESM2-3B are faster. Finch needs a CUDA GPU and Triton (extra `finch`): 3 to 25 minutes per readout on one H100 (on
+ESM2-3B are faster. `scripts/embed.py` is the paper's extraction (a fused FP16 ESM2 encoder, the paper's work units and
+batches); embedding archipelago, development and test together reproduced the paper's vectors bit for bit (whole work
+units of ESM2-15B and ProtT5 checked on an H100), while other groupings change the last digits (cosine 0.99997 or
+closer). The environments it ran in are in its docstring. Finch needs a CUDA GPU and Triton (extra `finch`): 3 to 25 minutes per readout on one H100 (on
 ArchipelaGO about 11 minutes for the ESM2-15B readout and 9 for the ProtT5 readout; about 3 GPU-hours for every training
 set and seed of the main comparison). Baselines: minutes.
 
