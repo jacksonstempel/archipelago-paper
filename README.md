@@ -63,7 +63,7 @@ files into `datasets/candidates`) and its ESM2-15B embeddings, which are not par
 vocabulary removed.
 
 ```bash
-python scripts/rank_coverage.py --picks 600000                 # selection/coverage_ranking.tsv (51 s on four GPUs)
+python scripts/rank_coverage.py --picks 600000                 # selection/coverage_ranking.tsv (four GPUs, minutes)
 python scripts/rank_coverage.py --picks 500000 --no-filter     # selection/coverage_ranking_unfiltered.tsv (Fig. 3a control)
 python -m retrain.datasets.selected check-archipelago          # the ranking's first 150,000 = the released selected proteins
 python -m retrain.datasets.selected dose                       # archipelago_300k, archipelago_600k
@@ -71,8 +71,11 @@ python -m retrain.datasets.selected controls                   # pool_random, fi
 python -m retrain.datasets.random_draw                         # hq_random, from its released protein list
 ```
 
-Exactly tied candidates may come in another order than in the paper's run; the dataset builders use the paper's
-rankings instead when they are present (data/README.md).
+The ranking is the paper's code (`archipelago.coverage`): run on the paper's candidate and HQ vectors on four H100 GPUs, it
+reproduced both of the paper's rankings exactly. The paper's ranking read HQ vectors from an earlier extraction than the
+released training embeddings (same encoder and windows; it handled X and U differently, and every row differs in the
+last digits), so a ranking computed from the released embeddings can differ from the paper's among near-tied
+candidates; the dataset builders use the paper's rankings instead when they are present (data/README.md).
 
 ### 3. Finch and the baselines
 

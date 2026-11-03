@@ -101,8 +101,9 @@ def rare_function(labels, hq_counts, below=1000):
 def ranking(root, name):
     """seq_ids of a coverage ranking (rank, seq_id, score), in rank order. The paper's ranking, released as
     release/selection/<name>, is used when present (its length checked); otherwise selection/<name> from
-    scripts/rank_coverage.py, with a warning: a recomputed ranking can order exactly tied candidates differently, and
-    only ArchipelaGO's first 150,000 picks are checked against the release."""
+    scripts/rank_coverage.py, with a warning: a ranking recomputed from other vectors than the paper's (the released HQ
+    embeddings are a later extraction) can order near-tied candidates differently, and only ArchipelaGO's first 150,000
+    picks are checked against the release."""
     released = root / 'release' / 'selection' / name
     path = released if released.is_file() else root / 'selection' / name
     with open(path, newline='', encoding='utf-8') as handle:
@@ -113,7 +114,7 @@ def ranking(root, name):
         raise ValueError(f'{path}: {len(rows):,} rows; the paper\'s ranking has {RANKINGS[name]:,}')
     if path != released:
         log(f'WARNING: {released} not found; using the recomputed {path}. Sets beyond ArchipelaGO built from it can differ '
-            "from the paper's (tie order, and embeddings of non-standard residues).")
+            "from the paper's (the ranking's input vectors).")
     return [r['seq_id'] for r in rows]
 
 

@@ -24,7 +24,8 @@ controls           The sets of Fig. 3b that add the ranking's ingredients one at
 Inputs: datasets/hq, development, test and candidates (retrain.datasets.candidates); the coverage rankings
 coverage_ranking.tsv (600,000 rows) and coverage_ranking_unfiltered.tsv (500,000 rows), the paper's own as release files
 under release/selection/ (used when present; their lengths are checked) or recomputed by scripts/rank_coverage.py under
-selection/ (with a warning: tied candidates can come in another order, so sets beyond ArchipelaGO can differ).
+selection/ (with a warning: from other input vectors than the paper's, near-tied candidates can come in another order,
+so sets beyond ArchipelaGO can differ).
 """
 import argparse
 
