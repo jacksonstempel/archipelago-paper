@@ -36,12 +36,13 @@ command takes `--data DIR` (or reads `ARCHIPELAGO_DATA`) and prints its options 
 plain command; `examples/slurm/stage.sbatch` is an example of running one as a Slurm job. Times are for the paper's
 hardware (NVIDIA H100 80 GB GPUs; CPU stages on 16 to 64 cores).
 
-The code here is the code that produced the paper's numbers, with the cluster's paths, logging and bookkeeping removed.
-Finch's training is the paper's own engine (`retrain/finch/engine.py`: CUDA graphs and Triton kernels, BF16 linear
-layers with FP32 master weights); retraining run 9301 on ArchipelaGO with this repository and the released data
-reproduced the paper's checkpoints and development and test scores bit for bit (one H100, PyTorch 2.10.0 with CUDA 12.6,
-Triton 3.6.0). The published methods are not bit-reproducible (GPU nondeterminism), and the structure bank differs where
-noted below.
+The code here is the code that produced the paper's numbers, with the original runs' paths, logging and bookkeeping
+removed. Three stages were rerun with it and reproduced the paper bit for bit on H100 GPUs (PyTorch 2.10.0 with CUDA 12.6,
+Triton 3.6.0): Finch's training (`retrain/finch/engine.py`; run 9301 on ArchipelaGO, from the released data: both
+checkpoints and every development and test score), the coverage ranking (both rankings, from the paper's input vectors)
+and the embeddings (whole work units of ESM2-15B and ProtT5). The published methods are not bit-reproducible (GPU
+nondeterminism), and where inputs that are not released change a result, the stage says so: the structure bank (section
+4), the no-hit subsets (section 5) and the sets that need files available on request (data/README.md).
 
 ### 1. Datasets
 
@@ -201,7 +202,7 @@ python -m retrain.scoring.test_labels experimental   # scoring against experimen
 python -m retrain.scoring.test_labels all_goa        # ... with every GOA assertion the label review considered
 python -m retrain.scoring.test_labels masked         # ... with the reviewed GOA assertions masked
 python -m retrain.scoring.term_strata                # the main gains on common and rare terms (GPU)
-python -m retrain.scoring.no_hit                     # test proteins without training relatives (Fig. 3c; DIAMOND)
+python -m retrain.scoring.no_hit                     # test proteins without training relatives (Fig. 3c; the paper's subsets)
 python -m retrain.scoring.sizes                      # sizes of every training set
 python -m retrain.scoring.parameters                 # trainable parameters of the models on ArchipelaGO (CPU)
 python -m retrain.scoring.training_cost              # GPU-hours of the training runs, from the fits' records
