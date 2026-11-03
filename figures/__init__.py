@@ -17,7 +17,9 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   no_hit/subsets.tsv, differences.tsv,      no_hit              Table 2, Fig. 3c, SI: test proteins without training
     E<cutoff>/{metrics.tsv,contrasts.tsv}                       relatives
   term_strata/gains.tsv                     term_strata         SI: the main gains on common and rare terms
+  shared_terms/summary.tsv                  shared_terms        SI: the data comparisons on the terms each original set covers
   training_cost.tsv                         training_cost       SI: training cost
+  outside_masked/, outside_compare/         retrain.outside     SI: the published methods' own benchmarks (figures/si.py)
 
 Fig. 1 reads the counts in figures/sankey_counts.json; Extended Data Fig. 1 is a schematic.
 DIAMOND-kNN is the method `diamond_knn` of the main run (no E-value cutoff, as reported).

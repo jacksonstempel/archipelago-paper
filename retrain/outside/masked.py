@@ -11,6 +11,9 @@ positive nor negative); saved predictions only, the paper's evaluator only (Supp
     python -m retrain.outside.masked prepare METHOD     CPU: the score, truth and mask matrices -> WORK/<method>/arrays_*.npz
     python -m retrain.outside.masked bootstrap METHOD   GPU (archipelago.evaluate on CUDA; --device cpu works, slower):
                                                         -> WORK/<method>/{table,contrasts,masks}.tsv, timing.json
+    python -m retrain.outside.masked pooling METHOD     GPU: Finch's two training sets by how each metric pools the
+                                                        pairs (micro, protein-centric, term-centric; Supplementary
+                                                        Table 19, deepgose) -> WORK/<method>/pooling_{metrics,contrasts}.tsv
     every stage: --data WORK --outside OUT --replication REP [--goa GOA] [--swissprot FASTA]
 
 WORK (--data) receives everything; OUT/<method> and REP/<method> are each method's outside root (retrain.outside.build,
@@ -323,9 +326,87 @@ def bootstrap(a):
     log(method, 'wrote', out, json.dumps(timing))
 
 
+POOLING_MODELS = ('finch_A', 'finch_B', 'method', 'released')
+
+
+def term_ap(scores, truth, valid):
+    """Average precision of every column with a positive among its valid rows (ties grouped, as micro_auprc): {j: AP}."""
+    from archipelago.evaluate import micro_auprc
+    out = {}
+    for j in np.flatnonzero((truth & valid).any(0)):
+        v = valid[:, j]
+        out[j] = micro_auprc(scores[v, j][:, None], truth[v, j][:, None])
+    return out
+
+
+def pooling(a):
+    """GPU: Finch on ArchipelaGO against Finch on the method's data by how each metric pools the protein-term pairs
+    (Supplementary Table 19, DeepGO-SE's benchmark), all test proteins, unmasked and with each mask: micro-AUPRC,
+    micro-Fmax and protein-centric Fmax (archipelago.evaluate; paired bootstrap over unique test sequences, 10,000
+    replicates) and term-centric (macro) AUPRC, the mean over the terms with a positive of each term's average precision
+    over its unmasked proteins (paired bootstrap over those terms, 10,000 draws, seed 20261103). Seed means; B - A,
+    A - method and B - method -> <W>/<method>/pooling_{metrics,contrasts}.tsv."""
+    from archipelago.evaluate import Benchmark, cluster_draws
+    out = W / a.method
+    metrics, contrasts = [], []
+    for path in sorted(out.glob('arrays_*.npz')):
+        test_set = path.stem[len('arrays_'):]
+        z = np.load(path)
+        truth, seq = z['truth'], z['seq']
+        keys = [tuple(k.split('|')) for k in z['keys']]
+        scores = {k: z[f'scores_{i}'] for i, k in enumerate(keys)}
+        runs = {m: [k for k in keys if k[0] == m] for m in POOLING_MODELS}
+        index, draws = cluster_draws(seq)
+        rows_all = np.arange(len(seq))
+        rng = np.random.default_rng(20261103)
+        for version, mask in (('unmasked', None), ('computational', z['computational']), ('all_goa', z['all_goa'])):
+            keep = truth[rows_all].any(1)
+            r = rows_all[keep]
+            present, relabel = np.unique(index[r], return_inverse=True)
+            bench = Benchmark(truth[r], clusters=relabel, draws=draws[:, present], device=DEVICE,
+                              mask=None if mask is None else mask[r])
+            st = {}
+            for model, ks in runs.items():
+                res = [bench.score(scores[k][r]) for k in ks]
+                st[model] = {name: (np.array([x['metrics'][key] for x in res]), np.mean([x['replicates'][:, c] for x in res], axis=0))
+                             for name, key, c in (('micro_AUPRC', 'auprc', 0), ('micro_Fmax', 'fmax', 1),
+                                                  ('protein_Fmax', 'protein_fmax', 3))}
+            valid = np.ones(truth.shape, bool) if mask is None else ~mask
+            aps = {k: term_ap(scores[k], truth, valid) for k in keys}
+            terms_with = sorted(aps[keys[0]])
+            macro = {m: np.array([np.mean([aps[k][j] for j in terms_with]) for k in ks]) for m, ks in runs.items()}
+            per_term = {m: np.mean([[aps[k][j] for j in terms_with] for k in ks], axis=0) for m, ks in runs.items()}
+            for model in POOLING_MODELS:
+                sd = lambda x: float(x.std(ddof=1)) if len(x) > 1 else 0.0  # noqa: E731
+                metrics.append(dict(test_set=test_set, version=version, model=model, proteins=len(r),
+                                    positive_pairs=int(truth[r].sum()), masked_pairs=0 if mask is None else int(mask[r].sum()),
+                                    terms_with_positive=len(terms_with),
+                                    **{f'{n}_mean': float(st[model][n][0].mean()) for n in st[model]},
+                                    **{f'{n}_sd': sd(st[model][n][0]) for n in st[model]},
+                                    macro_AUPRC_mean=float(macro[model].mean()), macro_AUPRC_sd=sd(macro[model])))
+            term_draws = rng.integers(0, len(terms_with), (10_000, len(terms_with)))
+            for x, y in (('finch_B', 'finch_A'), ('finch_A', 'method'), ('finch_B', 'method')):
+                for n in ('micro_AUPRC', 'micro_Fmax', 'protein_Fmax'):
+                    (px, rx), (py, ry) = st[x][n], st[y][n]
+                    lo, hi = np.percentile(rx - ry, [2.5, 97.5])
+                    contrasts.append(dict(test_set=test_set, version=version, contrast=f'{x} - {y}', metric=n,
+                                          difference=px.mean() - py.mean(), ci_low=lo, ci_high=hi, units='test sequences'))
+                d = per_term[x] - per_term[y]
+                lo, hi = np.percentile(d[term_draws].mean(1), [2.5, 97.5])
+                contrasts.append(dict(test_set=test_set, version=version, contrast=f'{x} - {y}', metric='macro_AUPRC',
+                                      difference=float(d.mean()), ci_low=lo, ci_high=hi, units='terms'))
+            log(a.method, test_set, version, {m: round(float(st[m]['micro_AUPRC'][0].mean()), 4) for m in runs})
+    for name, data in (('pooling_metrics', metrics), ('pooling_contrasts', contrasts)):
+        with open(out / f'{name}.tsv', 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=list(data[0]), delimiter='\t')
+            w.writeheader()
+            w.writerows(data)
+    log(a.method, 'wrote', out / 'pooling_metrics.tsv', out / 'pooling_contrasts.tsv')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('stage', choices=['fetch', 'scan', 'prepare', 'bootstrap'])
+    parser.add_argument('stage', choices=['fetch', 'scan', 'prepare', 'bootstrap', 'pooling'])
     parser.add_argument('method', nargs='?', choices=METHODS)
     parser.add_argument('--outside', type=Path, required=True, help="the outside roots' parent (OUT/<method>)")
     parser.add_argument('--replication', type=Path, required=True, help="the replication roots' parent (REP/<method>)")
@@ -340,9 +421,9 @@ def main():
     GOA_RAW, OUTSIDE, REPLICATION, SWISSPROT, DEVICE = a.goa, a.outside, a.replication, a.swissprot, a.device
     if a.stage == 'scan' and GOA_RAW is None:
         raise SystemExit('scan needs --goa')
-    if a.stage in ('prepare', 'bootstrap') and a.method is None:
+    if a.stage in ('prepare', 'bootstrap', 'pooling') and a.method is None:
         raise SystemExit(f'{a.stage} needs a method')
-    dict(fetch=fetch, scan=scan, prepare=prepare, bootstrap=bootstrap)[a.stage](a)
+    dict(fetch=fetch, scan=scan, prepare=prepare, bootstrap=bootstrap, pooling=pooling)[a.stage](a)
 
 
 if __name__ == '__main__':

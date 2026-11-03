@@ -202,6 +202,7 @@ python -m retrain.scoring.test_labels experimental   # scoring against experimen
 python -m retrain.scoring.test_labels all_goa        # ... with every GOA assertion the label review considered
 python -m retrain.scoring.test_labels masked         # ... with the reviewed GOA assertions masked
 python -m retrain.scoring.term_strata                # the main gains on common and rare terms (GPU)
+python -m retrain.scoring.shared_terms               # the data comparisons on the terms each original set covers (GPU)
 python -m retrain.scoring.no_hit                     # test proteins without training relatives (Fig. 3c; the paper's subsets)
 python -m retrain.scoring.sizes                      # sizes of every training set
 python -m retrain.scoring.parameters                 # trainable parameters of the models on ArchipelaGO (CPU)
@@ -279,16 +280,19 @@ like `original_<method>` and scored with `retrain.outside.score --screened-origi
 when its Finch runs exist.
 
 One table per benchmark with every model (both Finch arms, the method's own retrain, the authors' model) and paired
-bootstrap intervals, and the check of Supplementary Table 16 with the test proteins' current GOA annotations masked
+bootstrap intervals, and the check of Supplementary Tables 16-17 with the test proteins' current GOA annotations masked
 (our evaluator, micro-Fmax and micro-AUPRC; the bootstrap runs on a GPU):
 
 ```bash
 python -m retrain.outside.compare deepgose --data out/deepgose --replication rep/deepgose   # -> outside/compare
+mkdir -p <root>/results/outside_compare/deepgose                                            # figures/si.py's Table 18:
+cp out/deepgose/outside/compare/relatives.tsv <root>/results/outside_compare/deepgose/      # likewise transfew, dpfunc
 M="--data <root>/results/outside_masked --outside out --replication rep"                   # out/<method>, rep/<method>
 python -m retrain.outside.masked fetch $M                                   # UniProt sec_ac.txt; DPFunc's entry names
 python -m retrain.outside.masked scan $M --goa <GOA folder> --swissprot uniprot_sprot.fasta.gz   # goa_uniprot_all.{gaf,gpi}.gz
 python -m retrain.outside.masked prepare deepgose $M                        # and transfew, dpfunc (CPU)
-python -m retrain.outside.masked bootstrap deepgose $M                      # (GPU) -> figures/si.py's Table 16
+python -m retrain.outside.masked bootstrap deepgose $M                      # (GPU) -> Tables 16-17, Figs. 3-4
+python -m retrain.outside.masked pooling deepgose $M                        # (GPU) -> Table 19
 ```
 
 ### External inputs

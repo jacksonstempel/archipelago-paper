@@ -9,6 +9,7 @@
                                              assertions masked (masked)
     python -m retrain.scoring.no_hit         scoring of test proteins without training relatives
     python -m retrain.scoring.term_strata    the main gains on common and rare terms
+    python -m retrain.scoring.shared_terms   the data comparisons on the terms each original training set covers
     python -m retrain.scoring.sizes          sizes of the training sets and the benchmark
     python -m retrain.scoring.parameters     trainable parameters of the models trained on ArchipelaGO
     python -m retrain.scoring.training_cost  GPU-hours of the training runs
