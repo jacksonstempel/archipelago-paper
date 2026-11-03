@@ -238,7 +238,7 @@ predictions reproduce their papers' numbers this way. Costs on H100s: DeepGO-SE 
 TransFew 0.2 per seed, DPFunc about 0.8 per seed.
 
 **Finch on the published methods' benchmarks.** Finch is trained on each method's training split and on ArchipelaGO
-without the method's test and validation proteins and their relatives (the paper's homology screen), with ArchipelaGO's
+without the method's test proteins and their relatives (the paper's homology screen), with ArchipelaGO's
 labels mapped onto the method's GO release (`retrain.outside`). The method's validation set is the development set of both
 arms (checkpoints and the F1 threshold); the test set is scored with the paper's own code.
 

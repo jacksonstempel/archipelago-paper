@@ -7,10 +7,11 @@ released dataset, and Finch's embeddings of it in inputs/embeddings/<encoder>/ar
 
   datasets/ontology, original_<method>, development, test   copies of REP's (the authors' GO release, vocabulary, training
                                   split, validation set, test set)
-  datasets/archipelago_screened   ArchipelaGO's training proteins without a relative of the method's validation or test
-                                  proteins, with ArchipelaGO's labels on the method's GO release and vocabulary:
+  datasets/archipelago_screened   ArchipelaGO's training proteins without a relative of the method's test proteins, with
+                                  ArchipelaGO's labels on the method's GO release and vocabulary:
     1. the paper's homology screen (retrain.common.screen: identical sequence, or a DIAMOND very-sensitive hit at E <= 1e-3
-       at the fixed database size, either direction) against DIR's development and test sets; every protein it names goes;
+       at the fixed database size, either direction) against DIR's test set (the validation set only selects Finch's
+       checkpoint and F1 threshold, as for the original split); every protein it names goes;
     2. each asserted term mapped onto the method's GO release (alt_id -> primary id; an obsolete term with exactly one live
        replaced_by -> it; terms absent from that release dropped: Ontology.map_term), closed over is_a in that release and
        restricted to the method's vocabulary (Ontology.label_matrix); proteins left without a vocabulary label dropped.
@@ -39,9 +40,9 @@ ENCODERS = ('esm2_15b_l48', 'prott5_l21')
 
 
 def relatives(root, proteins, work):
-    """retrain.common.screen of `proteins` ({seq_id: sequence}) against the root's development and test sets: (identical
-    ids, DIAMOND-hit ids, {test seq_id: 'identical' or 'diamond'} of the test proteins it links to them)."""
-    exact, hits = screen(root, proteins, work, int(os.environ.get('SLURM_CPUS_PER_TASK', 8)))
+    """retrain.common.screen of `proteins` ({seq_id: sequence}) against the root's test set: (identical ids, DIAMOND-hit
+    ids, {test seq_id: 'identical' or 'diamond'} of the test proteins it links to them)."""
+    exact, hits = screen(root, proteins, work, int(os.environ.get('SLURM_CPUS_PER_TASK', 8)), against=('test',))
     test = load(root, 'test', labels=False)
     sequences = {s.upper() for s in proteins.values()}
     found = {h: 'identical' for h, s in zip(test.seq_ids, test.sequences) if s.upper() in sequences}
@@ -85,7 +86,7 @@ def main():
     exact, hits, _ = relatives(root, proteins, work / 'screen_archipelago')
     removed = exact | hits
     kept = [h for h in archipelago.seq_ids if h not in removed]
-    record['archipelago'] = dict(proteins=len(proteins), identical_to_validation_or_test=len(exact), diamond_hit=len(hits),
+    record['archipelago'] = dict(proteins=len(proteins), identical_to_test=len(exact), diamond_hit=len(hits),
                                  removed=len(exact | hits), kept_by_screen=len(kept))
     keep = set(kept)
     pairs = sorted({(h, g) for h, g, _, _ in read_annotations(main_root / 'datasets' / 'archipelago') if h in keep})

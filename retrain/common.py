@@ -292,14 +292,14 @@ def diamond():
     return path
 
 
-def screen(root, proteins, work, threads=8):
+def screen(root, proteins, work, threads=8, against=tuple(SPLITS.values())):
     """Proteins ({id: sequence}) related to the benchmark: identical to a development or test sequence, or with a DIAMOND
-    blastp hit to one in either direction (--very-sensitive, E <= 1e-3, no identity or coverage floor). Returns
-    (exact ids, DIAMOND-hit ids)."""
+    blastp hit to one in either direction (--very-sensitive, E <= 1e-3, no identity or coverage floor). `against` names
+    the held-out datasets (default both). Returns (exact ids, DIAMOND-hit ids)."""
     work = Path(work)
     work.mkdir(parents=True, exist_ok=True)
     held = {}
-    for name in SPLITS.values():
+    for name in against:
         ds = load(root, name, labels=False)
         held.update({f'{name}:{h}': s for h, s in zip(ds.seq_ids, ds.sequences)})
     write_fasta(work / 'source.fasta', proteins.items())
