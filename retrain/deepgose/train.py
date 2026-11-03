@@ -13,7 +13,7 @@ propagates its predictions, evaluate_entailment.py averages the top six). Here:
   datasets/ontology/go-basic.obo), then averaged;
 - every output covers the 8,739 vocabulary terms.
 
-    python -m retrain.deepgose.train world TRAINING_SET WORLD      (one GPU; WORLD 0..9)
+    python -m retrain.deepgose.train world TRAINING_SET WORLD [--allow-shared-proteins]   (one GPU; WORLD 0..9)
     python -m retrain.deepgose.train ensemble TRAINING_SET          (CPU, after the ten worlds)
 
 TRAINING_SET is a dataset name, or `original` for datasets/original_deepgose. Worlds go to
@@ -32,7 +32,8 @@ from pathlib import Path
 
 import numpy as np
 
-from retrain.common import (Ontology, add_argument, check_reproduced, data_root, fit_folder, load, log, write_fit)
+from retrain.common import (Ontology, add_argument, check_disjoint, check_reproduced, data_root, fit_folder, load, log,
+                            write_fit)
 from retrain.deepgose import features
 
 METHOD = 'deepgose'
@@ -63,7 +64,7 @@ def micro_auprc(scores, labels):
     return float((precision * y).sum() / y.sum())
 
 
-def world(root, training_set, k):
+def world(root, training_set, k, allow_shared=False):
     import torch
     from retrain.deepgose.engine import GraphPlan, StreamingStep
     from retrain.deepgose.model import DeepGOModel, load_normal_forms
@@ -84,8 +85,7 @@ def world(root, training_set, k):
     test = load(root, 'test', labels=False)
     if train.labels.shape[1] != len(terms) or dev.labels.shape[1] != len(terms):
         raise ValueError('labels do not have one column per vocabulary term')
-    if set(train.seq_ids) & (set(dev.seq_ids) | set(test.seq_ids)):
-        raise ValueError(f'{train.name} shares proteins with the development or test set')
+    check_disjoint(train, dev, test, allow_shared)
     x, dx, tx = (features.read(root, ds) for ds in (train, dev, test))
     y = train.labels.toarray().astype(np.uint8)
 
@@ -288,13 +288,16 @@ def main():
     parser.add_argument('stage', choices=['world', 'ensemble'])
     parser.add_argument('training_set', help='dataset name, or `original` for original_deepgose')
     parser.add_argument('world', nargs='?', type=int, choices=range(WORLDS), help='world (seed) 0-9; stage world only')
+    parser.add_argument('--allow-shared-proteins', action='store_true',
+                        help="train although training proteins are also development or test proteins (an authors' own "
+                             'split, used as released: retrain.replicate)')
     add_argument(parser)
     a = parser.parse_args()
     root = data_root(a.data)
     if a.stage == 'world':
         if a.world is None:
             parser.error('world needs a world number')
-        world(root, a.training_set, a.world)
+        world(root, a.training_set, a.world, a.allow_shared_proteins)
     else:
         ensemble(root, a.training_set)
 

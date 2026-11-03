@@ -1,7 +1,7 @@
 """Train Finch's readouts on one training set and seed, and predict the development and test sets.
 
     python -m retrain.finch.train --training-set archipelago --seed 9301 [--readouts esm2_15b_l48 prott5_l21]
-        [--data DIR] [--device cuda]
+        [--data DIR] [--device cuda] [--allow-shared-proteins]
 
 The readouts and their recipes are configs/finch.json (retrain.finch.recipe): by default Finch's two; the recipe
 ablation's readouts (Fig. 4a) and its variant's are trained on ArchipelaGO with --readouts esm2_3b_l36_linear
@@ -33,7 +33,7 @@ import torch
 from archipelago.io import read_matrix
 from archipelago.readout import predict
 from retrain.finch.recipe import readout as build_readout, train
-from retrain.common import Ontology, add_argument, check_reproduced, data_root, fit_folder, load, log
+from retrain.common import Ontology, add_argument, check_disjoint, check_reproduced, data_root, fit_folder, load, log
 from retrain.finch import config
 
 NOT_RECIPE = ('encoder', 'embedding', 'seed_offset')  # a readout's entry in configs/finch.json besides its recipe
@@ -45,15 +45,13 @@ def recipe_of(settings, readout):
     return {**settings['training'], **{k: v for k, v in entry.items() if k not in NOT_RECIPE}}
 
 
-def fit(root, training_set, seed, readout, recipe, device, embedding=None, seed_offset=0):
+def fit(root, training_set, seed, readout, recipe, device, embedding=None, seed_offset=0, allow_shared=False):
     """Train one readout (embedding: the input embedding's name, default the readout's) with seed + seed_offset."""
     ontology = Ontology(root)
     data = load(root, training_set)
     dev = load(root, 'development')
     test = load(root, 'test', labels=False)
-    overlap = set(data.seq_ids) & (set(dev.seq_ids) | set(test.seq_ids))
-    if overlap:
-        raise ValueError(f'{training_set}: {len(overlap)} training proteins are development or test proteins')
+    check_disjoint(data, dev, test, allow_shared)
     for d in (data, dev):
         if d.labels.shape[1] != len(ontology.vocabulary):
             raise ValueError(f'{d.name}: {d.labels.shape[1]} label columns, the vocabulary has {len(ontology.vocabulary)}')
@@ -96,13 +94,16 @@ def main():
     parser.add_argument('--seed', type=int, required=True, help=f"the paper's seeds: {settings['seeds']}")
     parser.add_argument('--readouts', nargs='+', choices=list(settings['readouts']), default=list(settings['weights']))
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
+    parser.add_argument('--allow-shared-proteins', action='store_true',
+                        help="train although training proteins are also development or test proteins (a published "
+                             "method's own split, used as released: retrain.outside)")
     add_argument(parser)
     a = parser.parse_args()
     root = data_root(a.data)
     for readout in a.readouts:
         entry = settings['readouts'][readout]
         fit(root, a.training_set, a.seed, readout, recipe_of(settings, readout), a.device, entry['embedding'],
-            entry.get('seed_offset', 0))
+            entry.get('seed_offset', 0), a.allow_shared_proteins)
 
 
 if __name__ == '__main__':

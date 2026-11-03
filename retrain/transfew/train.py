@@ -18,7 +18,7 @@ training script's rule; `bcebest`) and the epoch with the highest propagated dev
 After training, a fresh model loads each checkpoint and must reproduce the development scores saved with it before
 its test scores are written.
 
-    python -m retrain.transfew.train TRAINING_SET SEED [--data DIR]
+    python -m retrain.transfew.train TRAINING_SET SEED [--data DIR] [--allow-shared-proteins]
 
 TRAINING_SET: original (datasets/original_transfew), goa, hq or archipelago. Inputs: retrain.transfew.features and
 retrain.transfew.label_gcn. Output: runs/transfew/<training set>/seed<k>/ (raw scores, vocabulary order). One GPU;
@@ -112,6 +112,9 @@ def main():
     parser.add_argument('seed', type=int)
     common.add_argument(parser)
     parser.add_argument('--epochs', type=int, default=RECIPE['epochs'], help='fewer epochs for a quick check only')
+    parser.add_argument('--allow-shared-proteins', action='store_true',
+                        help="train although training proteins are also development or test proteins (an authors' own "
+                             'split, used as released: retrain.replicate)')
     args = parser.parse_args()
     root = common.data_root(args.data)
     from retrain.transfew.model import weighted_bce
@@ -130,8 +133,7 @@ def main():
     train = common.load(root, dataset)
     dev = common.load(root, 'development')
     test = common.load(root, 'test', labels=False)
-    if set(train.seq_ids) & (set(dev.seq_ids) | set(test.seq_ids)):
-        raise ValueError(f'{dataset} shares proteins with the development or test set')
+    common.check_disjoint(train, dev, test, args.allow_shared_proteins)
     vectors = features.folder(root) / 'vectors'
     x_train, x_dev, x_test = (read_matrix(vectors, d.seq_ids)[1] for d in (train, dev, test))
     if len(train.seq_ids) % RECIPE['batch_size'] == 1:

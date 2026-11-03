@@ -9,7 +9,8 @@ graphs  contact graph of each protein from its backbone in the structure bank (r
         ordered by (source, target) as the released double loop makes them -> inputs/dpfunc/graphs/<ab>/<seq_id>.npy.
 bank    one memory-mapped file of residue features and one of edges for a group of datasets (original: original_dpfunc;
         archipelago, which also holds goa, hq and the other HQ subsets; evaluation: development then test), in dataset
-        order: banks/<bank>/{seq_ids.json, feature_offsets.npy, features.npy, edge_offsets.npy, edges.npy}. Above 2,700
+        order (a protein in two datasets of a bank, as in DPFunc's own validation and test sets, is held once):
+        banks/<bank>/{seq_ids.json, feature_offsets.npy, features.npy, edge_offsets.npy, edges.npy}. Above 2,700
         residues the graph and the features cover residues 1-1,400 (the structure bank's rule). ArchipelaGO's bank is
         large (about 0.6 TB of FP32 features).
 step    a dataset's rows in its bank and its InterPro count matrix on the released 22,369-entry vocabulary (entries
@@ -114,13 +115,14 @@ def _fill_edges(job):
 
 def bank(root, arguments):
     name = arguments.name
-    seq_ids, lengths = [], []
+    seq_ids, lengths, seen = [], [], set()
     for dataset in BANKS[name]:
         ds = load(root, dataset, labels=False)
-        seq_ids += ds.seq_ids
-        lengths += [len(s) for s in ds.sequences]
-    if len(set(seq_ids)) != len(seq_ids):
-        raise ValueError(f'bank {name}: a protein repeats across {BANKS[name]}')
+        for h, s in zip(ds.seq_ids, ds.sequences):  # a protein in two datasets of the bank is held once
+            if h not in seen:
+                seen.add(h)
+                seq_ids.append(h)
+                lengths.append(len(s))
     missing = [h for h in seq_ids if not esm_file(root, h).exists() or not graph_file(root, h).exists()]
     if missing:
         raise SystemExit(f'bank {name}: {len(missing):,} proteins lack ESM-1b features or a graph, e.g. {missing[0]}')

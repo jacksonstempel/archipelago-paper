@@ -143,6 +143,19 @@ def read_annotations(folder):
         return [(r['seq_id'], r['go_id'], r['evidence'], r['source']) for r in csv.DictReader(handle, delimiter='\t')]
 
 
+def check_disjoint(training, development, test, allow_shared=False):
+    """Training proteins must not be development or test proteins. A published method's own split, used as released
+    (the replication of retrain.replicate), can share identical sequences between its splits: allow_shared accepts them
+    and logs how many. Returns the number shared."""
+    shared = set(training.seq_ids) & (set(development.seq_ids) | set(test.seq_ids))
+    if shared and not allow_shared:
+        raise ValueError(f'{training.name}: {len(shared):,} training proteins are development or test proteins')
+    if shared:
+        log(f"{training.name}: {len(shared):,} training proteins are also development or test proteins (an authors' "
+            'split, used as released)')
+    return len(shared)
+
+
 def label_counts(labels):
     labels = sp.csr_matrix(labels)
     return dict(proteins=labels.shape[0], propagated_pairs=int(labels.nnz),
@@ -151,7 +164,13 @@ def label_counts(labels):
 
 # ---------------------------------------------------------------------------------------------------------- ontology
 class Ontology:
-    """The GO release of every label (datasets/ontology/go-basic.obo) and the output vocabulary (vocabulary.json)."""
+    """The GO release of every label (datasets/ontology/go-basic.obo) and the output vocabulary (vocabulary.json).
+
+    Every vocabulary term must be a live term of go-basic.obo, except the terms listed in the optional
+    datasets/ontology/not_live.json: a published method's own vocabulary can keep terms that are alt_ids or obsolete in the
+    GO release of its labels (DPFunc's, for one). Those stay output columns without parents; any other term that is not
+    live stops the run. The paper's vocabulary has no such file.
+    """
 
     def __init__(self, root):
         folder = Path(root) / 'datasets' / 'ontology'
@@ -161,11 +180,15 @@ class Ontology:
         self.index = {t: i for i, t in enumerate(self.vocabulary)}
         if len(self.index) != len(self.vocabulary):
             raise ValueError('vocabulary.json has duplicate terms')
+        listed = folder / 'not_live.json'
+        self.not_live = json.loads(listed.read_text(encoding='utf-8')) if listed.exists() else []
         bad = [t for t in self.vocabulary if t not in self.terms or self.terms[t]['obsolete']]
-        if bad:
-            raise ValueError(f'{len(bad)} vocabulary terms are missing or obsolete in go-basic.obo, e.g. {bad[0]}')
+        if sorted(bad) != sorted(self.not_live):
+            raise ValueError(f'{len(bad)} vocabulary terms are missing or obsolete in go-basic.obo (e.g. '
+                             f'{(bad or [None])[0]}), {len(self.not_live)} listed in not_live.json')
         self.alt = {a: t for t, d in self.terms.items() for a in d['alt_id']}
-        self.parents = [sorted({self.index[p] for p in self.terms[t]['is_a'] if p in self.index}) for t in self.vocabulary]
+        self.parents = [sorted({self.index[p] for p in self.terms[t]['is_a'] if p in self.index}) if t in self.terms
+                        else [] for t in self.vocabulary]
         self._propagation = Propagation(self.parents)
         self._ancestors = {}
 
