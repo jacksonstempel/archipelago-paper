@@ -1,25 +1,34 @@
 """A data root for Finch on a published method's own benchmark.
 
-    python -m retrain.outside.build {deepgose,transfew,dpfunc} --data DIR --replication REP --archipelago MAIN
+    python -m retrain.outside.build {deepgose,transfew,dpfunc} --data DIR --replication REP --archipelago MAIN [--addback NAME]
 
 REP is the method's replication root (retrain.replicate.build), MAIN the paper's data root (datasets/archipelago from the
 released dataset, and Finch's embeddings of it in inputs/embeddings/<encoder>/archipelago). DIR receives:
 
   datasets/ontology, original_<method>, development, test   copies of REP's (the authors' GO release, vocabulary, training
                                   split, validation set, test set)
-  datasets/archipelago_screened   ArchipelaGO's training proteins without a relative of the method's test proteins, with
-                                  ArchipelaGO's labels on the method's GO release and vocabulary:
+  datasets/archipelago_screened   ArchipelaGO's training proteins (and, with --addback, the proteins of MAIN's dataset
+                                  NAME) without a relative of the method's test proteins, with their labels on the method's
+                                  GO release and vocabulary:
     1. the paper's homology screen (retrain.common.screen: identical sequence, or a DIAMOND very-sensitive hit at E <= 1e-3
        at the fixed database size, either direction) against DIR's test set (the validation set only selects Finch's
        checkpoint and F1 threshold, as for the original split); every protein it names goes;
     2. each asserted term mapped onto the method's GO release (alt_id -> primary id; an obsolete term with exactly one live
-       replaced_by -> it; terms absent from that release dropped: Ontology.map_term), closed over is_a in that release and
-       restricted to the method's vocabulary (Ontology.label_matrix); proteins left without a vocabulary label dropped.
+       replaced_by -> it; terms absent from that release dropped: Ontology.map_term), closed over the relations of the
+       method's own training labels in that release (RELATIONS: DeepGO-SE is_a and every relationship, as deepgo2's
+       Ontology with_rels; TransFew and DPFunc is_a and part_of; each method's training labels are closed under exactly
+       these) and restricted to the method's vocabulary; proteins left without a vocabulary label dropped. Column `part`
+       says where each protein comes from.
   inputs/embeddings/<encoder>/archipelago_screened   its rows of MAIN's embeddings (Finch's encoders)
-  outside/build.json      counts: screen, label mapping, proteins, terms with positives in each arm and in both
+  outside/build.json      counts: screen, label mapping, proteins (per part), terms with positives in each arm and in both
   outside/relatives.tsv   per test protein, a relative in the original training split under the same screen (identical,
-                          diamond or none); ArchipelaGO has none by construction, so `none` means none in either training set
+                          diamond or none); arm B has none by construction, so `none` means none in either training set
   outside/shared_terms.json   the terms with training positives in both arms
+
+--addback NAME: the paper's runs added back the proteins ArchipelaGO left out only because of the paper's own benchmark
+(its 2,500 development and 5,000 test proteins and the 4,063 HQ proteins related to them), labelled as HQ training
+proteins are labelled (not with the reviewed benchmark labels); MAIN must hold them as datasets/NAME with their
+embeddings (scripts/embed.py --set NAME).
 
 Then embed DIR's original_<method>, development and test sets with scripts/embed.py (esm2_15b_l48, prott5_l21), train
 Finch on both training sets and combine (README), and score with retrain.outside.score.
@@ -32,11 +41,13 @@ import shutil
 from pathlib import Path
 
 import numpy as np
+import scipy.sparse as sp
 
 from retrain.common import Ontology, add_argument, data_root, load, log, read_annotations, screen, write_dataset
 
 ARM_B = 'archipelago_screened'
 ENCODERS = ('esm2_15b_l48', 'prott5_l21')
+RELATIONS = {'deepgose': 'all', 'transfew': ('part_of',), 'dpfunc': ('part_of',)}  # besides is_a
 
 
 def relatives(root, proteins, work):
@@ -63,11 +74,58 @@ def mapping_counts(ontology, pairs):
     return dict(counts)
 
 
+def ancestors_over(obo, relations):
+    """A function term -> {term and its ancestors} over is_a and `relations` ('all': every relationship type) in the whole
+    OBO file (all namespaces); breadth-first, so cycles through has_part / part_of are harmless."""
+    parents, term = collections.defaultdict(list), None
+    for line in open(obo, encoding='utf-8-sig'):
+        line = line.rstrip('\n')
+        if line.startswith('['):
+            term = '' if line == '[Term]' else None
+        elif term is not None and line.startswith('id: '):
+            term = line[4:].strip()
+        elif term and line.startswith('is_a: '):
+            parents[term].append(line[6:].split()[0])
+        elif term and line.startswith('relationship: '):
+            kind, target = line[len('relationship: '):].split()[:2]
+            if relations == 'all' or kind in relations:
+                parents[term].append(target)
+    memo = {}
+
+    def ancestors(t):
+        if t not in memo:
+            seen, frontier = {t}, [t]
+            while frontier:
+                frontier = [p for x in frontier for p in parents.get(x, ()) if p not in seen]
+                seen.update(frontier)
+            memo[t] = frozenset(seen)
+        return memo[t]
+    return ancestors
+
+
+def label_matrix(ontology, ancestors, pairs, row_of):
+    """Asserted (key, go_id) pairs -> CSR uint8 labels: mapped (Ontology.map_term), closed over `ancestors`, restricted to
+    the vocabulary."""
+    rows, cols = [], []
+    for key, g in pairs:
+        t = ontology.map_term(g)
+        if t is not None:
+            for x in ancestors(t):
+                j = ontology.index.get(x)
+                if j is not None:
+                    rows.append(row_of[key])
+                    cols.append(j)
+    m = sp.coo_matrix((np.ones(len(rows), np.int32), (rows, cols)), shape=(len(row_of), len(ontology.vocabulary))).tocsr()
+    m.data[:] = 1
+    return m.astype(np.uint8)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('method', choices=['deepgose', 'transfew', 'dpfunc'])
     parser.add_argument('--replication', required=True, help="the method's replication root (retrain.replicate.build)")
     parser.add_argument('--archipelago', required=True, help="the paper's data root (datasets/archipelago and its embeddings)")
+    parser.add_argument('--addback', help="a dataset of MAIN added to ArchipelaGO's training proteins before the screen")
     add_argument(parser)
     a = parser.parse_args()
     root, replication, main_root = data_root(a.data), Path(a.replication), Path(a.archipelago)
@@ -77,29 +135,41 @@ def main():
     for name in ('ontology', arm_a, 'development', 'test'):
         shutil.copytree(replication / 'datasets' / name, root / 'datasets' / name)
     ontology = Ontology(root)
+    ancestors = ancestors_over(root / 'datasets' / 'ontology' / 'go-basic.obo', RELATIONS[a.method])
     work = root / 'outside'
     work.mkdir(parents=True)
-    record = dict(method=a.method, vocabulary=len(ontology.vocabulary), not_live_terms=len(ontology.not_live))
+    record = dict(method=a.method, vocabulary=len(ontology.vocabulary), not_live_terms=len(ontology.not_live),
+                  relations=['is_a', RELATIONS[a.method]])
 
-    archipelago = load(main_root, 'archipelago', labels=False)
-    proteins = dict(zip(archipelago.seq_ids, archipelago.sequences))
+    proteins, part, pairs = {}, {}, set()
+    for name in ('archipelago', *([a.addback] if a.addback else [])):
+        ds = load(main_root, name, labels=False)
+        if set(ds.seq_ids) & set(proteins):
+            raise ValueError(f'{name} shares proteins with ArchipelaGO')
+        proteins.update(zip(ds.seq_ids, ds.sequences))
+        part.update(dict.fromkeys(ds.seq_ids, name))
+        pairs |= {(h, g) for h, g, _, _ in read_annotations(main_root / 'datasets' / name)}
+    candidates = list(proteins)
     exact, hits, _ = relatives(root, proteins, work / 'screen_archipelago')
     removed = exact | hits
-    kept = [h for h in archipelago.seq_ids if h not in removed]
-    record['archipelago'] = dict(proteins=len(proteins), identical_to_test=len(exact), diamond_hit=len(hits),
-                                 removed=len(exact | hits), kept_by_screen=len(kept))
+    kept = [h for h in candidates if h not in removed]
     keep = set(kept)
-    pairs = sorted({(h, g) for h, g, _, _ in read_annotations(main_root / 'datasets' / 'archipelago') if h in keep})
-    record['label_mapping'] = mapping_counts(ontology, pairs)
-    labels, _ = ontology.label_matrix(pairs, {h: i for i, h in enumerate(kept)})
+    pairs = sorted((h, g) for h, g in pairs if h in keep)
+    labels = label_matrix(ontology, ancestors, pairs, {h: i for i, h in enumerate(kept)})
     with_label = np.flatnonzero(labels.getnnz(axis=1) > 0)
     final, labels = [kept[i] for i in with_label], labels[with_label]
-    record['archipelago'].update(without_vocabulary_label=len(kept) - len(final), training_proteins=len(final),
-                                 propagated_pairs=int(labels.nnz), terms_with_positive=int((labels.getnnz(axis=0) > 0).sum()))
+    count = lambda hs: dict(collections.Counter(part[h] for h in hs))  # noqa: E731
+    record['arm_b'] = dict(candidates=count(candidates), identical_to_test=count(exact), removed_by_screen=count(removed),
+                           kept_by_screen=count(kept), without_vocabulary_label=count(keep - set(final)),
+                           proteins=count(final), total=len(final), propagated_pairs=int(labels.nnz),
+                           terms_with_positive=int((labels.getnnz(axis=0) > 0).sum()))
+    record['label_mapping'] = {name: mapping_counts(ontology, [(h, g) for h, g in pairs if part[h] == name])
+                               for name in sorted(set(part.values()))}
     kept_final = set(final)
-    annotations = [(h, ontology.map_term(g), 'ArchipelaGO, mapped', f'archipelago {g}') for h, g in pairs
+    annotations = [(h, ontology.map_term(g), 'asserted, mapped onto this GO release', f'{part[h]} {g}') for h, g in pairs
                    if h in kept_final and ontology.map_term(g)]
-    write_dataset(root, ARM_B, final, [[] for _ in final], [proteins[h] for h in final], annotations, labels, ontology)
+    write_dataset(root, ARM_B, final, [[] for _ in final], [proteins[h] for h in final], annotations, labels, ontology,
+                  columns={'part': [part[h] for h in final]})
 
     original = load(root, arm_a)
     _, _, found = relatives(root, dict(zip(original.seq_ids, original.sequences)), work / 'screen_original')
@@ -117,8 +187,12 @@ def main():
 
     from archipelago.io import read_matrix, write_matrix
     for encoder in ENCODERS:
-        _, x = read_matrix(main_root / 'inputs' / 'embeddings' / encoder / 'archipelago', final)
-        write_matrix(root / 'inputs' / 'embeddings' / encoder / ARM_B, final, np.asarray(x))
+        rows = {}
+        for name in sorted(set(part[h] for h in final)):
+            ids = [h for h in final if part[h] == name]
+            _, x = read_matrix(main_root / 'inputs' / 'embeddings' / encoder / name, ids)
+            rows.update(zip(ids, np.asarray(x)))
+        write_matrix(root / 'inputs' / 'embeddings' / encoder / ARM_B, final, np.stack([rows[h] for h in final]))
     (work / 'build.json').write_text(json.dumps(record, indent=1) + '\n')
     log(json.dumps(record))
 

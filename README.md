@@ -239,14 +239,18 @@ TransFew 0.2 per seed, DPFunc about 0.8 per seed.
 
 **Finch on the published methods' benchmarks.** Finch is trained on each method's training split and on ArchipelaGO
 without the method's test proteins and their relatives (the paper's homology screen), with ArchipelaGO's
-labels mapped onto the method's GO release (`retrain.outside`). The method's validation set is the development set of both
-arms (checkpoints and the F1 threshold); the test set is scored with the paper's own code.
+labels mapped onto the method's GO release and propagated over the relations the method's own training labels use
+(`retrain.outside`). For the paper's runs, the proteins ArchipelaGO left out only because of the paper's own benchmark (its
+2,500 development and 5,000 test proteins and their 4,063 HQ relatives, labelled as HQ training proteins) were added back
+before the screen (`--addback`). The method's validation set is the development set of both arms (checkpoints and the F1
+threshold); the test set is scored with the paper's own code. Both training sets can share sequences with the method's
+validation set (and the authors' splits with its test set), hence `--allow-shared-proteins`.
 
 ```bash
-python -m retrain.outside.build deepgose --data out/deepgose --replication rep/deepgose --archipelago <data root>
+python -m retrain.outside.build deepgose --data out/deepgose --replication rep/deepgose --archipelago <data root> [--addback NAME]
 python scripts/embed.py --set original_deepgose --encoder esm2_15b_l48 --data out/deepgose   # and development, test; prott5_l21
 python -m retrain.finch.train --training-set original_deepgose --seed 9301 --allow-shared-proteins --data out/deepgose
-python -m retrain.finch.train --training-set archipelago_screened --seed 9301 --data out/deepgose   # seeds 9301-9303 (GPU)
+python -m retrain.finch.train --training-set archipelago_screened --seed 9301 --allow-shared-proteins --data out/deepgose   # seeds 9301-9303 (GPU)
 python -m retrain.finch.combine --training-set original_deepgose --data out/deepgose        # and archipelago_screened
 python -m retrain.outside.score deepgose --data out/deepgose --replication rep/deepgose     # -> outside/results
 ```
