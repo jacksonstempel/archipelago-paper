@@ -44,6 +44,8 @@ The Hugging Face dataset, as downloaded (Parquet, one folder per table):
 | `benchmark_no_hit/` | the 5,000 test proteins | `protein_id`, `no_hit_up_to` (the largest E-value cutoff at which the protein has no training hit) |
 | `go_terms/` | the 8,739 vocabulary terms | `go_id`, `name`, `column` (output column), `parents`, `information_accretion`, protein counts |
 | `reference_scores/` | the paper's models on every benchmark version | one row per version, model and training set |
+| `hq_benchmark_relatives/` | the 4,063 HQ proteins removed from training as relatives of benchmark proteins (for other splits; do not train on them if you evaluate on this benchmark) | as `training/`, plus `related_proteins`, `related_splits`, `relations`, `evalues`, `evalue_directions` |
+| `hq_benchmark_relatives_annotations/` | their asserted annotations | as `training_annotations` |
 | `ontology/go-basic.obo.gz` | the GO release of every label | |
 | `fasta/` | the sequences of the training, development and test proteins | |
 | `embeddings/<encoder>/{training,development,test}.npy` | the embeddings the paper's Finch was trained on, `esm2_15b_l48` and `prott5_l21` | float16, rows in the order of `training` and `benchmark` |
