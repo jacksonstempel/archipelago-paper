@@ -12,6 +12,7 @@ two figures, written into <out>/si/. Reads, under <root>/results/:
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
   training_cost.tsv                                        retrain.scoring.training_cost
+  outside_masked/<method>/{table,contrasts}.tsv            retrain.outside.masked (its work folder; Supplementary Table 16)
 
 Main-text Table 2 with intervals (table2_intervals.tex) is written beside Table 2 by figures/main.py.
 
@@ -372,6 +373,32 @@ def shared(results, out):
     save(fig, out, 'si_fig_pr_models')
 
 
+def outside_table(results, out):
+    """Supplementary Table 16: Finch on the published methods' own benchmarks, our evaluator (micro-Fmax, micro-AUPRC) on
+    each benchmark's own test labels and with the test proteins' computational GOA annotations masked, B - A with its
+    paired interval (retrain.outside.masked, its work folder at results/outside_masked)."""
+    folder = results / 'outside_masked'
+    lines = []
+    for method, label, test_set in (('deepgose', 'DeepGO-SE', 'test'), ('transfew', r'TransFew, Test\_all', 'Test_all'),
+                                    ('transfew', r'TransFew, Test\_novel', 'Test_novel'), ('dpfunc', 'DPFunc', 'test')):
+        table, contrasts = read(folder / method / 'table.tsv'), read(folder / method / 'contrasts.tsv')
+        if lines:
+            lines.append(r'\midrule')
+        first = True
+        for version, vname in (('unmasked', "Paper's labels"), ('computational', 'Others masked')):
+            for subset, sname in (('all', 'All'), ('no_relative', 'No relative')):
+                cell = {r['model']: r for r in table if (r['test_set'], r['subset'], r['version']) == (test_set, subset, version)}
+                if not cell:
+                    continue
+                diff = {r['metric']: r for r in contrasts if (r['test_set'], r['subset'], r['version'], r['contrast'])
+                        == (test_set, subset, version, 'finch_B - finch_A')}
+                values = [r3(cell[m][k]) for k in ('micro_Fmax_mean', 'micro_AUPRC_mean') for m in ('finch_A', 'finch_B', 'method')]
+                lines.append(' & '.join([label if first else '', vname, f"{sname} ({int(cell['finch_A']['proteins']):,})",
+                                         *values, paired(diff['micro_Fmax'], 3), paired(diff['micro_AUPRC'], 3)]) + r' \\')
+                first, vname = False, ''
+    write(out, 'table_outside.tex', lines)
+
+
 def draw(results, out):
     out = out / 'si'
     out.mkdir(parents=True, exist_ok=True)
@@ -379,3 +406,4 @@ def draw(results, out):
     recipe_tables(results, out)
     cost_table(results, out)
     shared(results, out)
+    outside_table(results, out)
