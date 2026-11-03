@@ -1,14 +1,17 @@
 """Score Finch's two arms on a published method's own test set with that paper's own evaluation code.
 
     python -m retrain.outside.score {deepgose,transfew,dpfunc} --data DIR --replication REP [--seeds 9301 9302 9303]
-        -> DIR/outside/results/{scores.tsv, summary.tsv}
+        [--paper-aupr] -> DIR/outside/results/{scores.tsv, summary.tsv}
 
 The protocols are retrain.replicate.score's (REP holds the authors' files under external/), on Finch's raw scores
 (retrain.finch.combine) of both arms:
   DeepGO-SE  each run's scores propagated as the official pipeline propagates a model's predictions (go.obo, is_a and every
-             relationship), then deepgo2's compute_metrics: Fmax, Smin, AUPR, AUC
-  TransFew   the released predict.py's output, CAFA-evaluator 1.2.1 on Test_all and Test_novel: Fmax, WFmax, AUPR, Smin
-  DPFunc     DPFunc's new_compute_performance_deepgoplus: Fmax, AUPR
+             relationship), then deepgo2's compute_metrics: Fmax, Smin, AUC
+  TransFew   the released predict.py's output, CAFA-evaluator 1.2.1 on Test_all and Test_novel: Fmax, WFmax, Smin
+  DPFunc     DPFunc's new_compute_performance_deepgoplus: Fmax
+micro_AUPRC: the paper's metric on the matrices each paper's code scores (retrain.replicate.micro); with --paper-aupr also
+the paper's own protein-centric trapezoid AUPR (the papers' protocol check). For the shared terms, micro-AUPRC restricts
+the full-vocabulary matrices to them.
 F1: the test F at the threshold of each run's Fmax on the method's validation set (the same code on the authors' validation
 proteins and labels); Fmax itself is test-selected. Rows per arm (original: the method's own training split; archipelago:
 ArchipelaGO screened), seed, test set, subset (all; no_relative: the test proteins without a relative in either training set,
@@ -24,7 +27,7 @@ import numpy as np
 
 from archipelago.io import read_table
 from retrain.common import add_argument, data_root, load, log
-from retrain.replicate import score as replicate
+from retrain.replicate import micro, score as replicate
 
 ARMS = {'original': 'original_{}', 'archipelago': 'archipelago_screened'}
 
@@ -32,8 +35,9 @@ ARMS = {'original': 'original_{}', 'archipelago': 'archipelago_screened'}
 class Benchmark:
     """The outside root's validation and test proteins, the authors' records of them, the subsets and the shared terms."""
 
-    def __init__(self, method, root, replication, seeds):
+    def __init__(self, method, root, replication, seeds, paper_aupr=False):
         self.method, self.root, self.replication, self.seeds = method, Path(root), Path(replication), seeds
+        self.paper_aupr = paper_aupr
         self.ids = {split: [r['seq_id'] for r in read_table(self.root / 'datasets' / name / 'proteins.tsv')]
                     for split, name in (('valid', 'development'), ('test', 'test'))}
         rows = replicate.records(replication)
@@ -89,7 +93,9 @@ def deepgose(b, rows):
                     chosen = [{sub_terms[j] for j in np.flatnonzero(p >= threshold)} & go_set for p in pred]
                     rows.append(dict(arm=arm, seed=seed, test_set='test', subset=subset, terms=term_set, n_terms=len(idx),
                                      proteins=len(df), Fmax=fmax, F1=evaluate_annotations(go, labels, chosen)[0],
-                                     threshold_valid=threshold, threshold_test=tmax, Smin=smin, AUPR=aupr, AUC=auc))
+                                     threshold_valid=threshold, threshold_test=tmax, Smin=smin,
+                                     micro_AUPRC=micro.deepgose(pred, df['prop_annotations'], list(sub_terms), go_set),
+                                     AUC=auc, **({'AUPR': aupr} if b.paper_aupr else {})))
                     log(rows[-1])
 
 
@@ -115,6 +121,7 @@ def transfew(b, rows):
             lines = [line for line in lines if line.split('\t')[0] in counted]
         path.write_text(''.join(lines))
         return path
+    matrices = micro.TransFew(replicate.tfew(b.replication), b.vocabulary)
     for term_set, subset_terms in (('all', None), ('shared', b.shared)):
         pairs = [(t, j) for t, j in zip(terms_all, columns_all) if subset_terms is None or t in subset_terms]
         terms, columns = [t for t, _ in pairs], [j for _, j in pairs]
@@ -137,8 +144,14 @@ def transfew(b, rows):
                         replicate.transfew_file(path, scores, proteins, terms, columns)
                         table = replicate.cafa_table(b.replication, path, gt_path, out)
                         at = table.iloc[(table['tau'] - threshold).abs().argmin()]
+                        metrics = replicate.cafa_metrics(table)
+                        if not b.paper_aupr:
+                            del metrics['AUPR']
+                        full_gt = restricted(gt, out / f'gt_{test_set}_{subset}_all.tsv', None, {p for p, _ in proteins})
                         rows.append(dict(arm=arm, seed=seed, test_set=test_set, subset=subset, terms=term_set,
-                                         n_terms=len(columns), proteins=len(proteins), **replicate.cafa_metrics(table),
+                                         n_terms=len(columns), proteins=len(proteins), **metrics,
+                                         micro_AUPRC=matrices.score(full_gt, subset_terms, scores, proteins, terms_all,
+                                                                    columns_all),
                                          F1=float(at['f']), threshold_valid=threshold,
                                          threshold_test=float(table.loc[table['f'].idxmax(), 'tau'])))
                         log(rows[-1])
@@ -163,7 +176,7 @@ def dpfunc(b, rows):
     def evaluable(terms):  # a true term the official evaluation counts: in the GO file, not the root
         return any(t != 'GO:0003674' and go.has_term(t) for t in terms)
 
-    def score(split, keep, scores, subset_terms):
+    def score(split, keep, scores, subset_terms, micro_keeps=()):
         # with a term subset, proteins without a true term in it are left out (the official fmax averages recall over
         # proteins and needs a true term for each; DeepGO-SE's code skips such proteins too)
         recs = [r for r in b.records[split] if r['record'] in keep
@@ -174,20 +187,25 @@ def dpfunc(b, rows):
             protein_id=[r['record'] for r in recs],
             gos=[truth[r['record']] if subset_terms is None else truth[r['record']] & subset_terms for r in recs],
             predictions=[dict(zip(names, map(float, scores[r['seq_id']][cols]))) for r in recs]))
-        fmax, aupr, t = evaluation.new_compute_performance_deepgoplus(frame, obo, 'mf')
-        return fmax, aupr, t, list(captured['p']), list(captured['r']), len(recs), len(cols)
+        (fmax, aupr, t), micros = micro.dpfunc(evaluation, frame, obo, b.vocabulary, micro_keeps)
+        return fmax, aupr, t, list(captured['p']), list(captured['r']), len(recs), len(cols), micros
 
     for arm in ARMS:
         for seed in b.seeds:
+            micro_of = {}  # micro-AUPRC from the full-vocabulary matrices, restricted to all or the shared terms
             for term_set, subset_terms in (('all', None), ('shared', b.shared)):
                 threshold = score('valid', {r['record'] for r in b.records['valid']}, b.scores(arm, seed, 'valid'),
                                   subset_terms)[2]
                 for subset, keep in b.subsets.items():
-                    fmax, aupr, t, p, r, n, k = score('test', keep, b.scores(arm, seed, 'test'), subset_terms)
+                    fmax, aupr, t, p, r, n, k, micros = score('test', keep, b.scores(arm, seed, 'test'), subset_terms,
+                                                              (None, b.shared) if term_set == 'all' else ())
+                    if term_set == 'all':
+                        micro_of[subset] = dict(zip(('all', 'shared'), micros))
                     cut = int(round(threshold * 100))
                     rows.append(dict(arm=arm, seed=seed, test_set='test', subset=subset, terms=term_set, n_terms=k,
                                      proteins=n, Fmax=float(fmax), F1=f_of(p[cut], r[cut]), threshold_valid=threshold,
-                                     threshold_test=t, AUPR=float(aupr)))
+                                     threshold_test=t, micro_AUPRC=micro_of[subset][term_set],
+                                     **({'AUPR': float(aupr)} if b.paper_aupr else {})))
                     log(rows[-1])
 
 
@@ -215,10 +233,12 @@ def main():
     parser.add_argument('method', choices=['deepgose', 'transfew', 'dpfunc'])
     parser.add_argument('--replication', required=True, help="the method's replication root")
     parser.add_argument('--seeds', nargs='+', type=int, default=[9301, 9302, 9303])
+    parser.add_argument('--paper-aupr', action='store_true',
+                        help="also the paper's own protein-centric trapezoid AUPR (the papers' protocol check)")
     add_argument(parser)
     a = parser.parse_args()
     import pandas as pd
-    b = Benchmark(a.method, data_root(a.data), a.replication, a.seeds)
+    b = Benchmark(a.method, data_root(a.data), a.replication, a.seeds, a.paper_aupr)
     rows = []
     globals()[a.method](b, rows)
     folder = b.root / 'outside' / 'results'

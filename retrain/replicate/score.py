@@ -1,7 +1,11 @@
 """Score a replication root's test predictions with the paper's own evaluation code, and write the test set as scored.
 
-    python -m retrain.replicate.score {deepgose,transfew,dpfunc} [--testset] --data DIR
+    python -m retrain.replicate.score {deepgose,transfew,dpfunc} [--testset] [--paper-aupr] --data DIR
         -> replicate/results/scores.tsv (and with --testset: replicate/testset/)
+
+Reported: each paper's Fmax (and Smin, AUC, WFmax where it reports them) by its own protocol, and the paper's (our)
+micro-AUPRC on the matrices that protocol scores (retrain.replicate.micro). With --paper-aupr also each paper's own
+protein-centric trapezoid AUPR, the check that its protocol is reproduced (it gives the papers' tables).
 
 DeepGO-SE  deepgo2's deepgo/metrics.compute_metrics (the function its evaluate_entailment.py calls; external/deepgose/deepgo2
            at commit 6c77c98) on the 2,845 test records, with the ontology and information content exactly as
@@ -32,6 +36,9 @@ import numpy as np
 
 from archipelago.io import read_fasta, read_table
 from retrain.common import add_argument, data_root, log
+from retrain.replicate import micro
+
+PAPER_AUPR = False  # --paper-aupr: also each paper's own protein-centric trapezoid AUPR (the papers' protocol check)
 
 PAPER = {
     'deepgose': dict(source='Kulmanov et al. 2024, Nat Mach Intell, Table 1 (MF, UniProtKB/Swiss-Prot test set)',
@@ -101,6 +108,7 @@ def deepgose(root, out):
             log(f'{path} not there; skipped')
             continue
         scores = scores_by_protein(root, path)
+        go_set = go.get_namespace_terms('molecular_function') - {micro.ROOT}
         for subset in ('all', 'no_identical_training'):
             keep = [subset == 'all' or not tests[p]['identical_training'] for p in test['proteins']]
             if subset != 'all' and all(keep):
@@ -108,9 +116,12 @@ def deepgose(root, out):
             df = test[keep].reset_index(drop=True)
             preds = np.stack([scores[tests[p]['seq_id']] for p in df['proteins']]).astype(np.float32)
             fmax, smin, tmax, _, _, auc, aupr, _, _ = compute_metrics(df, go, terms_dict, terms, 'mf', preds)
-            rows.append([label, subset, len(df), round(fmax, 4), round(smin, 3), round(aupr, 4), round(auc, 4), tmax])
+            rows.append([label, subset, len(df), round(fmax, 4), round(smin, 3),
+                         round(micro.deepgose(preds, df['prop_annotations'], list(terms), go_set), 4), round(auc, 4), tmax,
+                         *([round(aupr, 4)] if PAPER_AUPR else [])])
             log(rows[-1])
-    write_tsv(out / 'scores.tsv', ['model', 'subset', 'proteins', 'Fmax', 'Smin', 'AUPR', 'AUC', 'threshold'], rows)
+    write_tsv(out / 'scores.tsv', ['model', 'subset', 'proteins', 'Fmax', 'Smin', 'micro_AUPRC', 'AUC', 'threshold',
+                                   *(['AUPR'] if PAPER_AUPR else [])], rows)
 
 
 # ------------------------------------------------------------------------------------------------------------- TransFew
@@ -163,6 +174,7 @@ def cafa_metrics(table):
 def transfew(root, out):
     terms, columns = transfew_terms(root)
     tests = test_records(root)
+    matrices = micro.TransFew(tfew(root), json.loads((Path(root) / 'datasets/ontology/vocabulary.json').read_text()))
     rows = []
     for test_set, gt in transfew_groundtruth(root).items():
         listed = {line.split('\t')[0] for line in open(gt)}
@@ -174,10 +186,10 @@ def transfew(root, out):
             if keep != listed:
                 gt_file = out / f'gt_{test_set}_{subset}.tsv'
                 gt_file.write_text(''.join(line for line in open(gt) if line.split('\t')[0] in keep))
-            sources = {}
+            sources = {}  # label: (prediction file as predict.py writes it, the scores at full precision or None)
             if subset == 'all':
-                sources["authors' released predictions"] = tfew(root) / 'evaluation' / 'predictions' / \
-                    {'Test_all': 'full', 'Test_novel': 'seq_ID_30'}[test_set] / 'swissprot_mf' / 'transfew.tsv'
+                sources["authors' released predictions"] = (tfew(root) / 'evaluation' / 'predictions' / {
+                    'Test_all': 'full', 'Test_novel': 'seq_ID_30'}[test_set] / 'swissprot_mf' / 'transfew.tsv', None)
             for seed in range(3):
                 fit = Path(root) / 'runs' / 'transfew' / 'original' / f'seed{seed}'
                 for checkpoint, name in (('last epoch (primary)', 'test_scores.npy'),
@@ -185,13 +197,18 @@ def transfew(root, out):
                     if (fit / name).exists():
                         path = out / 'predictions' / f'seed{seed}_{name[:-4]}_{test_set}_{subset}.tsv'
                         path.parent.mkdir(parents=True, exist_ok=True)
-                        transfew_file(path, scores_by_protein(root, fit / name), proteins, terms, columns)
-                        sources[f'seed {seed}, {checkpoint}'] = path
-            for label, path in sources.items():
+                        scores = scores_by_protein(root, fit / name)
+                        transfew_file(path, scores, proteins, terms, columns)
+                        sources[f'seed {seed}, {checkpoint}'] = (path, scores)
+            for label, (path, scores) in sources.items():
                 m = cafa_metrics(cafa_table(root, path, gt_file, out / 'work'))
-                rows.append([label, test_set, subset, len(proteins), *(round(m[k], 4) for k in ('Fmax', 'WFmax', 'AUPR', 'Smin'))])
+                m['micro_AUPRC'] = (matrices.score(gt_file, pred_file=path) if scores is None else
+                                    matrices.score(gt_file, None, scores, proteins, terms, columns))
+                rows.append([label, test_set, subset, len(proteins), *(round(m[k], 4) for k in (
+                    'Fmax', 'WFmax', 'micro_AUPRC', 'Smin', *(['AUPR'] if PAPER_AUPR else [])))])
                 log(rows[-1])
-    write_tsv(out / 'scores.tsv', ['model', 'test_set', 'subset', 'proteins', 'Fmax', 'WFmax', 'AUPR', 'Smin'], rows)
+    write_tsv(out / 'scores.tsv', ['model', 'test_set', 'subset', 'proteins', 'Fmax', 'WFmax', 'micro_AUPRC', 'Smin',
+                                   *(['AUPR'] if PAPER_AUPR else [])], rows)
 
 
 # --------------------------------------------------------------------------------------------------------------- DPFunc
@@ -232,11 +249,13 @@ def dpfunc(root, out):
         scores = scores_by_protein(root, path)
         for subset in ('all', 'no_identical_training'):
             chosen = [r for r in tests if subset == 'all' or not r['identical_training']]
-            fmax, aupr, t = evaluation.new_compute_performance_deepgoplus(
-                dpfunc_frame(chosen, scores, vocabulary, truth), str(Path(root) / 'datasets/ontology/go-basic.obo'), 'mf')
-            rows.append([label, subset, len(chosen), round(float(fmax), 4), round(float(aupr), 4), t])
+            (fmax, aupr, t), (micro_auprc,) = micro.dpfunc(evaluation, dpfunc_frame(chosen, scores, vocabulary, truth),
+                                                           str(Path(root) / 'datasets/ontology/go-basic.obo'), vocabulary)
+            rows.append([label, subset, len(chosen), round(float(fmax), 4), round(micro_auprc, 4), t,
+                         *([round(float(aupr), 4)] if PAPER_AUPR else [])])
             log(rows[-1])
-    write_tsv(out / 'scores.tsv', ['model', 'subset', 'proteins', 'Fmax', 'AUPR', 'threshold'], rows)
+    write_tsv(out / 'scores.tsv', ['model', 'subset', 'proteins', 'Fmax', 'micro_AUPRC', 'threshold',
+                                   *(['AUPR'] if PAPER_AUPR else [])], rows)
 
 
 # ------------------------------------------------------------------------------------------------------------- test set
@@ -280,8 +299,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('method', choices=list(PAPER))
     parser.add_argument('--testset', action='store_true', help='also write replicate/testset/')
+    parser.add_argument('--paper-aupr', action='store_true',
+                        help="also the paper's own protein-centric trapezoid AUPR (the papers' protocol check)")
     add_argument(parser)
     a = parser.parse_args()
+    global PAPER_AUPR
+    PAPER_AUPR = a.paper_aupr
     root = data_root(a.data)
     out = root / 'replicate' / 'results'
     out.mkdir(parents=True, exist_ok=True)
