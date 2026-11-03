@@ -200,6 +200,62 @@ Scoring the main comparison takes about half a minute on one H100 (a few seconds
 scripts need only the result files; `--tikz` draws Fig. 1's PDF with true colour gradients through TikZ, as in the paper
 (needs `tectonic` and the Arial font).
 
+### 6. The published methods on their own benchmarks (Supplementary Note 14)
+
+**Replication.** Each published method is trained with this repository's code on its authors' own training split and scored
+on their test set with their own evaluation code (`retrain.replicate`). A method's vocabulary and GO release are the
+authors', so each method gets its own data root, here `rep/<method>`, with the authors' release under its `external/`
+(the files of the table below; a link to the main data root's `external/` will do). The authors' splits share identical
+sequences between training and test (TransFew 34, DPFunc 53), so their trainers run with `--allow-shared-proteins`; DPFunc's
+77 vocabulary terms that are obsolete or merged in its GO release are listed in `datasets/ontology/not_live.json`.
+
+```bash
+python -m retrain.replicate.build deepgose --data rep/deepgose      # likewise transfew, dpfunc (CPU, minutes)
+# DeepGO-SE: ESM2-3B inputs, ten worlds, the six-world ensemble, the released models, scoring
+python -m retrain.deepgose.features original_deepgose development test --data rep/deepgose
+python -m retrain.deepgose.train world original <k> --data rep/deepgose      # k = 0..9, one GPU each
+python -m retrain.deepgose.train ensemble original --data rep/deepgose
+python -m retrain.replicate.released deepgose --data rep/deepgose          # external/deepgose/data.tar.gz (GPU)
+python -m retrain.replicate.score deepgose --testset --data rep/deepgose   # -> replicate/results, replicate/testset
+# TransFew: ESM2-15B inputs, label GCN, seeds 0-2, scoring (its released prediction files are scored too)
+python -m retrain.transfew.features embed --sets original_transfew development test --data rep/transfew
+python -m retrain.transfew.features merge --sets original_transfew development test --data rep/transfew
+python -m retrain.transfew.label_gcn --data rep/transfew
+python -m retrain.transfew.train original <seed> --allow-shared-proteins --data rep/transfew
+python -m retrain.replicate.score transfew --testset --data rep/transfew
+# DPFunc: structures, ESM-1b, InterProScan, graphs and banks as in section 4 with --datasets original_dpfunc development
+# test (and the banks original and evaluation), then seeds 0-2, the released checkpoints, scoring
+python -m retrain.dpfunc.train --training-set original --seed <seed> --data rep/dpfunc
+python -m retrain.replicate.released dpfunc --data rep/dpfunc              # external/dpfunc/save_models.tar.gz (GPU)
+python -m retrain.replicate.score dpfunc --testset --data rep/dpfunc
+```
+
+The splits: DeepGO-SE 38,533 / 1,901 / 2,845 records (training, validation, test), TransFew 70,773 / 7,864 / 1,112 (Test_all;
+Test_novel is 858 of them), DPFunc 31,463 / 682 / 401. Scoring follows each paper's protocol (docstring of
+`retrain.replicate.score`): DeepGO-SE's `compute_metrics`, TransFew's CAFA-evaluator 1.2.1 call (`pip install
+cafaeval==1.2.1`), DPFunc's `new_compute_performance_deepgoplus`; the authors' released DeepGO-SE models and TransFew
+predictions reproduce their papers' numbers this way. Costs on H100s: DeepGO-SE about 2 GPU-hours for the ten worlds,
+TransFew 0.2 per seed, DPFunc about 0.8 per seed.
+
+**Finch on the published methods' benchmarks.** Finch is trained on each method's training split and on ArchipelaGO
+without the method's test and validation proteins and their relatives (the paper's homology screen), with ArchipelaGO's
+labels mapped onto the method's GO release (`retrain.outside`). The method's validation set is the development set of both
+arms (checkpoints and the F1 threshold); the test set is scored with the paper's own code.
+
+```bash
+python -m retrain.outside.build deepgose --data out/deepgose --replication rep/deepgose --archipelago <data root>
+python scripts/embed.py --set original_deepgose --encoder esm2_15b_l48 --data out/deepgose   # and development, test; prott5_l21
+python -m retrain.finch.train --training-set original_deepgose --seed 9301 --allow-shared-proteins --data out/deepgose
+python -m retrain.finch.train --training-set archipelago_screened --seed 9301 --data out/deepgose   # seeds 9301-9303 (GPU)
+python -m retrain.finch.combine --training-set original_deepgose --data out/deepgose        # and archipelago_screened
+python -m retrain.outside.score deepgose --data out/deepgose --replication rep/deepgose     # -> outside/results
+```
+
+`retrain.outside.build` needs the main data root's `datasets/archipelago` and its Finch embeddings
+(`inputs/embeddings/{esm2_15b_l48,prott5_l21}/archipelago`, e.g. from the release as in data/README.md). The results are
+reported for all test proteins and for those without a relative in either training set, and for the full vocabulary and
+the terms with training positives in both arms.
+
 ### External inputs
 
 | Input | Source | Place under the data root | Checksum (SHA-256) |
@@ -210,6 +266,11 @@ scripts need only the result files; `--tikz` draws Fig. 1's PDF with true colour
 | TransFew release `TFewData.tar.gz` | https://doi.org/10.5281/zenodo.22139108 (21.0 GB) | `external/transfew/` (extracted) | `2f9007f96b1fdd28cb12c35e452f4415eaa69e8e6b2ae4e5026d100de672bf40` |
 | DPFunc data archive (December 2025 version) | https://drive.google.com/file/d/1qrxbkk450GJzhVfqnAN9Ms798owrq96n | `external/dpfunc/dpfunc_published_dataset.zip` | `3fa11fc181b5db435c0ebe1ac6005ed38c1d0073283130b4b5767d163c1d56e2` |
 | DPFunc InterPro vocabulary `inter_idx.pkl` | https://github.com/CSUBioGroup/DPFunc (commit `c5faf4df`), `data/inter_idx.pkl` | `external/dpfunc/` | |
+| DeepGO-SE code (replication: its metrics) | https://github.com/bio-ontology-research-group/deepgo2, commit `6c77c98` | `external/deepgose/deepgo2/` | |
+| DeepGO-SE trained models (replication) | https://bio2vec.net/data/deepgo/deepgo2/data.tar.gz (15.0 GB) | `external/deepgose/data.tar.gz` | |
+| DPFunc code and label list (replication) | https://github.com/CSUBioGroup/DPFunc, commit `c5faf4df` | `external/dpfunc/DPFunc/` | |
+| DPFunc trained models (replication) | https://drive.google.com/file/d/1V0VTFTiB29ilbAIOZn0okBQWPlbOI3wN (`save_models.tar.gz`, 14.3 GB) | `external/dpfunc/save_models.tar.gz` | |
+| GO release 2022-12-04 (replication: DPFunc's labels) | https://release.geneontology.org/2022-12-04/ontology/go.obo | `external/go/2022-12-04/go.obo` | |
 | Language models | ESM2-15B, ESM2-3B, ESM-1b (fair-esm / Hugging Face), ProtT5-XL-U50 | downloaded on first use | |
 | Programs | DIAMOND 2.2.4, InterProScan 5.78-109.0, ColabFold 1.6.3 with MMseqs2 release 18 and the ColabFold databases (UniRef30 2302, colabfold_envdb_202108), Java 11 with Groovy 2.4 | `PATH` | |
 
@@ -222,7 +283,7 @@ The scoring bundle written from the released benchmark should have the SHA-256 c
 ```
 retrain/        common.py (datasets, ontology, fits, the homology screen), paths.py (the data root), and one package per
                 stage: datasets, finch (training recipe, training, combination), baselines, deepgose, transfew, dpfunc,
-                structures, scoring
+                structures, scoring, replicate (the methods on their own benchmarks), outside (Finch on them)
 scripts/        rank_coverage.py (the coverage ranking), embed.py (language-model embeddings), export_package.py (Finch's
                 model package)
 figures/        the paper's figures and tables (python -m figures.make_all)
