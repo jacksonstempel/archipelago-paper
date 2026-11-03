@@ -275,6 +275,19 @@ python -m retrain.outside.score deepgose --data out/deepgose --replication rep/d
 reported for all test proteins and for those without a relative in either training set, and for the full vocabulary and
 the terms with training positives in both arms.
 
+One table per benchmark with every model (both Finch arms, the method's own retrain, the authors' model) and paired
+bootstrap intervals, and the check of Supplementary Table 16 with the test proteins' current GOA annotations masked
+(our evaluator, micro-Fmax and micro-AUPRC; the bootstrap runs on a GPU):
+
+```bash
+python -m retrain.outside.compare deepgose --data out/deepgose --replication rep/deepgose   # -> outside/compare
+M="--data <root>/results/outside_masked --outside out --replication rep"                   # out/<method>, rep/<method>
+python -m retrain.outside.masked fetch $M                                   # UniProt sec_ac.txt; DPFunc's entry names
+python -m retrain.outside.masked scan $M --goa <GOA folder> --swissprot uniprot_sprot.fasta.gz   # goa_uniprot_all.{gaf,gpi}.gz
+python -m retrain.outside.masked prepare deepgose $M                        # and transfew, dpfunc (CPU)
+python -m retrain.outside.masked bootstrap deepgose $M                      # (GPU) -> figures/si.py's Table 16
+```
+
 ### External inputs
 
 | Input | Source | Place under the data root | Checksum (SHA-256) |
