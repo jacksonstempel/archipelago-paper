@@ -66,7 +66,10 @@ def waterfall(ax, auprc):
     # the published methods trained on ArchipelaGO, dashed behind the bars. Their labels stand in a column against the Finch
     # bar, the one stretch free of step labels; DeepGO-SE and TransFew are 0.001 apart, so one sits above their lines and the
     # other below
-    for m, va, dy in (('deepgose', 'bottom', 0.0012), ('transfew', 'top', -0.0012), ('dpfunc', 'bottom', 0.0012)):
+    up = max(('deepgose', 'transfew'), key=lambda m: auprc(m, 'archipelago'))  # the higher of the two goes above its line
+    for m, va, dy in (('deepgose', 'bottom' if up == 'deepgose' else 'top', 0.0012 if up == 'deepgose' else -0.0012),
+                      ('transfew', 'bottom' if up == 'transfew' else 'top', 0.0012 if up == 'transfew' else -0.0012),
+                      ('dpfunc', 'bottom', 0.0012)):
         v = auprc(m, 'archipelago')
         ax.axhline(v, color='#8f939a', lw=0.8, ls=(0, (3, 2)), zorder=1)
         ax.text(end - w / 2 - 0.08, v + dy, f'{NAMES[m]} {half_up(v)}', ha='right', va=va, fontsize=fs(6.5), color=GREY, zorder=4)

@@ -15,7 +15,7 @@ the figures, written into <out>/si/. Reads, under <root>/results/:
   training_cost.tsv                                        retrain.scoring.training_cost
   macro/contrasts.tsv                                      retrain.scoring.macro (Supplementary Table 16)
   outside_masked/<method>/{table,contrasts}.tsv            retrain.outside.masked bootstrap (its work folder; Supplementary
-                                                           Table 18, Supplementary Figure 3)
+                                                           Table 18, Supplementary Figure 4)
 
 Main-text Table 2 with intervals (table2_intervals.tex) is written beside Table 2 by figures/main.py.
 
@@ -29,7 +29,7 @@ import numpy as np
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.transforms import blended_transform_factory
 
-from figures.style import (COLOURS, DOUBLE, GREY, INK, NAMES, PUBLISHED, contrasts, fs, half_up, labelled, pr_curves, read, save,
+from figures.style import (COLOURS, DOUBLE, GREY, HEADLINE, INK, NAMES, PUBLISHED, contrasts, fs, half_up, labelled, pr_curves, read, save,
                            seed_means)
 from retrain.finch import config as finch_config
 
@@ -46,7 +46,7 @@ SHADES = {'transfew': '#55595f', 'deepgose': '#8f939a', 'dpfunc': '#bfc2c7'}
 # the published methods' own benchmarks (Supplementary Note 14): (method, test set, name)
 BENCHMARKS = (('deepgose', 'test', 'DeepGO-SE'), ('transfew', 'Test_all', r'TransFew, Test\_all'), ('dpfunc', 'test', 'DPFunc'))
 ORDER = ('deepgose', 'transfew', 'dpfunc')  # main-text Table 2's order
-# Supplementary Figure 2: an original set wears its method's shade, the HQ family tints of the HQ blue
+# Supplementary Figures 2 and 3: an original set wears its method's shade, the HQ family tints of the HQ blue
 SET_LINE = {'original_dpfunc': SHADES['dpfunc'], 'original_transfew': SHADES['transfew'], 'original_deepgose': SHADES['deepgose'],
             'hq_explabels': '#aad2ef', 'goa': '#75b6e4', 'hq': COLOURS['hq'], 'archipelago': COLOURS['archipelago']}
 
@@ -246,6 +246,69 @@ def label_grid_table(results, out):
     if len(lines) - 2 - 3 != len(grid):  # every grid row printed once (3 \addlinespace)
         raise ValueError('label_grid: grid rows and table rows differ')
     write(out, 'table_label_grid.tex', lines)
+
+def label_grid_figure(results, out):
+    """Supplementary Figure 1 (si_fig_label_grid): the grid of Supplementary Table 6 as small multiples, one panel per version
+    of the test labels. x: the training sets in order; y: test micro-AUPRC; Finch in the paper's violet, the published
+    methods in grey with the marker shapes of main-text Fig. 4b; Finch on each published method's original data: hollow
+    violet markers at 'Original data', in that method's shape. The published methods have no HQ + random point, so their
+    lines pass that position dotted. The panel of the main test labels is marked (main)."""
+    panels = [('experimental', 'Experimental labels only'), ('direct_negatives', 'Direct evidence, inferences negative'),
+              ('direct_masked', 'Direct evidence only'), ('masked', 'Annotations masked'), ('reviewed', 'Reviewed labels'),
+              ('all_goa', 'All GOA annotations'), ('no_hit_0.001', r'No training hit, E $\leq$ $10^{-3}$'),
+              ('no_hit_10', r'No training hit, E $\leq$ 10')]
+    x_sets = ['original', 'hq_explabels', 'hq', 'hq_random', 'archipelago']
+    x_names = ['Original data', 'HQ, exp. labels only', 'HQ', 'HQ + random', 'ArchipelaGO']
+    mark = {'deepgose': ('o', 4.2), 'transfew': ('s', 3.8), 'dpfunc': ('^', 4.6)}  # as main-text Fig. 4b
+    original = {'deepgose': 'original_deepgose', 'transfew': 'original_transfew', 'dpfunc': 'original_dpfunc'}
+    shift = {'deepgose': -0.2, 'transfew': 0.0, 'dpfunc': 0.2}  # Finch's three original-data markers side by side
+    ink, line, violet = '#55595f', '#8f939a', COLOURS['archipelago']
+    main_version = 'masked' if HEADLINE == 'masked' else 'reviewed'
+    grid = {(r['method'], r['training_set']): r for r in read(results / 'label_grid' / 'grid.tsv')}
+    proteins = {r['version']: int(r['proteins']) for r in read(results / 'label_grid' / 'versions.tsv')}
+    gx = {s: i for i, s in enumerate(x_sets)}
+
+    def value(method, ts, version):
+        return float(grid[method, ts][version])
+
+    fig, axes = plt.subplots(2, 4, figsize=(DOUBLE, 4.3), sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.07, right=0.99, top=0.86, bottom=0.17, wspace=0.08, hspace=0.32)
+    for ax, (version, title) in zip(axes.flat, panels):
+        ax.grid(axis='y', color='#e6e7e9', lw=0.5)
+        for method in PUBLISHED:
+            sets = ['original', 'hq_explabels', 'hq', 'archipelago']
+            xs, ys = [gx[s] for s in sets], [value(method, s, version) for s in sets]
+            ax.plot(xs[:3], ys[:3], color=line, lw=0.9, zorder=2)
+            ax.plot(xs[2:], ys[2:], color=line, lw=0.9, ls=(0, (1, 1.5)), zorder=2)  # no HQ + random point
+            ax.plot(xs, ys, ls='', marker=mark[method][0], ms=mark[method][1] * 0.85, mfc=ink, mec='white', mew=0.4, zorder=3)
+            ax.plot(gx['original'] + shift[method], value('finch', original[method], version), ls='', marker=mark[method][0],
+                    ms=mark[method][1] * 0.85, mfc='white', mec=violet, mew=0.9, zorder=4)
+        sets = ['hq_explabels', 'hq', 'hq_random', 'archipelago']
+        ys = [value('finch', s, version) for s in sets]
+        ax.plot([gx[s] for s in sets], ys, color=violet, lw=1.4, marker='o', ms=4.0, mfc=violet, mec='white', mew=0.4, zorder=5)
+        ax.annotate(r3(ys[-1]), (gx['archipelago'], ys[-1]), xytext=(0, 4), textcoords='offset points', ha='center',
+                    va='bottom', fontsize=fs(6), color=GREY)
+        ax.set_title(f"{title}{' (main)' if version == main_version else ''}\n", fontsize=fs(6.5), fontweight='normal',
+                     loc='left', pad=2)
+        ax.text(0, 1.02, f'{proteins[version]:,} test proteins', transform=ax.transAxes, fontsize=fs(6), color=GREY,
+                va='bottom', ha='left')
+        ax.set_ylim(0.26, 0.68)
+        ax.set_yticks(np.arange(0.3, 0.651, 0.1))
+        ax.set_xlim(-0.5, len(x_sets) - 0.5)
+        ax.tick_params(axis='both', labelsize=fs(6))
+    for ax in axes[1]:
+        ax.set_xticks(range(len(x_sets)), x_names, rotation=45, ha='right', rotation_mode='anchor', fontsize=fs(6))
+    for ax in axes[:, 0]:
+        ax.set_ylabel('Micro-AUPRC', fontsize=fs(7))
+    handles = [plt.Line2D([], [], color=violet, lw=1.4, marker='o', ms=4.0, mfc=violet, mec='white', mew=0.4)]
+    handles += [plt.Line2D([], [], color=line, lw=0.9, marker=mark[m][0], ms=mark[m][1] * 0.85, mfc=ink, mec='white', mew=0.4)
+                for m in PUBLISHED]
+    handles += [tuple(plt.Line2D([], [], ls='', marker=mark[m][0], ms=mark[m][1] * 0.85, mfc='white', mec=violet, mew=0.9)
+                      for m in PUBLISHED)]
+    fig.legend(handles, [NAMES[k] for k in ('finch', *PUBLISHED)] + ["Finch on each method's original data (the method's shape)"],
+               loc='upper left', bbox_to_anchor=(0.07, 0.995), ncol=5, frameon=False, fontsize=fs(6.5), handlelength=2.0,
+               columnspacing=1.4, handletextpad=0.5, handler_map={tuple: HandlerTuple(ndivide=None, pad=0.3)})
+    save(fig, out, 'si_fig_label_grid')
 
 
 def cost_table(results, out):
@@ -493,7 +556,7 @@ def outside_table(results, out):
     write(out, 'table_outside_data.tex', lines)
 
 
-# Supplementary Figure 3, in the look of main-text Fig. 4b (figures/main.py). a: Finch against the method retrained, both
+# Supplementary Figure 4, in the look of main-text Fig. 4b (figures/main.py). a: Finch against the method retrained, both
 # trained on the method's training split, on the paper's labels, Finch's lead at the right. b: Finch on ArchipelaGO minus
 # Finch on the method's data, with the paired interval, on the paper's labels, with the computational annotations masked,
 # and masked against the method's data without the test proteins' relatives. One colour, Finch's violet; the fill counts
@@ -550,7 +613,7 @@ def key(fig, ax, letter, entries):
 
 
 def outside_figure(results, out):
-    """Supplementary Figure 3 (si_fig_outside)."""
+    """Supplementary Figure 4 (si_fig_outside)."""
     folder = results / 'outside_masked'
     height_b, height_a = 3.2 * ROW_B, 3.2 * ROW_A
     height = BOTTOM + height_b + KEY + GAP + BOTTOM + height_a + KEY
@@ -606,6 +669,7 @@ def draw(results, out):
     out.mkdir(parents=True, exist_ok=True)
     tables(results, out)
     label_grid_table(results, out)
+    label_grid_figure(results, out)
     recipe_tables(results, out)
     cost_table(results, out)
     shared(results, out)

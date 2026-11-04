@@ -11,11 +11,13 @@ c, Finch's gain over HQ alone from the selected and from the random proteins, on
 homology filters. Reads <root>/results/main/contrasts.tsv and <root>/results/no_hit/{differences.tsv,E<cutoff>/contrasts.tsv}
 (retrain.scoring.no_hit). No error bars: the intervals are in the SI tables.
 """
+from decimal import ROUND_HALF_UP, Decimal
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import Affine2D, ScaledTranslation, blended_transform_factory
 
-from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, labelled, read, save, seed_means
+from figures.style import DOUBLE, GREY, INK, contrasts, fs, labelled, read, save, seed_means
 
 HQ, PICKED = '#2b8fd6', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
 H = 3.5  # figure height, inches
@@ -30,11 +32,23 @@ ARMS = [('hq_random', (0, 0, 0)), ('pool_random', (1, 0, 0)), ('filter_random', 
 STEPS = [('One per\ncluster', 'pool_random', 'hq_random'), ('Rare\nfunction', 'filter_random', 'pool_random'),
          ('Coverage\nranking', 'archipelago', 'filter_random')]
 BAR, DOT_ON, DOT_OFF, STRIPE = '#8f939a', '#3b3e44', '#dcdde0', '#f3f3f1'
-BAR_TOP, MS = 0.06, 6  # bar axis top; matrix dot size
+MS = 6  # matrix dot size
 # panel b: three of panel a's training sets, in its order, with line colour and key label (the two sets that differ only
 # by the rare-function filter lie on the curves of the sets without it)
 LINES = [('hq_random', '#c3c6cb', 'Random'), ('pool_random', '#7d8188', 'One per cluster'),
          ('archipelago', PICKED, 'ArchipelaGO')]
+
+
+def half_up(v, sign=False):
+    """Three decimals rounded half up (0.0195 -> 0.020); a small negative value keeps its minus sign (-0.0004 -> -0.000)."""
+    s = str(Decimal(repr(float(v))).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP))
+    return '+' + s if sign and not s.startswith('-') else s
+
+
+def half_up(v, sign=False):
+    """Three decimals rounded half up (0.0195 -> 0.020); a small negative value keeps its minus sign (-0.0004 -> -0.000)."""
+    s = str(Decimal(repr(float(v))).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP))
+    return '+' + s if sign and not s.startswith('-') else s
 
 
 def at(ax, x, y, dx=0.0, dy=0.0):
@@ -46,10 +60,11 @@ def at(ax, x, y, dx=0.0, dy=0.0):
 
 def upset(b, m, gains, steps):
     """The bars of the gain over HQ alone (axes b) over the ingredient matrix (axes m, sharing b's x)."""
+    top = 0.07 if max(gains) > 0.055 else 0.06  # bar axis top: room for the tallest bar's number
     for i, v in enumerate(gains):
         b.bar(i, v, 0.62, color=BAR, lw=0, zorder=2)
-        b.text(i, v + BAR_TOP * 0.015, half_up(v, sign=True), ha='center', va='bottom', fontsize=fs(7.5), zorder=4)
-    b.set_ylim(0, BAR_TOP)
+        b.text(i, v + top * 0.015, half_up(v, sign=True), ha='center', va='bottom', fontsize=fs(7.5), zorder=4)
+    b.set_ylim(0, top)
     b.set_xlim(-0.6, len(ARMS) - 0.4)
     b.set_yticks([0, 0.02, 0.04, 0.06])
     b.set_ylabel('Micro-AUPRC gain\nover HQ alone')

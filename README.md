@@ -283,7 +283,7 @@ like `original_<method>` and scored with `retrain.outside.score --screened-origi
 when its Finch runs exist.
 
 One table per benchmark with every model (both Finch arms, the method's own retrain, the authors' model) and paired
-bootstrap intervals, and the scoring behind Supplementary Table 18 and Supplementary Figure 3, on the papers' test labels
+bootstrap intervals, and the scoring behind Supplementary Table 18 and Supplementary Figure 4, on the papers' test labels
 and with the test proteins' current GOA annotations masked (our evaluator, micro-Fmax and micro-AUPRC; the bootstrap runs
 on a GPU):
 
