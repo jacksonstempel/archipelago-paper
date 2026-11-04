@@ -235,7 +235,7 @@ def table2(results, out):
         # full width through tabularx's stretched first column, not tabular*'s stretched gaps, which a shaded row leaves
         # white; no @{} at the edges, so that the shading ends with the rules instead of reaching \tabcolsep beyond them
         lines = [r'\begin{tabular}{lr' + 'c' * (2 * n + 1) + '}' if intervals else
-                 r'\begin{tabularx}{\textwidth}{Xr' + 'c' * (2 * n + 1) + '}',
+                 r'\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}Xr' + 'c' * (2 * n + 1) + '}',
                  r'\toprule',
                  rf' & & \multicolumn{{{n}}}{{c}}{{\bfseries Original data $\rightarrow$ ArchipelaGO}} & '
                  rf'\multicolumn{{{n + 1}}}{{c}}{{\bfseries Finch on ArchipelaGO minus}} \\',
