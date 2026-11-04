@@ -3,7 +3,7 @@
     python -m figures.make_all [--data DIR] [--out DIR] [--tikz]
 
 Reads <root>/results/ (written by retrain.scoring; see figures/__init__.py for the files each figure needs) and writes
-into --out (default <root>/figures/): fig1_dataset, fig2_retraining, fig3_choosing, fig4_finch, ed_fig1_finch_model
+into --out (default <root>/figures/, or <root>/figures_masked/ with HEADLINE=masked, see figures/__init__.py): fig1_dataset, fig2_retraining, fig3_choosing, fig4_finch, ed_fig1_finch_model
 (.png, .pdf, .svg), table1.tex, table2.tex, table2_intervals.tex (Table 2 with intervals, for the SI), and si/ (the
 Supplementary Information's table bodies and figures). --tikz writes
 Fig. 1's PDF through TikZ with true gradients, as in the paper (needs `tectonic` on PATH).
@@ -13,6 +13,7 @@ from pathlib import Path
 
 from retrain.paths import add_argument, data_root
 from figures import ed_fig1, fig1, fig3, main as main_figures, si
+from figures.style import HEADLINE
 
 
 def main():
@@ -22,7 +23,7 @@ def main():
     parser.add_argument('--tikz', action='store_true', help="Fig. 1's PDF through TikZ and Tectonic")
     a = parser.parse_args()
     root = data_root(a.data)
-    results, out = root / 'results', a.out or root / 'figures'
+    results, out = root / 'results', a.out or root / ('figures_masked' if HEADLINE == 'masked' else 'figures')
     out.mkdir(parents=True, exist_ok=True)
     fig1.draw(out, a.tikz)
     main_figures.figures(results, out)
