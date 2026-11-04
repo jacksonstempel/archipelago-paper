@@ -482,7 +482,8 @@ STEPS = (('unmasked', 'finch_B - finch_A', "Paper's labels", dict(mfc='white')),
          ('computational', 'finch_B - finch_A', 'Computational annotations masked', dict(fillstyle='left', mfc=FINCH,
                                                                                          markerfacecoloralt='white')),
          ('computational', 'finch_B - finch_A_screened', 'Masked, and relatives removed from own data', dict(mfc=FINCH)))
-SUBROW = (0.28, 0.0, -0.28)  # panel b: each step's place within its row
+SUBROW = (0.24, 0.0, -0.24)  # panel b: each step's place within its row
+RULE = '#b9bcc2'  # panel b: the rules between the benchmarks
 ROW_A, ROW_B = 0.3, 0.44  # inches per row
 BOTTOM, KEY, GAP = 0.42, 0.24, 0.1  # inches: x axis and its label; the key above each panel; between the panels
 
@@ -558,6 +559,9 @@ def outside_figure(results, out):
 
     # b: what closes ArchipelaGO's gap
     rows(fig, b, folder)
+    for y in (1.5, 0.5):  # a rule between the benchmarks, from the row names to the panel's right edge
+        fig.add_artist(plt.Line2D([0.06 / WIDTH, (WIDTH - RIGHT) / WIDTH], [y, y], color=RULE, lw=0.6,
+                                  transform=blended_transform_factory(fig.transFigure, b.transData)))
     b.axvline(0, color=ZERO_LINE, lw=0.7, zorder=1)
     for i, (method, test_set, _) in enumerate(BENCHMARKS):
         for (version, contrast, _, style), dy in zip(STEPS, SUBROW):
