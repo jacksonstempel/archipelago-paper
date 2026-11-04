@@ -229,8 +229,8 @@ def label_grid_table(results, out):
     and each published method on every training set they were trained on, on every version of the test labels, with each
     version's test proteins first (retrain.scoring.label_grid: results/label_grid/{grid,versions}.tsv)."""
     versions = ('experimental', 'direct_negatives', 'direct_masked', 'masked', 'reviewed', 'all_goa', 'no_hit_0.001', 'no_hit_10')
-    grid = {(r['method'], r['training_set']): r for r in read(results / 'label_grid' / 'grid.tsv')}
-    counts = read(results / 'label_grid' / 'versions.tsv')
+    grid = {(r['method'], r['training_set']): r for r in read(labelled(results / 'label_grid' / 'grid.tsv'))}
+    counts = read(labelled(results / 'label_grid' / 'versions.tsv'))
     sets = {'finch': [('original_deepgose', "DeepGO-SE's original data"), ('original_transfew', "TransFew's original data"),
                       ('original_dpfunc', "DPFunc's original data")] + [s for s in SETS if s[0] != 'original'],
             **{m: [s for s in SETS if s[0] != 'hq_random'] for m in PUBLISHED}}
@@ -264,8 +264,8 @@ def label_grid_figure(results, out):
     shift = {'deepgose': -0.2, 'transfew': 0.0, 'dpfunc': 0.2}  # Finch's three original-data markers side by side
     ink, line, violet = '#55595f', '#8f939a', COLOURS['archipelago']
     main_version = 'masked' if HEADLINE == 'masked' else 'reviewed'
-    grid = {(r['method'], r['training_set']): r for r in read(results / 'label_grid' / 'grid.tsv')}
-    proteins = {r['version']: int(r['proteins']) for r in read(results / 'label_grid' / 'versions.tsv')}
+    grid = {(r['method'], r['training_set']): r for r in read(labelled(results / 'label_grid' / 'grid.tsv'))}
+    proteins = {r['version']: int(r['proteins']) for r in read(labelled(results / 'label_grid' / 'versions.tsv'))}
     gx = {s: i for i, s in enumerate(x_sets)}
 
     def value(method, ts, version):
