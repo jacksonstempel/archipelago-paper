@@ -134,7 +134,7 @@ def dots(ax, rows, comparators):
 def figures(results, out):
     metric = seed_means(labelled(results / 'main'))
     auprc = lambda m, s: float(metric[m, s, 'auprc']['value'])  # noqa: E731
-    comparators = sorted(PUBLISHED, key=lambda m: -auprc(m, 'original'))  # Fig. 2 and Table 1 order
+    comparators = ['deepgose', 'transfew', 'dpfunc']  # the paper's order of the methods (Fig. 2, Tables 1 and 2)
 
     # Figure 4. a: the recipe ablation as a waterfall; b: Finch and the published methods on every training set they share.
     ladder = seed_means(labelled(results / 'ladder'))
@@ -217,7 +217,7 @@ def table2(results, out):
     inputs (full text width, the main test labels shaded, per HEADLINE: colortbl, with `rowshade` defined by the document);
     table2_intervals.tex, the SI's copy at natural width, adds the paired 95% cluster-bootstrap intervals."""
     metric = seed_means(labelled(results / 'main'))
-    comparators = sorted(PUBLISHED, key=lambda m: -float(metric[m, 'original', 'auprc']['value']))
+    comparators = ['deepgose', 'transfew', 'dpfunc']  # the paper's order of the methods
     proteins = lambda folder, variant: next(int(r['proteins']) for r in read(results / folder / 'counts.tsv')  # noqa: E731
                                             if r['variant'] == variant)
     subsets = {float(r['cutoff']): int(r['proteins']) for r in read(results / 'no_hit' / 'subsets.tsv')}
