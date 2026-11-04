@@ -300,7 +300,7 @@ python -m retrain.outside.masked bootstrap deepgose $M                      # (G
 
 | Input | Source | Place under the data root | Checksum (SHA-256) |
 |---|---|---|---|
-| ArchipelaGO dataset release | Hugging Face, `jstempel/ArchipelaGO`, tag `v1.0` (to be released): `hf download jstempel/ArchipelaGO --repo-type dataset --revision v1.0 --local-dir <root>/release` | `release/` | `SHA256SUMS` in the release |
+| ArchipelaGO dataset release | Hugging Face, `ut-ornl-cmb/ArchipelaGO`, tag `v1.0` (to be released): `hf download ut-ornl-cmb/ArchipelaGO --repo-type dataset --revision v1.0 --local-dir <root>/release` | `release/` | `SHA256SUMS` in the release |
 | DeepGO-SE training data | https://bio2vec.net/data/deepgo/deepgo2/training-data.tar.gz | `external/deepgose/` | `80cc5446ef2d32cfccd19ff6a634cb6c2946370caf0ec7b9fd1bfb3c2dc07a44` |
 | GO-Plus (GO release 2026-07-26) | https://release.geneontology.org/2026-08-05/ontology/extensions/go-plus.owl | `external/deepgose/go-plus.owl` | `52f51e70a94667f887f89205daeb442abe5f6f8b6cd8dda51ff5ad7fe7524bf5` |
 | TransFew release `TFewData.tar.gz` | https://doi.org/10.5281/zenodo.22139108 (21.0 GB) | `external/transfew/` (extracted) | `2f9007f96b1fdd28cb12c35e452f4415eaa69e8e6b2ae4e5026d100de672bf40` |

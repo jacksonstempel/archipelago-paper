@@ -17,7 +17,7 @@ The threshold: the packaged model (archipelago/pretrained.py) scores the develop
 the threshold of its development micro-Fmax (0.01 to 1.00, the first maximum) becomes the package's default cut, as the
 paper's F1 chooses its threshold. The test set is not read.
 
-Upload to the Hub afterwards, e.g. `hf upload jstempel/finch finch_package .` (huggingface_hub's command line).
+Upload to the Hub afterwards, e.g. `hf upload ut-ornl-cmb/finch finch_package .` (huggingface_hub's command line).
 """
 import argparse
 import json
