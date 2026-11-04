@@ -2,7 +2,7 @@
 (archipelago.scorer), run unchanged on the fits of the main run, with every metric restricted to the GO terms that have at
 least one positive in one training set.
 
-    python -m retrain.scoring.shared_terms [--data DIR] [--device cuda|cpu]
+    python -m retrain.scoring.shared_terms [--data DIR] [--labels reviewed|masked] [--device cuda|cpu]
 
 1. For `all` (every term: the scorer as it is) and for each published method's original data (original_deepgose,
    original_transfew, original_dpfunc), results/shared_terms/<set>/: the scorer's results folder, its contrasts.tsv
@@ -20,7 +20,7 @@ least one positive in one training set.
    original data to HQ to ArchipelaGO, Finch from the set to ArchipelaGO, and the spread of the three published methods
    on ArchipelaGO (best minus worst; for Smin, lower is better).
 
-Needs results/main (retrain.scoring.score main). About a minute per set on one GPU.
+--labels masked: the main test labels (the pairs the reviewed GOA assertions add are neither positive nor negative; those on the covered\nterms stay out), from results_masked/main into results_masked/shared_terms.\n\nNeeds results/main (retrain.scoring.score main). About a minute per set on one GPU.
 """
 import argparse
 import csv
@@ -34,7 +34,7 @@ from pathlib import Path
 import numpy as np
 
 from retrain.common import add_argument, data_root, load, log
-from retrain.scoring.score import bundle, contrasts, fits, write_config
+from retrain.scoring.score import RESULTS, bundle, contrasts, fits, masked_config, results_dir, write_config
 
 SETS = {'deepgose': 'original_deepgose', 'transfew': 'original_transfew', 'dpfunc': 'original_dpfunc'}
 NAMES = {'deepgose': 'DeepGO-SE', 'transfew': 'TransFew', 'dpfunc': 'DPFunc', 'finch': 'Finch'}
@@ -83,7 +83,7 @@ def restricted(benchmark, columns, stats):
     return Restricted
 
 
-def score_set(root, name, config, device):
+def score_set(root, name, config, device, labels='reviewed'):
     """In this process: the scorer on `config`, restricted to the terms of `name` (or every term), then terms.json."""
     from archipelago import evaluate as ev, scorer
     from archipelago.io import read_vocabulary
@@ -101,8 +101,9 @@ def score_set(root, name, config, device):
     log(f'{name}: {len(columns)} of {len(vocabulary)} terms')
     stats = {}
     ev.Benchmark = restricted(ev.Benchmark, columns, stats)  # the scorer's main() takes Benchmark from archipelago.evaluate
-    out = root / 'results' / 'shared_terms' / name
-    scorer.main([str(config), '--out', str(out), '--cache', str(root / 'cache' / 'scoring')] + (['--device', device] if device else []))
+    out = results_dir(root, labels) / 'shared_terms' / name
+    scorer.main([str(config), '--out', str(out), '--cache', str(root / 'cache' / 'scoring'), '--labels', labels]
+                + (['--device', device] if device else []))
     record = dict(source=source, terms=len(columns), vocabulary=len(vocabulary), splits=stats,
                   covered_terms=[vocabulary[i] for i in columns], uncovered_terms=[t for t, c in zip(vocabulary, covered) if not c])
     (out / 'terms.json').write_text(json.dumps(record, indent=1) + '\n', encoding='utf-8')
@@ -237,30 +238,34 @@ def summary(w, check_text):
     log(f'wrote {w / "summary.tsv"} and summary.md')
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--device', choices=['cuda', 'cpu'], help="the scorer's device (default: cuda if available)")
     parser.add_argument('--set', help=argparse.SUPPRESS)  # internal: score one set in this process
+    parser.add_argument('--labels', choices=list(RESULTS), default='reviewed', help='the version of the main test labels')
     add_argument(parser)
-    a = parser.parse_args()
+    a = parser.parse_args(argv)
     root = data_root(a.data)
-    config = root / 'scoring' / 'shared_terms.json'
+    config = root / 'scoring' / ('shared_terms.json' if a.labels == 'reviewed' else 'shared_terms_masked.json')
     if a.set:  # as the scorer's own entry point: exit at once, without waiting for its reader threads
         try:
-            score_set(root, a.set, config, a.device)
+            score_set(root, a.set, config, a.device, a.labels)
         except BaseException:
             traceback.print_exc()
             sys.stderr.flush()
             os._exit(1)
         sys.stdout.flush()
         os._exit(0)
-    results = root / 'results'
+    results = results_dir(root, a.labels)
     if not (results / 'main' / 'replicates.npz').is_file():
-        raise FileNotFoundError(f'{results / "main"}: run retrain.scoring.score main first')
+        raise FileNotFoundError(f'{results / "main"}: run retrain.scoring.score main (with --labels {a.labels}) first')
     (results / 'shared_terms').mkdir(parents=True, exist_ok=False)
-    write_config(config, bundle(root), fits(root, 'main'))
+    if a.labels == 'masked':
+        masked_config(root, 'main', 'shared_terms')
+    else:
+        write_config(config, bundle(root), fits(root, 'main'))
     for name in ('all', *SETS.values()):
-        command = [sys.executable, '-m', 'retrain.scoring.shared_terms', '--set', name, '--data', str(root)]
+        command = [sys.executable, '-m', 'retrain.scoring.shared_terms', '--set', name, '--labels', a.labels, '--data', str(root)]
         log('RUN', ' '.join(command + (['--device', a.device] if a.device else [])))
         subprocess.run(command + (['--device', a.device] if a.device else []), check=True)
         contrasts(results / 'shared_terms' / name)
