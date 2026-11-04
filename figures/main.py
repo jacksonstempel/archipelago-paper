@@ -225,7 +225,7 @@ def table2(results, out):
     # protein subsets; the groups are separated by a rule, not labelled
     groups = [[('Experimental labels only', proteins('experimental_test_labels', 'exp'), 'experimental_test_labels'),
                ('Direct evidence only', proteins('experimental_test_labels', 'all'), 'direct_masked_test_labels'),
-               ('Annotations masked', proteins('masked_test_labels', 'masked'), 'masked_test_labels'),
+               ('Computational annotations unscored', proteins('masked_test_labels', 'masked'), 'masked_test_labels'),
                ('Reviewed labels', proteins('experimental_test_labels', 'all'), 'main'),
                ('All GOA annotations', proteins('all_goa_test_labels', 'all_goa'), 'all_goa_test_labels')],
               [(r'No training hit, E\,$\leq$\,10\textsuperscript{-3}', subsets[1e-3], 'no_hit/E0.001'),

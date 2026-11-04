@@ -24,7 +24,7 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   outside_masked/                           retrain.outside.masked     SI: the published methods' own benchmarks
 
 HEADLINE=masked (environment variable; default reviewed) draws every result that depends on the main test labels from 
-<root>/results_masked/ instead (same folders and files; a missing file is an error) and shades the Annotations masked row of
+<root>/results_masked/ instead (same folders and files; a missing file is an error) and shades the Computational annotations unscored row of
 Table 2 instead of the Reviewed labels row. Everything is then written to <root>/figures_masked/, so that the two sets of figures share no file. The label versions' own folders (experimental, direct, masked, all GOA) and the
 no-hit subset sizes are read from results/ either way.
 

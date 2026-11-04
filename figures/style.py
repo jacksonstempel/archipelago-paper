@@ -49,7 +49,7 @@ def half_up(value, sign=False, places=3):
 HEADLINE = os.environ.get('HEADLINE', 'reviewed')  # the test labels of the headline numbers: 'reviewed' or 'masked'
 if HEADLINE not in ('reviewed', 'masked'):
     raise SystemExit(f"HEADLINE must be 'reviewed' or 'masked', not {HEADLINE!r}")
-MAIN_LABELS = 'Annotations masked' if HEADLINE == 'masked' else 'Reviewed labels'  # the main row of Table 2
+MAIN_LABELS = 'Computational annotations unscored' if HEADLINE == 'masked' else 'Reviewed labels'  # the main row of Table 2
 
 
 def labelled(path):

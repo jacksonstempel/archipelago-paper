@@ -254,7 +254,7 @@ def label_grid_figure(results, out):
     violet markers at 'Original data', in that method's shape. The published methods have no HQ + random point, so their
     lines pass that position dotted. The panel of the main test labels is marked (main)."""
     panels = [('experimental', 'Experimental labels only'), ('direct_negatives', 'Direct evidence, inferences negative'),
-              ('direct_masked', 'Direct evidence only'), ('masked', 'Annotations masked'), ('reviewed', 'Reviewed labels'),
+              ('direct_masked', 'Direct evidence only'), ('masked', 'Computational annotations\nunscored'), ('reviewed', 'Reviewed labels'),
               ('all_goa', 'All GOA annotations'), ('no_hit_0.001', r'No training hit, E $\leq$ $10^{-3}$'),
               ('no_hit_10', r'No training hit, E $\leq$ 10')]
     x_sets = ['original', 'hq_explabels', 'hq', 'hq_random', 'archipelago']
@@ -500,7 +500,7 @@ def macro_table(results, out):
 # intervals from a bootstrap over the test sequences. Models: method, the method retrained on its training split; finch_A,
 # Finch on that split; finch_A_screened, Finch on that split without the test proteins' relatives; finch_B, Finch on
 # ArchipelaGO screened against the test proteins. TransFew: its Test_all.
-VERSIONS = (('unmasked', "Paper's"), ('computational', 'Masked'))
+VERSIONS = (('unmasked', "Paper's"), ('computational', 'Unscored'))
 
 
 def outside(folder, method, test_set, version):
@@ -566,9 +566,9 @@ FINCH, DOT_INK, ROW_LINE, ZERO_LINE, GRID = COLOURS['archipelago'], '#55595f', '
 TEXT = 7  # points, every text of the figure
 WIDTH, LEFT, RIGHT = 6.85, 1.25, 0.55  # inches: the SI's text width (174 mm); the row names; panel a's leads
 STEPS = (('unmasked', 'finch_B - finch_A', "Paper's labels", dict(mfc='white')),
-         ('computational', 'finch_B - finch_A', 'Computational annotations masked', dict(fillstyle='left', mfc=FINCH,
+         ('computational', 'finch_B - finch_A', 'Computational annotations unscored', dict(fillstyle='left', mfc=FINCH,
                                                                                          markerfacecoloralt='white')),
-         ('computational', 'finch_B - finch_A_screened', 'Masked, and relatives removed from own data', dict(mfc=FINCH)))
+         ('computational', 'finch_B - finch_A_screened', 'Unscored, and relatives removed from own data', dict(mfc=FINCH)))
 SUBROW = (0.24, 0.0, -0.24)  # panel b: each step's place within its row
 RULE = '#b9bcc2'  # panel b: the rules between the benchmarks
 ROW_A, ROW_B = 0.3, 0.44  # inches per row
