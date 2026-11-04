@@ -424,27 +424,49 @@ def outside(folder, method, test_set, version):
     return cell, diff
 
 
-def stacked(row):
-    """A paired difference over its interval (the SI's \\est), so that the table fits the page in readable type."""
+def with_interval(row):
+    """A paired difference followed by its interval in small grey type (the SI's \\ci)."""
     value, interval = paired(row, 3).split(' ', 1)
-    return rf'\est{{{value}}}{{{interval}}}'
+    return rf'{value}\ci{{{interval}}}'
+
+
+def block(name, proteins, body):
+    """One benchmark's rows: its name in the first row, its number of test proteins in the second."""
+    first = [name, rf'\textcolor{{muted}}{{{proteins:,} proteins}}'] + [''] * (len(body) - 2)
+    return [' & '.join([b, *r]) + r' \\' for b, r in zip(first, body)]
+
+
+# Supplementary Table 17b: Finch on ArchipelaGO against Finch on the method's training split, as released and without the
+# test proteins' relatives (DeepGO-SE: no screened run)
+SPLITS = (('finch_A', 'As released', 'finch_B - finch_A'),
+          ('finch_A_screened', 'Relatives removed', 'finch_B - finch_A_screened'))
 
 
 def outside_table(results, out):
-    """Supplementary Table 17: Finch on each published method's own benchmark (table_outside.tex)."""
+    """Supplementary Table 17: Finch on each published method's own benchmark (table_outside_methods.tex, a: Finch and the
+    method retrained, both trained on the method's training split; table_outside_data.tex, b: Finch on ArchipelaGO against
+    Finch on that split)."""
     folder = results / 'outside_masked'
     lines = []
     for method, test_set, name in BENCHMARKS:
-        if lines:
-            lines.append(r'\addlinespace')
-        cell, _ = outside(folder, method, test_set, 'unmasked')
-        lines.append(rf"\multicolumn{{8}}{{@{{}}l}}{{\textit{{{name}, {int(cell['method']['proteins']):,} test proteins}}}} \\")
+        body = []
         for version, label in VERSIONS:
             cell, diff = outside(folder, method, test_set, version)
-            values = [r3(cell[m]['micro_AUPRC_mean']) if m in cell else DASH for m in ('method', 'finch_A', 'finch_A_screened', 'finch_B')]
-            diffs = [stacked(diff[c]) if c in diff else DASH for c in ('finch_A - method', 'finch_B - finch_A', 'finch_B - finch_A_screened')]
-            lines.append(' & '.join([label, *values, *diffs]) + r' \\' + (r'[2pt]' if version == 'unmasked' else ''))
-    write(out, 'table_outside.tex', lines)
+            body.append([label, r3(cell['method']['micro_AUPRC_mean']), r3(cell['finch_A']['micro_AUPRC_mean']),
+                         with_interval(diff['finch_A - method'])])
+        lines += ([r'\addlinespace'] if lines else []) + block(name, int(cell['method']['proteins']), body)
+    write(out, 'table_outside_methods.tex', lines)
+
+    lines = []
+    for method, test_set, name in BENCHMARKS:
+        body = []
+        for version, label in VERSIONS:
+            cell, diff = outside(folder, method, test_set, version)
+            present = [s for s in SPLITS if s[0] in cell]
+            body += [[label if k == 0 else '', split, r3(cell[model]['micro_AUPRC_mean']), r3(cell['finch_B']['micro_AUPRC_mean']),
+                      with_interval(diff[contrast])] for k, (model, split, contrast) in enumerate(present)]
+        lines += ([r'\addlinespace'] if lines else []) + block(name, int(cell['method']['proteins']), body)
+    write(out, 'table_outside_data.tex', lines)
 
 
 # Supplementary Figure 3, in the look of main-text Fig. 4b (figures/main.py). a: Finch against the method retrained, both
@@ -453,7 +475,7 @@ def outside_table(results, out):
 # and masked against the method's data without the test proteins' relatives (TransFew and DPFunc). One colour, Finch's
 # violet; the fill counts the corrections. Drawn at the SI's text width, so that 7 pt is 7 pt on the page.
 MARK = {'deepgose': ('o', 4.2), 'transfew': ('s', 3.8), 'dpfunc': ('^', 4.6)}  # as Fig. 4b
-FINCH, DOT_INK, ROW_LINE, ZERO_LINE = COLOURS['archipelago'], '#55595f', '#e6e7e9', '#8f939a'
+FINCH, DOT_INK, ROW_LINE, ZERO_LINE, GRID = COLOURS['archipelago'], '#55595f', '#e6e7e9', '#8f939a', '#cfd1d5'
 TEXT = 7  # points, every text of the figure
 WIDTH, LEFT, RIGHT = 6.85, 1.25, 0.55  # inches: the SI's text width (174 mm); the row names; panel a's leads
 STEPS = (('unmasked', 'finch_B - finch_A', "Paper's labels", dict(mfc='white')),
@@ -481,6 +503,14 @@ def rows(fig, ax, folder):
     ax.spines['left'].set_visible(False)
     ax.set_ylim(-0.6, 2.6)
     ax.tick_params(axis='x', labelsize=TEXT)
+
+
+def ticks(ax, values, label):
+    """The x ticks, each with a light dashed line up through the panel."""
+    values = np.round(values, 2)
+    ax.set_xticks(values, [label(v) for v in values])
+    ax.grid(axis='x', color=GRID, ls=(0, (3, 2)), lw=0.5)
+    ax.set_axisbelow(True)
 
 
 def key(fig, ax, letter, entries):
@@ -519,8 +549,8 @@ def outside_figure(results, out):
                va='center', fontsize=TEXT)
     a.annotate('Lead', (1.015, 1.0), xycoords='axes fraction', xytext=(0, 5.5), textcoords='offset points', ha='left',
                va='center', fontsize=TEXT, color=GREY)  # level with the key
-    a.set_xlim(0.42, 0.68)
-    a.set_xticks(np.arange(0.45, 0.651, 0.05))
+    a.set_xlim(0.43, 0.67)
+    ticks(a, np.arange(0.44, 0.661, 0.02), lambda v: f'{v:.2f}')
     a.set_xlabel("Micro-AUPRC, paper's test labels", fontsize=TEXT)
     key(fig, a, 'a', [('Finch', dict(ls='', marker='o', ms=5.6, mfc=FINCH, mec='white', mew=0.5)),
                       ("The method, retrained by us (both trained on the method's own data)",
@@ -538,7 +568,7 @@ def outside_figure(results, out):
             b.plot([float(d['ci_low']), float(d['ci_high'])], [y, y], color=FINCH, lw=1.0, solid_capstyle='butt', zorder=2)
             b.plot(float(d['difference']), y, 'o', ms=5.6, mec=FINCH, mew=1.0, zorder=3, **style)
     b.set_xlim(-0.27, 0.17)
-    b.set_xticks([-0.2, -0.1, 0, 0.1], ['−0.2', '−0.1', '0', '+0.1'])
+    ticks(b, np.arange(-0.25, 0.151, 0.05), lambda v: '0' if v == 0 else f'{v:+.2f}'.replace('-', '−'))
     b.set_xlabel("Finch trained on ArchipelaGO minus Finch trained on the method's own data (micro-AUPRC)", fontsize=TEXT)
     key(fig, b, 'b', [(label, dict(color=FINCH, lw=1.0, marker='o', ms=5.6, mec=FINCH, mew=1.0, **style))
                       for _, _, label, style in STEPS])
