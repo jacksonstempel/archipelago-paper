@@ -7,6 +7,8 @@
     python -m retrain.scoring.test_labels LABELS   scoring against other test labels: experimental-only, every GOA
                                              assertion the label review considered (all_goa), or with the reviewed GOA
                                              assertions masked (masked)
+    python -m retrain.scoring.label_grid     the direct-evidence test labels (Table 2) and every model on every version
+                                             of the test labels (after test_labels and no_hit, whose results it checks)
     python -m retrain.scoring.no_hit         scoring of test proteins without training relatives
     python -m retrain.scoring.term_strata    the main gains on common and rare terms
     python -m retrain.scoring.shared_terms   the data comparisons on the terms each original training set covers

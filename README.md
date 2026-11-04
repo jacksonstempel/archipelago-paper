@@ -205,6 +205,7 @@ python -m retrain.scoring.term_strata                # the main gains on common 
 python -m retrain.scoring.shared_terms               # the data comparisons on the terms each original set covers (GPU)
 python -m retrain.scoring.macro                      # the main comparisons in term-centric (macro) AUPRC (GPU)
 python -m retrain.scoring.no_hit                     # test proteins without training relatives (Fig. 3c; the paper's subsets)
+python -m retrain.scoring.label_grid                 # direct-evidence test labels (Table 2), every model on every version (GPU)
 python -m retrain.scoring.sizes                      # sizes of every training set
 python -m retrain.scoring.parameters                 # trainable parameters of the models on ArchipelaGO (CPU)
 python -m retrain.scoring.training_cost              # GPU-hours of the training runs, from the fits' records
@@ -281,7 +282,7 @@ like `original_<method>` and scored with `retrain.outside.score --screened-origi
 when its Finch runs exist.
 
 One table per benchmark with every model (both Finch arms, the method's own retrain, the authors' model) and paired
-bootstrap intervals, and the scoring behind Supplementary Table 17 and Supplementary Figure 3, on the papers' test labels
+bootstrap intervals, and the scoring behind Supplementary Table 18 and Supplementary Figure 3, on the papers' test labels
 and with the test proteins' current GOA annotations masked (our evaluator, micro-Fmax and micro-AUPRC; the bootstrap runs
 on a GPU):
 

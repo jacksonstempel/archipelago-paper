@@ -2,8 +2,8 @@
 methods on every training set they share) and the bodies of Tables 1 and 2, from the results: <root>/results/main/
 {metrics,contrasts}.tsv (test, seed means), <root>/results/explabels_training/{metrics,contrasts}.tsv and <root>/results/
 ladder/metrics.tsv; Table 2 also reads the contrasts.tsv of every version of the test set (main,
-experimental_test_labels, masked_test_labels, all_goa_test_labels, no_hit/E0.001, no_hit/E10) with the label versions'
-counts.tsv and no_hit/subsets.tsv."""
+experimental_test_labels, direct_masked_test_labels, masked_test_labels, all_goa_test_labels, no_hit/E0.001, no_hit/E10)
+with the label versions' counts.tsv and no_hit/subsets.tsv."""
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import blended_transform_factory
@@ -221,6 +221,7 @@ def table2(results, out):
     # (name, proteins, results folder, main result) per group: the label versions from strictest to loosest, then the
     # protein subsets; the groups are separated by a rule, not labelled
     groups = [[('Experimental labels only', proteins('experimental_test_labels', 'exp'), 'experimental_test_labels', False),
+               ('Direct evidence only', proteins('experimental_test_labels', 'all'), 'direct_masked_test_labels', False),
                ('Annotations masked', proteins('masked_test_labels', 'masked'), 'masked_test_labels', False),
                ('Reviewed labels', proteins('experimental_test_labels', 'all'), 'main', True),
                ('All GOA annotations', proteins('all_goa_test_labels', 'all_goa'), 'all_goa_test_labels', False)],

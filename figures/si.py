@@ -5,6 +5,7 @@ the figures, written into <out>/si/. Reads, under <root>/results/:
   dataset_sizes.tsv                                        retrain.scoring.sizes
   experimental_test_labels/counts.tsv                      retrain.scoring.test_labels experimental
   explabels_training/{metrics.tsv,contrasts.tsv}           retrain.scoring.score explabels_training
+  label_grid/{grid.tsv,versions.tsv}                       retrain.scoring.label_grid (Supplementary Table 6)
   no_hit/{subsets.tsv,differences.tsv,E<cutoff>/}          retrain.scoring.no_hit
   pr_curves/curves.tsv                                     retrain.scoring.pr_curves
   selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
@@ -12,9 +13,9 @@ the figures, written into <out>/si/. Reads, under <root>/results/:
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
   training_cost.tsv                                        retrain.scoring.training_cost
-  macro/contrasts.tsv                                      retrain.scoring.macro (Supplementary Table 15)
+  macro/contrasts.tsv                                      retrain.scoring.macro (Supplementary Table 16)
   outside_masked/<method>/{table,contrasts}.tsv            retrain.outside.masked bootstrap (its work folder; Supplementary
-                                                           Table 17, Supplementary Figure 3)
+                                                           Table 18, Supplementary Figure 3)
 
 Main-text Table 2 with intervals (table2_intervals.tex) is written beside Table 2 by figures/main.py.
 
@@ -223,6 +224,30 @@ def label_counts(results, out):
         handle.write(f"\\newcommand{{\\CountExpDropped}}{{{int(counts['exp']['proteins_dropped']):,}}}\n")
 
 
+def label_grid_table(results, out):
+    """Supplementary Table 6 (table_label_grid.tex): test micro-AUPRC (mean of the runs; DeepGO-SE its ensemble) of Finch
+    and each published method on every training set they were trained on, on every version of the test labels, with each
+    version's test proteins first (retrain.scoring.label_grid: results/label_grid/{grid,versions}.tsv)."""
+    versions = ('experimental', 'direct_negatives', 'direct_masked', 'masked', 'reviewed', 'all_goa', 'no_hit_0.001', 'no_hit_10')
+    grid = {(r['method'], r['training_set']): r for r in read(results / 'label_grid' / 'grid.tsv')}
+    counts = read(results / 'label_grid' / 'versions.tsv')
+    sets = {'finch': [('original_deepgose', "DeepGO-SE's original data"), ('original_transfew', "TransFew's original data"),
+                      ('original_dpfunc', "DPFunc's original data")] + [s for s in SETS if s[0] != 'original'],
+            **{m: [s for s in SETS if s[0] != 'hq_random'] for m in PUBLISHED}}
+    if [r['version'] for r in counts] != list(versions) or list(next(iter(grid.values())))[3:] != list(versions):
+        raise ValueError('label_grid: versions not in the expected order')
+    lines = ['Test proteins & & ' + ' & '.join(f"{int(r['proteins']):,}" for r in counts) + r' \\', r'\midrule']
+    for i, method in enumerate(['finch', 'transfew', 'deepgose', 'dpfunc']):  # as Supplementary Table 3
+        if i:
+            lines.append(r'\addlinespace')
+        for k, (ts, name) in enumerate(sets[method]):
+            lines.append(f"{NAMES[method] if k == 0 else ''} & {name} & " + ' & '.join(r3(grid[method, ts][v]) for v in versions)
+                         + r' \\')
+    if len(lines) - 2 - 3 != len(grid):  # every grid row printed once (3 \addlinespace)
+        raise ValueError('label_grid: grid rows and table rows differ')
+    write(out, 'table_label_grid.tex', lines)
+
+
 def cost_table(results, out):
     """Training cost (table_cost.tex, from retrain.scoring.training_cost): per method, GPU-hours of one run on ArchipelaGO
     (the mean over its runs), of all its runs on ArchipelaGO, and of all its runs on every training set of the main
@@ -382,7 +407,7 @@ def shared(results, out):
 
 
 def macro_table(results, out):
-    """Supplementary Table 15: the paper's main comparisons in micro-AUPRC (paired cluster bootstrap) and in term-centric
+    """Supplementary Table 16: the paper's main comparisons in micro-AUPRC (paired cluster bootstrap) and in term-centric
     AUPRC (paired bootstrap over terms), from retrain.scoring.macro (results/macro/contrasts.tsv; its cluster bootstrap of
     macro-AUPRC is a diagnostic and not read)."""
     rows = [r for r in read(results / 'macro' / 'contrasts.tsv') if r['bootstrap'] in ('clusters', 'terms')]
@@ -436,14 +461,14 @@ def block(name, proteins, body):
     return [' & '.join([b, *r]) + r' \\' for b, r in zip(first, body)]
 
 
-# Supplementary Table 17b: Finch on ArchipelaGO against Finch on the method's training split, as released and without the
+# Supplementary Table 18b: Finch on ArchipelaGO against Finch on the method's training split, as released and without the
 # test proteins' relatives
 SPLITS = (('finch_A', 'As released', 'finch_B - finch_A'),
           ('finch_A_screened', 'Relatives removed', 'finch_B - finch_A_screened'))
 
 
 def outside_table(results, out):
-    """Supplementary Table 17: Finch on each published method's own benchmark (table_outside_methods.tex, a: Finch and the
+    """Supplementary Table 18: Finch on each published method's own benchmark (table_outside_methods.tex, a: Finch and the
     method retrained, both trained on the method's training split; table_outside_data.tex, b: Finch on ArchipelaGO against
     Finch on that split)."""
     folder = results / 'outside_masked'
@@ -580,6 +605,7 @@ def draw(results, out):
     out = out / 'si'
     out.mkdir(parents=True, exist_ok=True)
     tables(results, out)
+    label_grid_table(results, out)
     recipe_tables(results, out)
     cost_table(results, out)
     shared(results, out)

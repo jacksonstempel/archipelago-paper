@@ -160,8 +160,9 @@ def release_of(root):
             (ds.folder / 'annotations.tsv').write_text('\n'.join(text) + '\n')
             rows = [(first, 'GO:0000002'), (first, 'GO:0000003')] + [p for p in rows if p[0] != first]
             labels, _ = ontology.label_matrix(rows, row_of)
-            write('benchmark_reviews/test', [dict(protein_id=first, go_id='GO:0000003', decision='accept'),
-                                             dict(protein_id=second, go_id='GO:0000002', decision='do_not_accept')])
+            write('benchmark_reviews/test', [dict(protein_id=first, go_id='GO:0000003', decision='accept', support_type='inference'),
+                                             dict(protein_id=second, go_id='GO:0000002', decision='do_not_accept',
+                                                  support_type='none_established')])
             sp.save_npz(ds.folder / 'labels.npz', labels)
             positive = ontology.label_matrix([p for p in rows if p != (first, 'GO:0000003')], row_of)[0].toarray() > 0
             experimental = ontology.label_matrix([p for p in rows if p[0] != first], row_of)[0].toarray() > 0

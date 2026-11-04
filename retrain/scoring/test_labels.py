@@ -24,6 +24,7 @@ positive, for the official labels, `all`, and the version, `exp`, `masked` or `a
 """
 import argparse
 import csv
+from collections import Counter
 
 import numpy as np
 import pyarrow.parquet as pq
@@ -40,10 +41,12 @@ VARIANT = {'experimental': 'exp', 'masked': 'masked', 'all_goa': 'all_goa'}  # t
 
 def annotation_sets(root):
     """(test set, vocabulary, {name: asserted (seq_id, go_id) pairs}, propagate). The pair sets: `all` (every test
-    annotation row), `exp` (the rows with an experimental evidence code), `other` (the rows other than the review's) and
-    `all_goa` (`other` plus every assertion the review considered, accepted or not). propagate(pairs) gives their labels,
-    boolean (test proteins x vocabulary). Checked: `all` gives the official test labels exactly, and the review's rows are
-    exactly its accepted assertions."""
+    annotation row), `exp` (the rows with an experimental evidence code), `other` (the rows other than the review's),
+    `all_goa` (`other` plus every assertion the review considered, accepted or not) and `direct` (`other` plus the
+    assertions the review accepted with experimental support, support_type `experimental`; the others it accepted as a
+    supported inference, `inference`). propagate(pairs) gives their labels, boolean (test proteins x vocabulary). Checked:
+    `all` gives the official test labels exactly, the review's rows are exactly its accepted assertions, and an assertion
+    has a support type if and only if it was accepted."""
     ontology = Ontology(root)
     test = load(root, 'test', scoring=True)
     row_of = {h: i for i, h in enumerate(test.seq_ids)}
@@ -58,14 +61,19 @@ def annotation_sets(root):
     if (propagate([(h, g) for h, g, _, _ in rows]) != (test.labels.toarray() > 0)).any():
         raise ValueError('the test annotations do not reproduce the test labels')
     reviews = pq.read_table(root / 'release' / 'benchmark_reviews' / 'test.parquet',
-                            columns=['protein_id', 'go_id', 'decision']).to_pylist()
+                            columns=['protein_id', 'go_id', 'decision', 'support_type']).to_pylist()
     accepted = {(r['protein_id'], r['go_id']) for r in reviews if r['decision'] == 'accept'}
     if {(h, g) for h, g, _, source in rows if source == REVIEW_SOURCE} != accepted:
         raise ValueError("the review's test annotation rows are not exactly its accepted assertions")
-    log(f'label review: {len(reviews):,} assertions, {len(accepted):,} accepted')
+    support = Counter((r['decision'], r['support_type']) for r in reviews)
+    if any((decision == 'accept') != (kind in ('experimental', 'inference')) for decision, kind in support):
+        raise ValueError(f'review decisions and support types disagree: {dict(support)}')
+    log(f'label review: {len(reviews):,} assertions, {len(accepted):,} accepted; by support type {dict(support)}')
     other = [(h, g) for h, g, _, source in rows if source != REVIEW_SOURCE]
     pairs = dict(all=[(h, g) for h, g, _, _ in rows], exp=[(h, g) for h, g, e, _ in rows if e in EXPERIMENTAL],
-                 other=other, all_goa=other + [(r['protein_id'], r['go_id']) for r in reviews])
+                 other=other, all_goa=other + [(r['protein_id'], r['go_id']) for r in reviews],
+                 direct=other + [(r['protein_id'], r['go_id']) for r in reviews
+                                 if r['decision'] == 'accept' and r['support_type'] == 'experimental'])
     return test, ontology.vocabulary, pairs, propagate
 
 

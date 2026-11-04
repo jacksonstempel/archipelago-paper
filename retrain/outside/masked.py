@@ -2,7 +2,7 @@
 deficit on these experimental-only test labels an artefact of predictions of computationally annotated functions being
 counted as errors? The test labels with every current GOA molecular-function annotation of the test proteins masked, as
 the paper's "annotations masked" test version masks them (archipelago.evaluate.Benchmark mask: such a pair is neither
-positive nor negative); saved predictions only, the paper's evaluator only (Supplementary Table 17).
+positive nor negative); saved predictions only, the paper's evaluator only (Supplementary Table 18).
 
     python -m retrain.outside.masked fetch      UniProt's secondary accessions (sec_ac.txt, current release) and DPFunc's
                                                 entry names mapped to accessions (UniProt ID mapping, REST)
