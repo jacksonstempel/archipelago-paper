@@ -20,7 +20,7 @@ Steps:
    auprcbest) are scored as the methods transfew_bcebest and transfew_auprcbest. A missing fit stops the export.
 3. archipelago-score CONFIG --out <root>/results/RUN (which must not exist yet).
    With --labels masked, steps 1 and 2 are the earlier
-   scoring's: its config for RUN (scoring/RUN.json) is read again with the release bundle (every version of the labels) as its data,
+   scoring's: its config for RUN (scoring/RUN.json) is read again with the release bundle's masked version (development rows unchanged) as its data,
    scoring/RUN_masked.json, and the scorer's --labels masked writes <root>/results_masked/RUN (the main test labels of the paper:
    the reviewed GOA assertions neither positive nor negative).
 4. <root>/results/RUN/contrasts.tsv: for every metric (auprc, fmax, f1, smin), every pair of training sets of one model,
@@ -76,11 +76,31 @@ def release_bundle(root):
     return data
 
 
+def headline_bundle(root):
+    """<root>/scoring/headline_data: the release bundle with the development rows of the masked version replaced by the official
+    development labels and nothing left out. The main test labels change the test set only: the development set, its scores and
+    the F1 threshold selected on it stay as they were. Written once."""
+    data = Path(root) / 'scoring' / 'headline_data'
+    if not data.exists():
+        source = release_bundle(root)
+        (data / 'benchmark' / 'masked').mkdir(parents=True)
+        shutil.copytree(source / 'archipelago', data / 'archipelago')
+        for name in ('vocabulary.txt', 'go-basic.obo'):
+            shutil.copyfile(source / name, data / name)
+        for name in ('development.tsv', 'development_labels.tsv', 'test.tsv', 'test_labels.tsv'):
+            shutil.copyfile(source / 'benchmark' / name, data / 'benchmark' / name)
+        for name in ('test_labels.tsv', 'test_mask.tsv'):
+            shutil.copyfile(source / 'benchmark' / 'masked' / name, data / 'benchmark' / 'masked' / name)
+        shutil.copyfile(source / 'benchmark' / 'development_labels.tsv', data / 'benchmark' / 'masked' / 'development_labels.tsv')
+        (data / 'benchmark' / 'masked' / 'development_mask.tsv').write_text('protein_id\tgo_id\n', newline='\n')
+    return data
+
+
 def masked_config(root, run, name=None):
-    """<root>/scoring/<name or run>_masked.json: the config of un (the same predictions) with the release bundle as its data."""
+    """<root>/scoring/<name or run>_masked.json: the config of run (the same predictions) with headline_bundle as its data."""
     path = Path(root) / 'scoring' / f'{name or run}_masked.json'
     config = json.loads((Path(root) / 'scoring' / f'{run}.json').read_text())
-    config['data'] = os.path.relpath(release_bundle(root), path.parent).replace(os.sep, '/')
+    config['data'] = os.path.relpath(headline_bundle(root), path.parent).replace(os.sep, '/')
     path.write_text(json.dumps(config, indent=1) + '\n')
     return path
 

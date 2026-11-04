@@ -24,7 +24,7 @@ def main(argv=None):
     root = data_root(a.data)
     lines = ['dataset\tproteins\tpropagated_pairs\tterms_used']
     for name in DATASETS:
-        labels = load(root, name).labels
+        labels = load(root, name, scoring=True).labels  # the benchmark's labels are counted, not used
         if name == 'test' and a.labels == 'masked':
             _, _, pairs, labels_of = annotation_sets(root)
             labels = version_labels(pairs, labels_of, 'masked')[0]

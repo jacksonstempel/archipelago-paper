@@ -214,6 +214,12 @@ def test_the_main_test_labels_masked_are_scored_from_the_reviewed_config(tmp_pat
         benchmark = json.loads((tmp_path / folder / 'main' / 'inputs.json').read_text())['benchmark']
         assert (benchmark['labels'], benchmark['test_positive_pairs'], benchmark['test_masked_pairs']) == (labels, pairs, left_out)
 
+    def development(folder):  # the main test labels change the test set only
+        return {(r['method'], r['training_set'], r['seed'], r['metric']): r['value']
+                for r in read_table(tmp_path / folder / 'main' / 'metrics.tsv') if r['split'] == 'development'}
+
+    assert development('results') == development('results_masked') and development('results')
+
 
 
 def test_a_released_label_table_that_differs_from_its_definition_stops_the_scoring(tmp_path, monkeypatch):

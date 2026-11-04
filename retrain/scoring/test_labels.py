@@ -91,12 +91,12 @@ def write_counts(path, counts):
         writer.writerows(counts)
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('labels', choices=list(VARIANT))
     parser.add_argument('--device', choices=['cuda', 'cpu'])
     add_argument(parser)
-    a = parser.parse_args()
+    a = parser.parse_args(argv)
     root = data_root(a.data)
     out = root / 'results' / f'{a.labels}_test_labels'
     if out.exists():

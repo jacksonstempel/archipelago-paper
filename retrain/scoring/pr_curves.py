@@ -25,7 +25,7 @@ from archipelago.go import Propagation, read_parents
 from archipelago.io import read_labels, read_table, read_vocabulary
 from retrain.common import add_argument, data_root, log
 from archipelago.benchmark import version_files
-from retrain.scoring.score import ORIGINAL, PUBLISHED, RESULTS, release_bundle, results_dir
+from retrain.scoring.score import ORIGINAL, PUBLISHED, RESULTS, headline_bundle, results_dir
 
 METHODS = ('finch', *PUBLISHED)
 RUNS = {'main': ('original', *ORIGINAL.values(), 'goa', 'hq', 'archipelago'), 'explabels_training': ('hq_explabels',)}
@@ -44,7 +44,7 @@ def main(argv=None):
     out.mkdir(parents=True, exist_ok=False)
     device = torch.device(a.device or ('cuda' if torch.cuda.is_available() else 'cpu'))
     scoring = root / 'scoring'  # every run's config is here, and shares the bundle
-    data = scoring / json.loads((scoring / 'main.json').read_text())['data'] if a.labels == 'reviewed' else release_bundle(root)
+    data = scoring / json.loads((scoring / 'main.json').read_text())['data'] if a.labels == 'reviewed' else headline_bundle(root)
     vocabulary = read_vocabulary(data / 'vocabulary.txt')
     ids = [r['protein_id'] for r in read_table(data / 'benchmark' / 'test.tsv')]
     propagate = Propagation(read_parents(data / 'go-basic.obo', vocabulary))
