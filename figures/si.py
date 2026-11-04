@@ -29,7 +29,7 @@ import numpy as np
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.transforms import blended_transform_factory
 
-from figures.style import (COLOURS, DOUBLE, GREY, INK, NAMES, PUBLISHED, contrasts, fs, half_up, pr_curves, read, save,
+from figures.style import (COLOURS, DOUBLE, GREY, INK, NAMES, PUBLISHED, contrasts, fs, half_up, labelled, pr_curves, read, save,
                            seed_means)
 from retrain.finch import config as finch_config
 
@@ -85,15 +85,15 @@ def write(out, name, lines):
 
 def tables(results, out):
     """Every table body of the SI but those of the recipe ablation."""
-    main = {split: seed_means(results / 'main', split) for split in ('test', 'development')}
+    main = {split: seed_means(labelled(results / 'main'), split) for split in ('test', 'development')}
     # not DIAMOND-kNN: that run scores it at the screen's cutoff only, and the paper reports it without a cutoff
-    main['test'].update({k: v for k, v in seed_means(results / 'explabels_training').items()
+    main['test'].update({k: v for k, v in seed_means(labelled(results / 'explabels_training')).items()
                          if k[1] == 'hq_explabels' and k[0] != 'diamond_knn'})
     m = lambda method, ts, metric, split='test': main[split].get((method, ts, metric))  # noqa: E731
-    contrast = {**contrasts(results / 'explabels_training'), **contrasts(results / 'main')}
+    contrast = {**contrasts(labelled(results / 'explabels_training')), **contrasts(labelled(results / 'main'))}
 
     # Supplementary Table 2: composition of the training sets and the benchmark
-    sizes = {r['dataset']: r for r in read(results / 'dataset_sizes.tsv')}
+    sizes = {r['dataset']: r for r in read(labelled(results / 'dataset_sizes.tsv'))}
     lines = []
     for key, name in (('original_transfew', 'TransFew original data'), ('original_deepgose', 'DeepGO-SE original data'),
                       ('original_dpfunc', 'DPFunc original data'), ('goa', 'HQ, GOA proteins only'), ('hq', 'HQ'),
@@ -165,12 +165,12 @@ def tables(results, out):
     folder = results / 'no_hit'
     subsets = [('none', 5000, 2734)] + [(f"{float(r['cutoff']):g}", int(r['proteins']), int(r['clusters']))
                                          for r in read(folder / 'subsets.tsv')]
-    nohit = {(r['subset'], r['method'], r['base']): r for r in read(folder / 'differences.tsv')}
+    nohit = {(r['subset'], r['method'], r['base']): r for r in read(labelled(folder / 'differences.tsv'))}
     cutname = {'none': 'all test proteins', '1e-10': r'$10^{-10}$', '1e-06': r'$10^{-6}$', '0.001': r'$10^{-3}$',
                '0.01': r'$10^{-2}$', '0.1': r'$10^{-1}$', '1': '1', '10': '10'}
     lines = []
     for cut, n, k in subsets:
-        random_gain = (contrast if cut == 'none' else contrasts(folder / f'E{cut}'))['auprc', 'finch', 'hq_random', 'finch', 'hq']
+        random_gain = (contrast if cut == 'none' else contrasts(labelled(folder / f'E{cut}')))['auprc', 'finch', 'hq_random', 'finch', 'hq']
         rows = [nohit[cut, 'finch', 'hq'], nohit[cut, 'finch', 'hq_random'], random_gain,
                 *(nohit[cut, p, 'original'] for p in PUBLISHED)]
         cells = [f"{r3(r['difference'], True)} {ci(r['ci_low'], r['ci_high'])}" for r in rows]
@@ -178,9 +178,9 @@ def tables(results, out):
     write(out, 'table_nohit.tex', lines)
 
     # selection rules and number of picks (Finch)
-    selection_contrast = contrasts(results / 'selection')
+    selection_contrast = contrasts(labelled(results / 'selection'))
     runs = {}
-    for r in read(results / 'selection' / 'metrics.tsv'):
+    for r in read(labelled(results / 'selection' / 'metrics.tsv')):
         if r['method'] == 'finch' and r['split'] == 'test' and r['metric'] == 'auprc' and r['seed'].isdigit():
             runs.setdefault(r['training_set'], {})[r['seed']] = float(r['value'])
     lines = []
@@ -203,7 +203,7 @@ def tables(results, out):
 
     # the main gains on common and rare terms
     strata = {(r['stratum'], r['method'], r['training_set'], r['minus_training_set']): r
-              for r in read(results / 'term_strata' / 'gains.tsv')}
+              for r in read(labelled(results / 'term_strata' / 'gains.tsv'))}
     lines = []
     for method, a, b in [(p, 'archipelago', 'original') for p in PUBLISHED] + [('finch', 'archipelago', 'hq_random')]:
         lines.append(f'{NAMES[method]} & {SETNAME[a]} $-$ {SETNAME[b]} & '
@@ -213,7 +213,7 @@ def tables(results, out):
 
 def label_counts(results, out):
     """The counts of the experimental-only test labels (explabels_counts.tex)."""
-    counts = {r['variant']: r for r in read(results / 'experimental_test_labels' / 'counts.tsv')}
+    counts = {r['variant']: r for r in read(labelled(results / 'experimental_test_labels' / 'counts.tsv'))}
     with open(out / 'explabels_counts.tex', 'w', encoding='utf-8', newline='\n') as handle:
         for variant, key in (('all', 'All'), ('exp', 'Exp')):
             r = counts[variant]
@@ -267,7 +267,7 @@ def recipe_tables(results, out):
     """The Finch recipe ablation (Fig. 4a) and the other models the main text compares, all trained on ArchipelaGO: test
     AUPRC, Fmax and Smin, development AUPRC, for the ablation the paired gain over the step it builds on, and trainable
     parameters in millions; then the paired comparisons cited in the main text."""
-    folder = results / 'ladder'
+    folder = labelled(results / 'ladder')
     ladder = {split: seed_means(folder, split) for split in ('test', 'development')}
     ladder_contrast = contrasts(folder)
     settings = finch_config()
@@ -336,8 +336,8 @@ def recipe_tables(results, out):
 def shared(results, out):
     """Finch and the published methods on every training set they share: table_shared.tex, and the precision-recall curves
     by training set (si_fig_pr_sets) and by model (si_fig_pr_models), each dot a curve's Fmax point."""
-    main, trained = seed_means(results / 'main'), seed_means(results / 'explabels_training')
-    main_pairs, trained_pairs = contrasts(results / 'main'), contrasts(results / 'explabels_training')
+    main, trained = seed_means(labelled(results / 'main')), seed_means(labelled(results / 'explabels_training'))
+    main_pairs, trained_pairs = contrasts(labelled(results / 'main')), contrasts(labelled(results / 'explabels_training'))
     value = lambda metric, m, s, k: float(metric[m, s, k]['value'])  # noqa: E731
     lines = []
     for s, title, own in SHARED:
@@ -410,7 +410,7 @@ def macro_table(results, out):
     """Supplementary Table 16: the paper's main comparisons in micro-AUPRC (paired cluster bootstrap) and in term-centric
     AUPRC (paired bootstrap over terms), from retrain.scoring.macro (results/macro/contrasts.tsv; its cluster bootstrap of
     macro-AUPRC is a diagnostic and not read)."""
-    rows = [r for r in read(results / 'macro' / 'contrasts.tsv') if r['bootstrap'] in ('clusters', 'terms')]
+    rows = [r for r in read(labelled(results / 'macro' / 'contrasts.tsv')) if r['bootstrap'] in ('clusters', 'terms')]
 
     def cells(pick):
         return ' & '.join(paired(next(r for r in rows if r['metric'] == k and pick(r)), 3) for k in ('micro_auprc', 'macro_auprc'))

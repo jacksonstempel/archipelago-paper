@@ -23,6 +23,11 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   training_cost.tsv                         training_cost       SI: training cost
   outside_masked/                           retrain.outside.masked     SI: the published methods' own benchmarks
 
+HEADLINE=masked (environment variable; default reviewed) draws every result that depends on the main test labels from 
+<root>/results_masked/ instead (same folders and files; a missing file is an error) and shades the Annotations masked row of
+Table 2 instead of the Reviewed labels row. The label versions' own folders (experimental, direct, masked, all GOA) and the
+no-hit subset sizes are read from results/ either way.
+
 Fig. 1 reads the counts in figures/sankey_counts.json; Extended Data Fig. 1 is a schematic.
 DIAMOND-kNN is the method `diamond_knn` of the main run (no E-value cutoff, as reported).
 """

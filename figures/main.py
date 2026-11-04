@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import blended_transform_factory
 
-from figures.style import COLOURS, DOUBLE, GREY, NAMES, PUBLISHED, contrasts, fs, half_up, read, save, seed_means
+from figures.style import COLOURS, DOUBLE, GREY, NAMES, PUBLISHED, MAIN_LABELS, contrasts, fs, half_up, labelled, read, save, seed_means
 
 FINCH = COLOURS['archipelago']
 # Fig. 4a: the recipe ablation's steps (configs/finch.json, 'ladder'), ending at Finch; its control (two ESM2-15B networks)
@@ -81,8 +81,8 @@ def waterfall(ax, auprc):
 def shared_rows(results):
     """Fig. 4b's rows, lowest Finch score first: (label, {published method: micro-AUPRC}, Finch's, Finch's lead over the
     row's best published method), each published method's original data first."""
-    main, trained = seed_means(results / 'main'), seed_means(results / 'explabels_training')
-    main_pairs, trained_pairs = contrasts(results / 'main'), contrasts(results / 'explabels_training')
+    main, trained = seed_means(labelled(results / 'main')), seed_means(labelled(results / 'explabels_training'))
+    main_pairs, trained_pairs = contrasts(labelled(results / 'main')), contrasts(labelled(results / 'explabels_training'))
     rows = []
     for m in PUBLISHED:
         own = f'original_{m}'
@@ -129,12 +129,12 @@ def dots(ax, rows, comparators):
 
 
 def figures(results, out):
-    metric = seed_means(results / 'main')
+    metric = seed_means(labelled(results / 'main'))
     auprc = lambda m, s: float(metric[m, s, 'auprc']['value'])  # noqa: E731
     comparators = sorted(PUBLISHED, key=lambda m: -auprc(m, 'original'))  # Fig. 2 and Table 1 order
 
     # Figure 4. a: the recipe ablation as a waterfall; b: Finch and the published methods on every training set they share.
-    ladder = seed_means(results / 'ladder')
+    ladder = seed_means(labelled(results / 'ladder'))
     ladder_auprc = lambda m, s: float(ladder[m, s, 'auprc']['value'])  # noqa: E731
     fig = plt.figure(figsize=(DOUBLE, 3.15))
     grid = fig.add_gridspec(1, 2, width_ratios=[1.3, 1], wspace=0.42, left=0.06, right=0.945, top=0.91, bottom=0.14)
@@ -151,7 +151,7 @@ def figures(results, out):
     GAP = 0.25 * 0.85  # between the four-bar groups
     order = [('original', COLOURS['original'], 'Original data'), ('hq_explabels', '#aad2ef', 'HQ, experimental labels only'),
              ('hq', COLOURS['hq'], 'HQ'), ('archipelago', FINCH, 'ArchipelaGO')]
-    scores = {**metric, **{k: r for k, r in seed_means(results / 'explabels_training').items() if k[1] == 'hq_explabels'}}
+    scores = {**metric, **{k: r for k, r in seed_means(labelled(results / 'explabels_training')).items() if k[1] == 'hq_explabels'}}
     bars = len(order)
     fig, ax = plt.subplots(figsize=(DOUBLE * 0.9, 2.55))
     fig.subplots_adjust(left=0.08, right=0.99, bottom=0.11, top=0.88)  # fixed, so the key can be placed against the axes
@@ -211,22 +211,22 @@ def table2(results, out):
     """Table 2: the paper's three comparisons in test micro-AUPRC (each published method's gain from its original data to
     ArchipelaGO; Finch on ArchipelaGO minus Finch on HQ + random, and minus each published method on ArchipelaGO), on
     every version of the test set, read from each version's contrasts.tsv. table2.tex is the tabular the manuscript
-    inputs (full text width, the reviewed labels shaded: colortbl, with `rowshade` defined by the document);
+    inputs (full text width, the main test labels shaded, per HEADLINE: colortbl, with `rowshade` defined by the document);
     table2_intervals.tex, the SI's copy at natural width, adds the paired 95% cluster-bootstrap intervals."""
-    metric = seed_means(results / 'main')
+    metric = seed_means(labelled(results / 'main'))
     comparators = sorted(PUBLISHED, key=lambda m: -float(metric[m, 'original', 'auprc']['value']))
     proteins = lambda folder, variant: next(int(r['proteins']) for r in read(results / folder / 'counts.tsv')  # noqa: E731
                                             if r['variant'] == variant)
     subsets = {float(r['cutoff']): int(r['proteins']) for r in read(results / 'no_hit' / 'subsets.tsv')}
-    # (name, proteins, results folder, main result) per group: the label versions from strictest to loosest, then the
+    # (name, proteins, results folder) per group: the label versions from strictest to loosest, then the
     # protein subsets; the groups are separated by a rule, not labelled
-    groups = [[('Experimental labels only', proteins('experimental_test_labels', 'exp'), 'experimental_test_labels', False),
-               ('Direct evidence only', proteins('experimental_test_labels', 'all'), 'direct_masked_test_labels', False),
-               ('Annotations masked', proteins('masked_test_labels', 'masked'), 'masked_test_labels', False),
-               ('Reviewed labels', proteins('experimental_test_labels', 'all'), 'main', True),
-               ('All GOA annotations', proteins('all_goa_test_labels', 'all_goa'), 'all_goa_test_labels', False)],
-              [(r'No training hit, E\,$\leq$\,10\textsuperscript{-3}', subsets[1e-3], 'no_hit/E0.001', False),
-               (r'No training hit, E\,$\leq$\,10', subsets[10.0], 'no_hit/E10', False)]]
+    groups = [[('Experimental labels only', proteins('experimental_test_labels', 'exp'), 'experimental_test_labels'),
+               ('Direct evidence only', proteins('experimental_test_labels', 'all'), 'direct_masked_test_labels'),
+               ('Annotations masked', proteins('masked_test_labels', 'masked'), 'masked_test_labels'),
+               ('Reviewed labels', proteins('experimental_test_labels', 'all'), 'main'),
+               ('All GOA annotations', proteins('all_goa_test_labels', 'all_goa'), 'all_goa_test_labels')],
+              [(r'No training hit, E\,$\leq$\,10\textsuperscript{-3}', subsets[1e-3], 'no_hit/E0.001'),
+               (r'No training hit, E\,$\leq$\,10', subsets[10.0], 'no_hit/E10')]]
     n = len(comparators)
     for name, intervals in (('table2.tex', False), ('table2_intervals.tex', True)):
         # full width through tabularx's stretched first column, not tabular*'s stretched gaps, which a shaded row leaves
@@ -241,14 +241,14 @@ def table2(results, out):
                  + ' & '.join(NAMES[m] for m in comparators) + r' \\']
         for group in groups:
             lines.append(r'\midrule')
-            for version, count, folder, main in group:
-                c = contrasts(results / folder)
+            for version, count, folder in group:
+                c = contrasts(labelled(results / folder) if folder.startswith('no_hit/') else results / folder)
                 row = [c['auprc', m, 'archipelago', m, 'original'] for m in comparators] + \
                       [c['auprc', 'finch', 'archipelago', 'finch', 'hq_random']] + \
                       [c['auprc', 'finch', 'archipelago', m, 'archipelago'] for m in comparators]
                 cells = [f"{half_up(r['difference'])} ({half_up(r['ci_low'])}--{half_up(r['ci_high'])})" if intervals
                          else half_up(r['difference']) for r in row]
-                lines.append((r'\rowcolor{rowshade}' if main else '') + f'{version} & {count:,} & ' + ' & '.join(cells)
+                lines.append((r'\rowcolor{rowshade}' if version == MAIN_LABELS else '') + f'{version} & {count:,} & ' + ' & '.join(cells)
                              + r' \\')
         lines += [r'\bottomrule', r'\end{tabular}' if intervals else r'\end{tabularx}', '']
         with open(out / name, 'w', encoding='utf-8', newline='\n') as handle:

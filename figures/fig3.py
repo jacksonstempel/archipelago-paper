@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import Affine2D, ScaledTranslation, blended_transform_factory
 
-from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, read, save, seed_means
+from figures.style import DOUBLE, GREY, INK, contrasts, fs, half_up, labelled, read, save, seed_means
 
 HQ, PICKED = '#2b8fd6', '#7565db'  # the HQ blue and ArchipelaGO violet of the other figures
 H = 3.5  # figure height, inches
@@ -104,9 +104,9 @@ def densities(ax, results):
 def filters(ax, results):
     """Finch's gain over HQ alone on the test proteins left by each homology filter (`none`: every test protein), from the
     random and the selected proteins; each value is printed on the far side of its point from zero."""
-    rows = [r for r in read(results / 'no_hit' / 'differences.tsv')
+    rows = [r for r in read(labelled(results / 'no_hit' / 'differences.tsv'))
             if r['method'] == 'finch' and r['base'] == 'hq' and r['subset'] != '1e-10']  # at 1e-10 only 62 proteins go
-    pairs = [contrasts(results / 'main' if r['subset'] == 'none' else results / 'no_hit' / f"E{r['subset']}") for r in rows]
+    pairs = [contrasts(labelled(results / 'main' if r['subset'] == 'none' else results / 'no_hit' / f"E{r['subset']}")) for r in rows]
     x = np.arange(len(rows))
     ax.axhline(0, color='#b5b8bd', lw=0.6, zorder=1)
     for s, color, lw, text in (('hq_random', BAR, 1.3, 'Random'), ('archipelago', PICKED, 1.6, 'ArchipelaGO')):
@@ -152,7 +152,7 @@ def panel_upset(fig, results):
 def draw(results, out):
     fig = plt.figure(figsize=(DOUBLE, H))
     letter(fig, 0, 'a')
-    panel_upset(fig, results / 'selection')
+    panel_upset(fig, labelled(results / 'selection'))
     width = DOUBLE - B_LEFT - 0.08
     letter(fig, B_LETTER, 'b')
     upper = axes(fig, B_LEFT, B_BOTTOM, width, TOP - B_BOTTOM)

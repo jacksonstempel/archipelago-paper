@@ -1,7 +1,9 @@
 """Shared figure style: Nature-family sizes (single column 89 mm, double column 183 mm), text at most 7 pt, bold lowercase
 panel letters, the paper's colours, rounding as in the text, reading result tables and saving."""
 import csv
+import os
 from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
 
 import matplotlib
 
@@ -44,6 +46,25 @@ def half_up(value, sign=False, places=3):
     return '+' + s if sign and not s.startswith('-') else s
 
 
+HEADLINE = os.environ.get('HEADLINE', 'reviewed')  # the test labels of the headline numbers: 'reviewed' or 'masked'
+if HEADLINE not in ('reviewed', 'masked'):
+    raise SystemExit(f"HEADLINE must be 'reviewed' or 'masked', not {HEADLINE!r}")
+MAIN_LABELS = 'Annotations masked' if HEADLINE == 'masked' else 'Reviewed labels'  # the main row of Table 2
+
+
+def labelled(path):
+    """The file or folder to read for a result that depends on the main test labels. With HEADLINE=masked it is the same
+    path under <root>/results_masked/ instead of <root>/results/; a missing one is an error, never the reviewed result."""
+    if HEADLINE == 'reviewed':
+        return path
+    parts = Path(path).parts
+    i = len(parts) - 1 - parts[::-1].index('results')
+    masked = Path(*parts[:i], 'results_masked', *parts[i + 1:])
+    if not masked.exists():
+        raise FileNotFoundError(f'HEADLINE=masked, but the masked counterpart of {path} is missing: {masked}')
+    return masked
+
+
 def read(path):
     with open(path, encoding='utf-8', newline='') as handle:
         return list(csv.DictReader(handle, delimiter='\t'))
@@ -64,7 +85,7 @@ def contrasts(results):
 def pr_curves(results):
     """{(method, training set): [(recall, precision)]} of the `mean` curves (their area is the seed mean of AUPRC)."""
     curves = {}
-    for r in read(results / 'pr_curves' / 'curves.tsv'):
+    for r in read(labelled(results / 'pr_curves' / 'curves.tsv')):
         if r['seed'] == 'mean':
             curves.setdefault((r['method'], r['training_set']), []).append((float(r['recall']), float(r['precision'])))
     return curves
