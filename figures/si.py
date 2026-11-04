@@ -410,8 +410,8 @@ def macro_table(results, out):
 # results/outside_masked/<method>/{table,contrasts}.tsv): micro-AUPRC (seed means) on all test proteins of each benchmark, on
 # the paper's own test labels (unmasked) and with the test proteins' computational GOA annotations masked, with paired 95%
 # intervals from a bootstrap over the test sequences. Models: method, the method retrained on its training split; finch_A,
-# Finch on that split; finch_A_screened, Finch on that split without the test proteins' relatives (TransFew and DPFunc);
-# finch_B, Finch on ArchipelaGO screened against the test proteins. TransFew: its Test_all.
+# Finch on that split; finch_A_screened, Finch on that split without the test proteins' relatives; finch_B, Finch on
+# ArchipelaGO screened against the test proteins. TransFew: its Test_all.
 VERSIONS = (('unmasked', "Paper's"), ('computational', 'Masked'))
 
 
@@ -437,7 +437,7 @@ def block(name, proteins, body):
 
 
 # Supplementary Table 17b: Finch on ArchipelaGO against Finch on the method's training split, as released and without the
-# test proteins' relatives (DeepGO-SE: no screened run)
+# test proteins' relatives
 SPLITS = (('finch_A', 'As released', 'finch_B - finch_A'),
           ('finch_A_screened', 'Relatives removed', 'finch_B - finch_A_screened'))
 
@@ -462,9 +462,8 @@ def outside_table(results, out):
         body = []
         for version, label in VERSIONS:
             cell, diff = outside(folder, method, test_set, version)
-            present = [s for s in SPLITS if s[0] in cell]
             body += [[label if k == 0 else '', split, r3(cell[model]['micro_AUPRC_mean']), r3(cell['finch_B']['micro_AUPRC_mean']),
-                      with_interval(diff[contrast])] for k, (model, split, contrast) in enumerate(present)]
+                      with_interval(diff[contrast])] for k, (model, split, contrast) in enumerate(SPLITS)]
         lines += ([r'\addlinespace'] if lines else []) + block(name, int(cell['method']['proteins']), body)
     write(out, 'table_outside_data.tex', lines)
 
@@ -472,8 +471,8 @@ def outside_table(results, out):
 # Supplementary Figure 3, in the look of main-text Fig. 4b (figures/main.py). a: Finch against the method retrained, both
 # trained on the method's training split, on the paper's labels, Finch's lead at the right. b: Finch on ArchipelaGO minus
 # Finch on the method's data, with the paired interval, on the paper's labels, with the computational annotations masked,
-# and masked against the method's data without the test proteins' relatives (TransFew and DPFunc). One colour, Finch's
-# violet; the fill counts the corrections. Drawn at the SI's text width, so that 7 pt is 7 pt on the page.
+# and masked against the method's data without the test proteins' relatives. One colour, Finch's violet; the fill counts
+# the corrections. Drawn at the SI's text width, so that 7 pt is 7 pt on the page.
 MARK = {'deepgose': ('o', 4.2), 'transfew': ('s', 3.8), 'dpfunc': ('^', 4.6)}  # as Fig. 4b
 FINCH, DOT_INK, ROW_LINE, ZERO_LINE, GRID = COLOURS['archipelago'], '#55595f', '#e6e7e9', '#8f939a', '#cfd1d5'
 TEXT = 7  # points, every text of the figure
@@ -566,8 +565,6 @@ def outside_figure(results, out):
     for i, (method, test_set, _) in enumerate(BENCHMARKS):
         for (version, contrast, _, style), dy in zip(STEPS, SUBROW):
             _, diff = outside(folder, method, test_set, version)
-            if contrast not in diff:  # DeepGO-SE: no screened run
-                continue
             d, y = diff[contrast], 2 - i + dy
             b.plot([float(d['ci_low']), float(d['ci_high'])], [y, y], color=FINCH, lw=1.0, solid_capstyle='butt', zorder=2)
             b.plot(float(d['difference']), y, 'o', ms=5.6, mec=FINCH, mew=1.0, zorder=3, **style)

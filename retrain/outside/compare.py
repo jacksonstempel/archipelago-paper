@@ -76,7 +76,7 @@ class Bench:
                        'finch_B': [('finch', ARM_B, s) for s in FINCH],
                        'method': [('own', None, s) for s in OWN[method][0]],
                        'released': [('released', None, 0)]}
-        if (self.path / 'runs/finch' / ARM_A_SCREENED.format(method)).exists():  # arm A screened (TransFew, DPFunc)
+        if (self.path / 'runs/finch' / ARM_A_SCREENED.format(method)).exists():  # arm A screened (all three benchmarks)
             self.models['finch_A_screened'] = [('finch', ARM_A_SCREENED.format(method), s) for s in FINCH]
 
     def raw(self, kind, name, seed):

@@ -276,7 +276,7 @@ python -m retrain.outside.score deepgose --data out/deepgose --replication rep/d
 (`inputs/embeddings/{esm2_15b_l48,prott5_l21}/archipelago`, e.g. from the release as in data/README.md). The results are
 reported for all test proteins and for those without a relative in either training set, and for the full vocabulary and
 the terms with training positives in both arms. `--screen-original` adds a third training set, the method's split without
-the test proteins' relatives under the same screen (`original_<method>_screened`; the paper: TransFew and DPFunc), trained
+the test proteins' relatives under the same screen (`original_<method>_screened`; the paper: all three methods), trained
 like `original_<method>` and scored with `retrain.outside.score --screened-original`; `compare` and `masked` include it
 when its Finch runs exist.
 

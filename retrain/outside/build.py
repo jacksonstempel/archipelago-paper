@@ -28,7 +28,7 @@ released dataset, and Finch's embeddings of it in inputs/embeddings/<encoder>/ar
 
 --screen-original: also datasets/original_<method>_screened, the authors' training split without the proteins the same
 screen links to the test set (counts in build.json); train Finch on it as on original_<method>, score it with
-retrain.outside.score --screened-original (the paper: TransFew and DPFunc).
+retrain.outside.score --screened-original (the paper: all three methods).
 
 --addback NAME: the paper's runs added back the proteins ArchipelaGO left out only because of the paper's own benchmark
 (its 2,500 development and 5,000 test proteins and the 4,063 HQ proteins related to them), labelled as HQ training
@@ -153,7 +153,7 @@ def main():
     parser.add_argument('--addback', help="a dataset of MAIN added to ArchipelaGO's training proteins before the screen")
     parser.add_argument('--screen-original', action='store_true',
                         help='also datasets/original_<method>_screened: the training split without the relatives of the test '
-                             'proteins under the same screen as archipelago_screened (the paper: TransFew and DPFunc)')
+                             'proteins under the same screen as archipelago_screened (the paper: all three methods)')
     add_argument(parser)
     a = parser.parse_args()
     root, replication, main_root = data_root(a.data), Path(a.replication), Path(a.archipelago)
