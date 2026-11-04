@@ -1,6 +1,6 @@
 """Score a set of fits with the paper's scorer (archipelago.scorer) and write their paired contrasts.
 
-    python -m retrain.scoring.score RUN [--data DIR] [--device cuda|cpu]
+    python -m retrain.scoring.score RUN [--labels reviewed|masked] [--data DIR] [--device cuda|cpu]
 
 RUN is one of
   main                every model on every training set of the main comparisons (Table 1, Figs. 2 and 4b, SI tables)
@@ -19,6 +19,10 @@ Steps:
    folder found; a fit with record.json and both score files). TransFew's further checkpoints (side files bcebest,
    auprcbest) are scored as the methods transfew_bcebest and transfew_auprcbest. A missing fit stops the export.
 3. archipelago-score CONFIG --out <root>/results/RUN (which must not exist yet).
+   With --labels masked, steps 1 and 2 are the earlier
+   scoring's: its config for RUN (scoring/RUN.json) is read again with the release bundle (every version of the labels) as its data,
+   scoring/RUN_masked.json, and the scorer's --labels masked writes <root>/results_masked/RUN (the main test labels of the paper:
+   the reviewed GOA assertions neither positive nor negative).
 4. <root>/results/RUN/contrasts.tsv: for every metric (auprc, fmax, f1, smin), every pair of training sets of one model,
    every pair of models on one training set, Finch on each published method's original data minus that method on it
    (whose set is called `original`), and Finch on ArchipelaGO minus DeepGO-SE on its original data: the difference of the seed means and its paired 95% cluster-bootstrap interval (2.5th
@@ -36,7 +40,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archipelago.benchmark import write_bundle
+from archipelago.benchmark import from_release, write_bundle
 from retrain.common import add_argument, data_root, load, log, score_file
 from retrain.finch import config as finch_config
 
@@ -56,6 +60,29 @@ RUNS = {  # run: {method: training sets}
                            **{m: ('hq_explabels', 'hq', 'archipelago') for m in BASELINES}},
 }
 CONTRAST_METRICS = ('auprc', 'fmax', 'f1', 'smin')
+RESULTS = {'reviewed': 'results', 'masked': 'results_masked'}  # where the results on each version of the main test labels go
+
+
+def results_dir(root, labels='reviewed'):
+    """<root>/results, or <root>/results_masked for the results on the masked test labels (same folders and files)."""
+    return Path(root) / RESULTS[labels]
+
+
+def release_bundle(root):
+    """<root>/scoring/release_data: the scorer's bundle written from the release, with every version of the labels (once)."""
+    data = Path(root) / 'scoring' / 'release_data'
+    if not data.exists():
+        from_release(Path(root) / 'release', data)
+    return data
+
+
+def masked_config(root, run, name=None):
+    """<root>/scoring/<name or run>_masked.json: the config of un (the same predictions) with the release bundle as its data."""
+    path = Path(root) / 'scoring' / f'{name or run}_masked.json'
+    config = json.loads((Path(root) / 'scoring' / f'{run}.json').read_text())
+    config['data'] = os.path.relpath(release_bundle(root), path.parent).replace(os.sep, '/')
+    path.write_text(json.dumps(config, indent=1) + '\n')
+    return path
 
 
 def bundle(root):
@@ -153,17 +180,22 @@ def contrasts(results):
     return rows
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('run', choices=list(RUNS))
     parser.add_argument('--device', choices=['cuda', 'cpu'], help="the scorer's device (default: cuda if available)")
+    parser.add_argument('--labels', choices=list(RESULTS), default='reviewed',
+                        help='the version of the main test labels: reviewed (results/RUN) or masked (results_masked/RUN, the '
+                             'config of an earlier reviewed scoring of RUN rescored, same predictions)')
     add_argument(parser)
-    a = parser.parse_args()
+    a = parser.parse_args(argv)
     root = data_root(a.data)
-    data = bundle(root)
-    config = write_config(root / 'scoring' / f'{a.run}.json', data, fits(root, a.run))
-    out = root / 'results' / a.run
-    run_scorer(root, config, out, a.device)
+    if a.labels == 'masked':
+        config = masked_config(root, a.run)
+    else:
+        config = write_config(root / 'scoring' / f'{a.run}.json', bundle(root), fits(root, a.run))
+    out = results_dir(root, a.labels) / a.run
+    run_scorer(root, config, out, a.device, labels=None if a.labels == 'reviewed' else a.labels)
     contrasts(out)
 
 

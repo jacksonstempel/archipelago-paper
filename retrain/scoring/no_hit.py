@@ -1,7 +1,7 @@
 """Test proteins without training relatives: every model of the main run scored on the test proteins that have no DIAMOND
 hit in any training set at progressively looser E-value cutoffs (Supplementary Information).
 
-    python -m retrain.scoring.no_hit [--data DIR] [--search] [--threads 32] [--device cuda|cpu]
+    python -m retrain.scoring.no_hit [--data DIR] [--labels reviewed|masked] [--search] [--threads 32] [--device cuda|cpu]
 
 1. The subsets: for each cutoff c in 1e-10, 1e-6, 1e-3, 0.01, 0.1, 1, 10, the test proteins without a hit at E <= c. By
    default they are the paper's, from the released table release/benchmark_no_hit (no_hit_up_to >= c): 4,938, 4,781,
@@ -16,18 +16,22 @@ hit in any training set at progressively looser E-value cutoffs (Supplementary I
 3. results/no_hit/differences.tsv: per subset (`none` = all test proteins, from results/main), model and earlier training
    set, the test micro-AUPRC of ArchipelaGO minus that set (seed means) with its paired 95% cluster-bootstrap interval.
 
+--labels masked scores the same subsets on the masked test labels (the subsets stay the same) into results_masked/no_hit; it needs
+results_masked/main (retrain.scoring.score main --labels masked) instead of results/main.
+
 Needs results/main (python -m retrain.scoring.score main); --search needs DIAMOND (2.2.4 in the paper) on PATH or in
 $DIAMOND.
 """
 import argparse
 import csv
+import json
 import subprocess
 from pathlib import Path
 
 import numpy as np
 
 from retrain.common import DIAMOND_DBSIZE, add_argument, data_root, diamond, load, log, write_fasta
-from retrain.scoring.score import bundle, contrasts, fits, run_scorer, write_config
+from retrain.scoring.score import RESULTS, bundle, contrasts, fits, masked_config, results_dir, run_scorer, write_config
 
 TRAINING_SETS = ('goa', 'hq', 'hq_random', 'archipelago', 'original_deepgose', 'original_dpfunc', 'original_transfew')
 CUTOFFS = (1e-10, 1e-6, 1e-3, 1e-2, 1e-1, 1.0, 10.0)
@@ -82,16 +86,17 @@ def seed_means(results):
     return value, replicates
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--search', action='store_true',
                         help="search the training sets here instead of reading the paper's subsets (see above)")
     parser.add_argument('--threads', type=int, default=32)
     parser.add_argument('--device', choices=['cuda', 'cpu'])
+    parser.add_argument('--labels', choices=list(RESULTS), default='reviewed', help='the version of the main test labels')
     add_argument(parser)
-    a = parser.parse_args()
+    a = parser.parse_args(argv)
     root = data_root(a.data)
-    out = root / 'results' / 'no_hit'
+    out = results_dir(root, a.labels) / 'no_hit'
     out.mkdir(parents=True, exist_ok=False)
     released = released_subsets(root) if (root / 'release' / 'benchmark_no_hit').exists() else None
     if a.search:
@@ -107,11 +112,15 @@ def main():
     else:
         subsets_of = released
         log("the paper's subsets, from release/benchmark_no_hit")
-    data = bundle(root)
-    config = write_config(root / 'scoring' / 'no_hit.json', data, fits(root, 'main'))
+    if a.labels == 'masked':
+        config = masked_config(root, 'main', 'no_hit')
+        data = (config.parent / json.loads(config.read_text())['data']).resolve()
+    else:
+        data = bundle(root)
+        config = write_config(root / 'scoring' / 'no_hit.json', data, fits(root, 'main'))
     with open(data / 'benchmark' / 'test.tsv', newline='') as handle:
         table = list(csv.DictReader(handle, delimiter='\t'))
-    subsets = [('none', len(table), len({r['cluster'] for r in table}), root / 'results' / 'main')]
+    subsets = [('none', len(table), len({r['cluster'] for r in table}), results_dir(root, a.labels) / 'main')]
     for cutoff in CUTOFFS:
         keep = {r['protein_id'] for r in table if r['protein_id'] in subsets_of[cutoff]}
         clusters = len({r['cluster'] for r in table if r['protein_id'] in keep})
@@ -119,7 +128,7 @@ def main():
         log(f'E <= {name}: {len(keep):,} test proteins without a hit, {clusters:,} clusters')
         listed = root / 'scoring' / f'no_hit_E{name}.txt'
         listed.write_text(''.join(f'{h}\n' for h in sorted(keep)), encoding='utf-8')
-        run_scorer(root, config, out / f'E{name}', a.device, proteins=listed)
+        run_scorer(root, config, out / f'E{name}', a.device, labels=None if a.labels == 'reviewed' else a.labels, proteins=listed)
         contrasts(out / f'E{name}')
         subsets.append((name, len(keep), clusters, out / f'E{name}'))
     with open(out / 'subsets.tsv', 'w', newline='\n') as handle:

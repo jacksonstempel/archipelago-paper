@@ -2,11 +2,14 @@
 all terms, over the common terms (held by at least 1,000 HQ proteins, the line of the rare-function filter) and over the rest.
 A stratum is the pairs of its terms; every protein and cluster is kept.
 
-    python -m retrain.scoring.term_strata [--data DIR] [--device cuda|cpu]
+    python -m retrain.scoring.term_strata [--data DIR] [--labels reviewed|masked] [--device cuda|cpu]
 
 A score is an exact micro-AUPRC over the pairs of a stratum (replicate_auprc): the scorer's 10,000 resamples of the test
 clusters give the paired 95% intervals, and a resample that draws every cluster once gives the point estimate. A model's value
 is the mean over its seeds.
+
+--labels masked: the masked test labels instead (the reviewed GOA assertions are neither positive nor negative, in no stratum;
+the strata are the same terms), written to results_masked/term_strata/gains.tsv.
 
 Writes results/term_strata/gains.tsv (stratum, terms, positives, method, training_set, minus_training_set, value, minus_value,
 difference, ci_low, ci_high). Needs results/main. One minute on one GPU.
@@ -19,8 +22,8 @@ import torch
 from archipelago.evaluate import cluster_draws
 from archipelago.go import Propagation, read_parents
 from retrain.common import add_argument, data_root, load, log
-from retrain.scoring.score import PUBLISHED, bundle, fits
-from retrain.scoring.test_labels import annotation_sets
+from retrain.scoring.score import PUBLISHED, RESULTS, bundle, fits, results_dir
+from retrain.scoring.test_labels import annotation_sets, version_labels
 
 COMMON = 1000
 MODELS = [('finch', s) for s in ('hq', 'hq_random', 'archipelago')] + [(m, s) for m in PUBLISHED for s in ('original', 'hq', 'archipelago')]
@@ -60,20 +63,25 @@ def replicate_auprc(s, y, keep, cluster, draws, chunk=1000):
     return torch.cat(out).cpu().numpy()
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--device', choices=['cuda', 'cpu'], help='default: cuda if available')
+    parser.add_argument('--labels', choices=list(RESULTS), default='reviewed', help='the version of the main test labels')
     add_argument(parser)
-    a = parser.parse_args()
+    a = parser.parse_args(argv)
     root = data_root(a.data)
-    out = root / 'results' / 'term_strata'
+    out = results_dir(root, a.labels) / 'term_strata'
     out.mkdir(parents=True, exist_ok=False)
     device = torch.device(a.device or ('cuda' if torch.cuda.is_available() else 'cpu'))
     torch.backends.cuda.matmul.allow_tf32 = False
     tensor = lambda x: torch.as_tensor(x, device=device)  # noqa: E731
 
     test, vocabulary, pairs, labels_of = annotation_sets(root)
-    official = tensor(labels_of(pairs['all']))
+    if a.labels == 'masked':
+        official, left_out = (tensor(m) for m in version_labels(pairs, labels_of, 'masked'))
+    else:
+        official, left_out = tensor(labels_of(pairs['all'])), tensor(np.zeros(test.labels.shape, dtype=bool))
+    counted = ~left_out  # the pairs that count
     common = tensor(np.asarray(load(root, 'hq').labels.sum(axis=0)).ravel() >= COMMON)
     strata = {'all': torch.ones_like(common), 'common': common, 'rare': ~common}
 
@@ -91,7 +99,7 @@ def main():
         for files in seeds.values():
             s = propagate(torch.as_tensor(np.load(files['test']), dtype=torch.float32, device=device))
             for name, terms in strata.items():
-                k = terms[None, :].expand_as(official)
+                k = counted & terms[None, :]
                 per_seed.setdefault(name, []).append((float(replicate_auprc(s, official, k, cluster, once)[0]),
                                                       replicate_auprc(s, official, k, cluster, draws)))
         for name, values in per_seed.items():

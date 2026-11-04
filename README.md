@@ -206,10 +206,11 @@ python -m retrain.scoring.shared_terms               # the data comparisons on t
 python -m retrain.scoring.macro                      # the main comparisons in term-centric (macro) AUPRC (GPU)
 python -m retrain.scoring.no_hit                     # test proteins without training relatives (Fig. 3c; the paper's subsets)
 python -m retrain.scoring.label_grid                 # direct-evidence test labels (Table 2), every model on every version (GPU)
+python -m retrain.scoring.headline                   # the results that depend on the test labels on the main test labels (masked) -> results_masked/ (GPU)
 python -m retrain.scoring.sizes                      # sizes of every training set
 python -m retrain.scoring.parameters                 # trainable parameters of the models on ArchipelaGO (CPU)
 python -m retrain.scoring.training_cost              # GPU-hours of the training runs, from the fits' records
-python -m figures.make_all                           # every figure and table -> <data root>/figures
+python -m figures.make_all                           # every figure and table -> <data root>/figures (HEADLINE=masked: on the main test labels)
 ```
 
 Scoring the main comparison takes about half a minute on one H100 (a few seconds per run on 32 CPU cores). The figure

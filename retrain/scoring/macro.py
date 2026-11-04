@@ -1,7 +1,7 @@
 """Term-centric (macro) AUPRC: the average precision of each GO term over the test proteins, averaged over the terms with at
 least one test positive (Supplementary Note 11 and Table 15; the paper's scorer has no macro metric).
 
-    python -m retrain.scoring.macro [--data DIR] [--device cuda|cpu]
+    python -m retrain.scoring.macro [--data DIR] [--labels reviewed|masked] [--device cuda|cpu]
 
 Every model and seed of the scorer configs of the main comparison and of the training run with experimental labels only
 (<root>/scoring/{main,explabels_training}.json, written by retrain.scoring.score; a model listed in both, with the same test
@@ -18,6 +18,9 @@ files, once): the raw test scores (rows as the scorer reads them) propagated wit
   macro_cluster_* columns; contrasts.tsv, bootstrap `clusters (diagnostic, not used)`).
   Checks on the first run: the point value equals the mean of the scorer's micro_auprc applied to each term's column, and
   two cluster replicates equal that reference on the data set with the proteins repeated.
+--labels masked: the masked test labels (every metric leaves the reviewed GOA assertions' pairs out: neither positive nor negative, in the
+micro-AUPRC and in each term's average precision); the databanks are results_masked/{main,explabels_training}, the output
+results_masked/macro.
 Seed means; a model's replicates are the means of its seeds' (as the scorer). Writes results/macro/models.tsv, seeds.tsv,
 contrasts.tsv (the paper's comparisons; figures/si.py reads it), contrasts_all.tsv (every pair of sets within a model and
 of models within a set; micro over clusters, macro over terms), replicates.npz, per_term.npz (each model's per-term
@@ -41,16 +44,19 @@ from archipelago import evaluate as ev, scorer
 from archipelago.go import Propagation
 from archipelago.io import read_table, read_vocabulary
 from retrain.paths import add_argument, data_root
+from retrain.scoring.score import RESULTS, masked_config, results_dir
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--device', default='cuda', help='cuda (the paper) or cpu')
+    parser.add_argument('--labels', choices=list(RESULTS), default='reviewed', help='the version of the main test labels')
     add_argument(parser)
-    a = parser.parse_args()
-    root, device = data_root(a.data), a.device
-    out = root / 'results' / 'macro'
-    pairs = [(root / 'scoring' / f'{run}.json', root / 'results' / run) for run in ('main', 'explabels_training')]
+    a = parser.parse_args(argv)
+    root, device, labels = data_root(a.data), a.device, a.labels
+    out = results_dir(root, labels) / 'macro'
+    pairs = [(masked_config(root, run) if labels == 'masked' else root / 'scoring' / f'{run}.json', results_dir(root, labels) / run)
+             for run in ('main', 'explabels_training')]
     CACHE = root / 'cache' / 'scoring'
     dev = torch.device(device)
     torch.backends.cuda.matmul.allow_tf32 = False  # the count products below must be exact (integers below 2**24 in float32)
@@ -90,18 +96,22 @@ def main():
     test_table = read_table(data / 'benchmark/test.tsv')
     ids = [r['protein_id'] for r in test_table]
     dev_ids = [r['protein_id'] for r in read_table(data / 'benchmark/development.tsv')]
-    inputs = scorer.prepared_inputs(data, scorer.data_checksums(data, 'reviewed'), vocabulary, test_table, dev_ids, 'test', 'reviewed',
+    inputs = scorer.prepared_inputs(data, scorer.data_checksums(data, labels), vocabulary, test_table, dev_ids, 'test', labels,
                                     None, 10_000, CACHE)
-    if len(inputs['test_rows']) != len(ids) or len(inputs['test_masked']):
-        raise ValueError('every test protein must be scored, none masked (the reviewed labels)')
+    if len(inputs['test_rows']) != len(ids):
+        raise ValueError('every test protein must be scored (the label version drops proteins)')
     ptr = inputs['parent_ptr']
     propagate = Propagation([inputs['parent'][a:b].tolist() for a, b in zip(ptr[:-1], ptr[1:])])
     n = len(ids)
     y = torch.zeros(n * T, dtype=torch.bool, device=dev)
     y[torch.as_tensor(inputs['test'], device=dev)] = True
     y = y.view(n, T)
+    left_out = torch.zeros(n * T, dtype=torch.bool, device=dev)
+    left_out[torch.as_tensor(inputs['test_masked'], device=dev)] = True
+    left_out = left_out.view(n, T)
+    keep = ~left_out  # the pairs that count
     clusters, draws = inputs['clusters'], inputs['draws']
-    bench = ev.Benchmark(y, inputs['ia'], clusters, draws, device=dev)  # micro-AUPRC: the scorer's own code
+    bench = ev.Benchmark(y, inputs['ia'], clusters, draws, device=dev, mask=left_out if left_out.any() else None)  # micro-AUPRC: the scorer's own code
     R, K = draws.shape
 
     # ---- macro set-up: positives sorted by term; per-cluster indicator; draws
@@ -118,7 +128,8 @@ def main():
     onehot[cl, torch.arange(n, device=dev)] = 1
     W = torch.as_tensor(draws, dtype=torch.float32, device=dev)
     pos_cluster = cl[rows]
-    say(f'test: {n} proteins, {M} positive pairs on {NT} terms (the terms averaged), {K} clusters, {R} replicates')
+    say(f'test ({labels} labels): {n} proteins, {M} positive pairs on {NT} terms (the terms averaged), {int(left_out.sum())} left-out '
+        f'pairs, {K} clusters, {R} replicates')
 
     def segment_sums(x):  # (r x M), positives sorted by term -> (r x NT) sums per term
         c = torch.cumsum(x, 1)
@@ -133,7 +144,7 @@ def main():
         for a in range(0, M, chunk_pairs):
             b = min(a + chunk_pairs, M)
             cols = terms[a:b]
-            at_or_above = s[:, cols] >= v[None, a:b]  # the positive's tie group and everything above it
+            at_or_above = (s[:, cols] >= v[None, a:b]) & keep[:, cols]  # the positive's tie group and everything above it
             N[:, a:b] = onehot @ at_or_above.float()
             TP[:, a:b] = onehot @ (at_or_above & y[:, cols]).float()
         precision = TP.sum(0).double() / N.sum(0).double()
@@ -150,12 +161,13 @@ def main():
             averaged.append(has.sum(1))
         return float(ap.mean()), ap.cpu().numpy(), torch.cat(reps).cpu().numpy(), torch.cat(averaged).cpu().numpy()
 
-    def reference(s_np, y_np, weights=None):
-        """Mean over terms with a positive of the scorer's micro_auprc on each term's column (proteins repeated by weights)."""
+    def reference(s_np, y_np, keep_np, weights=None):
+        """Mean over terms with a positive of the scorer's micro_auprc on each term's column (proteins repeated by weights; the
+        pairs that do not count left out)."""
         if weights is not None:
-            keep = np.repeat(np.arange(len(s_np)), weights)
-            s_np, y_np = s_np[keep], y_np[keep]
-        values = [ev.micro_auprc(s_np[:, [t]], y_np[:, [t]]) for t in np.flatnonzero(y_np.any(0))]
+            repeated = np.repeat(np.arange(len(s_np)), weights)
+            s_np, y_np, keep_np = s_np[repeated], y_np[repeated], keep_np[repeated]
+        values = [ev.micro_auprc(s_np[keep_np[:, t]][:, [t]], y_np[keep_np[:, t]][:, [t]]) for t in np.flatnonzero(y_np.any(0))]
         return float(np.mean(values)), len(values)
 
     def load(path):
@@ -200,13 +212,13 @@ def main():
             if not done:  # the macro checks, on the first run
                 say(f'cluster bootstrap: terms with a drawn positive per replicate, of {NT}: mean {averaged.mean():.0f}, '
                     f'2.5-97.5% {np.percentile(averaged, 2.5):.0f}-{np.percentile(averaged, 97.5):.0f}')
-                s_np, y_np = s.cpu().numpy(), y.cpu().numpy()
-                ref, count = reference(s_np, y_np)
+                s_np, y_np, keep_np = s.cpu().numpy(), y.cpu().numpy(), keep.cpu().numpy()
+                ref, count = reference(s_np, y_np, keep_np)
                 say(f'check macro point {method}/{training_set}/{seed}: {value:.12f}, reference {ref:.12f} over {count} terms')
                 if abs(ref - value) > 1e-9 or count != NT:
                     raise ValueError('the macro point value does not reproduce the reference')
                 for r in (0, 1):
-                    ref, count = reference(s_np, y_np, draws[r][clusters])
+                    ref, count = reference(s_np, y_np, keep_np, draws[r][clusters])
                     say(f'check macro replicate {r}: {replicates[r]:.12f}, reference {ref:.12f} over {count} terms')
                     if abs(ref - replicates[r]) > 1e-9:
                         raise ValueError('a macro replicate does not reproduce the reference')

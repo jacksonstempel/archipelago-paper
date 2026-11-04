@@ -203,6 +203,18 @@ def test_a_test_label_version_is_checked_against_the_release_and_scored(tmp_path
     assert (int(version['proteins']), int(version['propagated_pairs'])) == (proteins, pairs)
     assert {r['labels'] for r in read_table(out / 'metrics.tsv')} == {labels}
 
+def test_the_main_test_labels_masked_are_scored_from_the_reviewed_config(tmp_path, monkeypatch):
+    tiny_root(tmp_path)
+    models = release_of(tmp_path)
+    monkeypatch.setattr(score, 'fits', lambda root, run: models)
+    for argv in (['score', 'main'], ['score', 'main', '--labels', 'masked']):
+        monkeypatch.setattr(sys, 'argv', [*argv, '--data', str(tmp_path), '--device', 'cpu'])
+        score.main()
+    for labels, folder, pairs, left_out in (('reviewed', 'results', 16, 0), ('masked', 'results_masked', 15, 3)):
+        benchmark = json.loads((tmp_path / folder / 'main' / 'inputs.json').read_text())['benchmark']
+        assert (benchmark['labels'], benchmark['test_positive_pairs'], benchmark['test_masked_pairs']) == (labels, pairs, left_out)
+
+
 
 def test_a_released_label_table_that_differs_from_its_definition_stops_the_scoring(tmp_path, monkeypatch):
     tiny_root(tmp_path)

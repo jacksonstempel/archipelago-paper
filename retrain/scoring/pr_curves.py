@@ -1,7 +1,7 @@
 """Micro-averaged precision-recall curves on the test set of Finch and the published methods on every training set they
 share (Supplementary Figures), from the scored files of the main and explabels_training runs.
 
-    python -m retrain.scoring.pr_curves [--data DIR] [--device cuda|cpu]
+    python -m retrain.scoring.pr_curves [--data DIR] [--labels reviewed|masked] [--device cuda|cpu]
 
 The scorer's code path (archipelago.scorer): test labels and scores propagated with archipelago.go.Propagation, NaN
 scores set to 0 and clipped to [0, 1]. All protein-term pairs are pooled and sorted by score; each distinct score is one
@@ -9,6 +9,8 @@ operating point (precision = TP / predicted, recall = TP / positives), so the st
 curve is read at recall k/500, k = 1..500 (the precision of the first operating point reaching that recall; no
 interpolation). Per model: one curve per seed and `mean` (the per-recall average of the seeds' curves; its exact area is
 the seed mean of AUPRC).
+
+--labels masked: the masked test labels (the pairs the reviewed GOA assertions add are neither positive nor negative, in no operating\npoint), from results_masked/{main,explabels_training}, into results_masked/pr_curves.
 
 Writes results/pr_curves/curves.tsv (method, training_set, seed, recall, precision) and check.tsv; stops unless every
 exact step area equals the micro-AUPRC of its run's metrics.tsv to three decimals.
@@ -22,30 +24,37 @@ import numpy as np
 from archipelago.go import Propagation, read_parents
 from archipelago.io import read_labels, read_table, read_vocabulary
 from retrain.common import add_argument, data_root, log
-from retrain.scoring.score import ORIGINAL, PUBLISHED
+from archipelago.benchmark import version_files
+from retrain.scoring.score import ORIGINAL, PUBLISHED, RESULTS, release_bundle, results_dir
 
 METHODS = ('finch', *PUBLISHED)
 RUNS = {'main': ('original', *ORIGINAL.values(), 'goa', 'hq', 'archipelago'), 'explabels_training': ('hq_explabels',)}
 GRID = np.arange(1, 501) / 500
 
 
-def main():
+def main(argv=None):
     import torch
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--device', choices=['cuda', 'cpu'])
+    parser.add_argument('--labels', choices=list(RESULTS), default='reviewed', help='the version of the main test labels')
     add_argument(parser)
-    a = parser.parse_args()
+    a = parser.parse_args(argv)
     root = data_root(a.data)
-    out = root / 'results' / 'pr_curves'
+    out = results_dir(root, a.labels) / 'pr_curves'
     out.mkdir(parents=True, exist_ok=False)
     device = torch.device(a.device or ('cuda' if torch.cuda.is_available() else 'cpu'))
     scoring = root / 'scoring'  # every run's config is here, and shares the bundle
-    data = scoring / json.loads((scoring / 'main.json').read_text())['data']
+    data = scoring / json.loads((scoring / 'main.json').read_text())['data'] if a.labels == 'reviewed' else release_bundle(root)
     vocabulary = read_vocabulary(data / 'vocabulary.txt')
     ids = [r['protein_id'] for r in read_table(data / 'benchmark' / 'test.tsv')]
     propagate = Propagation(read_parents(data / 'go-basic.obo', vocabulary))
-    y = propagate(read_labels(data / 'benchmark' / 'test_labels.tsv', ids, vocabulary).astype(np.float32)) > 0
+    labels_file, mask_file = version_files(a.labels, 'test')
+    y = propagate(read_labels(data / labels_file, ids, vocabulary).astype(np.float32)) > 0
     y = torch.as_tensor(y, device=device).reshape(-1)
+    keep = torch.ones_like(y)  # the pairs that count
+    if mask_file:
+        keep = torch.as_tensor(read_labels(data / mask_file, ids, vocabulary) == 0, device=device).reshape(-1)
+    y = y[keep]
     positives = int(y.sum())
 
     def load(path):  # as the scorer: rows in benchmark order, or reordered by the file's .ids.txt
@@ -59,7 +68,7 @@ def main():
         return torch.as_tensor(np.ascontiguousarray(values, dtype=np.float32), device=device)
 
     def curve(s):  # propagated scores -> (exact step area, precision at GRID)
-        s = s.nan_to_num(0.0).clamp(0, 1).add(0.0).reshape(-1)
+        s = s.nan_to_num(0.0).clamp(0, 1).add(0.0).reshape(-1)[keep]
         s, order = torch.sort(s, descending=True, stable=True)
         tp = torch.cumsum(y[order].double(), 0)
         end = torch.nonzero(torch.cat([s[1:] != s[:-1], torch.tensor([True], device=device)])).squeeze(1)
@@ -71,7 +80,7 @@ def main():
 
     rows, checks = [], []
     for run, training_sets in RUNS.items():
-        with open(root / 'results' / run / 'metrics.tsv', newline='') as handle:
+        with open(results_dir(root, a.labels) / run / 'metrics.tsv', newline='') as handle:
             scored = {(r['method'], r['training_set'], r['seed']): float(r['value'])
                       for r in csv.DictReader(handle, delimiter='\t') if r['split'] == 'test' and r['metric'] == 'auprc'}
         for model in json.loads((scoring / f'{run}.json').read_text())['models']:

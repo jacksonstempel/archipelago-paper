@@ -29,10 +29,10 @@ from collections import Counter
 import numpy as np
 import pyarrow.parquet as pq
 
-from archipelago.benchmark import from_release, version_files
+from archipelago.benchmark import version_files
 from archipelago.io import read_labels
 from retrain.common import Ontology, add_argument, data_root, load, log, read_annotations
-from retrain.scoring.score import contrasts, fits, run_scorer, write_config
+from retrain.scoring.score import contrasts, fits, release_bundle, run_scorer, write_config
 
 EXPERIMENTAL = {'EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP', 'HTP', 'HDA', 'HMP', 'HGI', 'HEP'}
 REVIEW_SOURCE = 'literature review (this work)'  # the source of the review's accepted assertions in annotations.tsv
@@ -105,9 +105,7 @@ def main():
     official = propagate(pairs['all'])
     y, masked = version_labels(pairs, propagate, a.labels)
 
-    data = root / 'scoring' / 'release_data'
-    if not data.exists():
-        from_release(root / 'release', data)
+    data = release_bundle(root)
     labels_file, mask_file = version_files(a.labels, 'test')
     if ((read_labels(data / labels_file, test.seq_ids, vocabulary) > 0) != y).any():
         raise ValueError(f'the released {a.labels} test labels differ from their definition')
