@@ -18,7 +18,7 @@ least one positive in one training set.
 3. results/shared_terms/summary.tsv and summary.md: for each original set, the paper's data comparisons over every term
    and over the terms the set covers (seed means, paired 95% cluster-bootstrap intervals): the published method from its
    original data to HQ to ArchipelaGO, Finch from the set to ArchipelaGO, and the spread of the three published methods
-   on ArchipelaGO (best minus worst; for Smin, lower is better). figures/si.py reads summary.tsv.
+   on ArchipelaGO (best minus worst; for Smin, lower is better).
 
 Needs results/main (retrain.scoring.score main). About a minute per set on one GPU.
 """

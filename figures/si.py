@@ -12,12 +12,9 @@ the figures, written into <out>/si/. Reads, under <root>/results/:
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
   training_cost.tsv                                        retrain.scoring.training_cost
+  macro/contrasts.tsv                                      retrain.scoring.macro (Supplementary Table 15)
   outside_masked/<method>/{table,contrasts}.tsv            retrain.outside.masked bootstrap (its work folder; Supplementary
-                                                           Tables 16-17, Figures 3-4)
-  outside_masked/deepgose/pooling_contrasts.tsv            retrain.outside.masked pooling deepgose (Supplementary Table 19)
-  outside_compare/<method>/relatives.tsv                   retrain.outside.compare (its outside/compare/relatives.tsv;
-                                                           Supplementary Table 18)
-  shared_terms/summary.tsv                                 retrain.scoring.shared_terms (Supplementary Table 20)
+                                                           Table 17, Supplementary Figure 3)
 
 Main-text Table 2 with intervals (table2_intervals.tex) is written beside Table 2 by figures/main.py.
 
@@ -45,9 +42,9 @@ SHARED = [('original_dpfunc', "DPFunc's original data", 'dpfunc'), ('original_tr
           ('original_deepgose', "DeepGO-SE's original data", 'deepgose'), ('hq_explabels', 'HQ, experimental labels only', None),
           ('goa', 'HQ, GOA proteins only', None), ('hq', 'HQ', None), ('archipelago', 'ArchipelaGO', None)]
 SHADES = {'transfew': '#55595f', 'deepgose': '#8f939a', 'dpfunc': '#bfc2c7'}
-# the published methods' own benchmarks (Supplementary Note 14): (method, name, test set)
-BENCHMARKS = (('deepgose', 'DeepGO-SE', 'test'), ('transfew', r'TransFew, Test\_all', 'Test_all'),
-              ('transfew', r'TransFew, Test\_novel', 'Test_novel'), ('dpfunc', 'DPFunc', 'test'))
+# the published methods' own benchmarks (Supplementary Note 14): (method, test set, name)
+BENCHMARKS = (('deepgose', 'test', 'DeepGO-SE'), ('transfew', 'Test_all', r'TransFew, Test\_all'), ('dpfunc', 'test', 'DPFunc'))
+ORDER = ('deepgose', 'transfew', 'dpfunc')  # main-text Table 2's order
 # Supplementary Figure 2: an original set wears its method's shade, the HQ family tints of the HQ blue
 SET_LINE = {'original_dpfunc': SHADES['dpfunc'], 'original_transfew': SHADES['transfew'], 'original_deepgose': SHADES['deepgose'],
             'hq_explabels': '#aad2ef', 'goa': '#75b6e4', 'hq': COLOURS['hq'], 'archipelago': COLOURS['archipelago']}
@@ -384,255 +381,168 @@ def shared(results, out):
     save(fig, out, 'si_fig_pr_models')
 
 
-def outside_cell(folder, method, test_set, subset, version, metric):
-    """{model: table.tsv row}, {contrast: contrasts.tsv row} of one row of retrain.outside.masked's tables."""
-    table, pairs = read(folder / method / 'table.tsv'), read(folder / method / 'contrasts.tsv')
-    cell = {r['model']: r for r in table if (r['test_set'], r['subset'], r['version']) == (test_set, subset, version)}
-    diff = {r['contrast']: r for r in pairs if (r['test_set'], r['subset'], r['version'], r['metric']) == (test_set, subset, version, metric)}
+def macro_table(results, out):
+    """Supplementary Table 15: the paper's main comparisons in micro-AUPRC (paired cluster bootstrap) and in term-centric
+    AUPRC (paired bootstrap over terms), from retrain.scoring.macro (results/macro/contrasts.tsv; its cluster bootstrap of
+    macro-AUPRC is a diagnostic and not read)."""
+    rows = [r for r in read(results / 'macro' / 'contrasts.tsv') if r['bootstrap'] in ('clusters', 'terms')]
+
+    def cells(pick):
+        return ' & '.join(paired(next(r for r in rows if r['metric'] == k and pick(r)), 3) for k in ('micro_auprc', 'macro_auprc'))
+
+    def pair(method, training_set, minus_method, minus_training_set):
+        return lambda r: (r['method'], r['training_set'], r['minus_method'], r['minus_training_set']) == \
+            (method, training_set, minus_method, minus_training_set)
+
+    lines = [f"{NAMES[m]} & ArchipelaGO $-$ Original & {cells(pair(m, 'archipelago', m, 'original'))}" + r' \\' for m in ORDER]
+    lines += [r'\addlinespace',
+              f"Finch & ArchipelaGO $-$ HQ + random & {cells(pair('finch', 'archipelago', 'finch', 'hq_random'))}" + r' \\',
+              r'\addlinespace']
+    lines += [f"Finch $-$ {NAMES[m]} & on ArchipelaGO & {cells(pair('finch', 'archipelago', m, 'archipelago'))}" + r' \\'
+              for m in ORDER]
+    # the spread: the best minus the worst published method on ArchipelaGO, by each metric's own point estimates
+    lines += [r'\addlinespace', 'Spread & Best $-$ worst method, on ArchipelaGO & '
+              + cells(lambda r: r['comparison'].startswith('Spread')) + r' \\']
+    write(out, 'table_macro.tex', lines)
+
+
+# Supplementary Note 14: Finch on the published methods' benchmarks (retrain.outside.masked's work folder,
+# results/outside_masked/<method>/{table,contrasts}.tsv): micro-AUPRC (seed means) on all test proteins of each benchmark, on
+# the paper's own test labels (unmasked) and with the test proteins' computational GOA annotations masked, with paired 95%
+# intervals from a bootstrap over the test sequences. Models: method, the method retrained on its training split; finch_A,
+# Finch on that split; finch_A_screened, Finch on that split without the test proteins' relatives (TransFew and DPFunc);
+# finch_B, Finch on ArchipelaGO screened against the test proteins. TransFew: its Test_all.
+VERSIONS = (('unmasked', "Paper's"), ('computational', 'Masked'))
+
+
+def outside(folder, method, test_set, version):
+    """{model: table.tsv row}, {contrast: contrasts.tsv row of micro-AUPRC} of all test proteins and one label version."""
+    cell = {r['model']: r for r in read(folder / method / 'table.tsv')
+            if (r['test_set'], r['subset'], r['version']) == (test_set, 'all', version)}
+    diff = {r['contrast']: r for r in read(folder / method / 'contrasts.tsv')
+            if (r['test_set'], r['subset'], r['version'], r['metric']) == (test_set, 'all', version, 'micro_AUPRC')}
     return cell, diff
 
 
-def outside_tables(results, out):
-    """Supplementary Tables 16-19, Finch on the published methods' own benchmarks: micro-AUPRC and micro-Fmax by test
-    labels and test proteins, with the paired differences (retrain.outside.masked's work folder, results/outside_masked);
-    micro-AUPRC by each test protein's relation to the method's training split (retrain.outside.compare's relatives.tsv,
-    results/outside_compare/<method>/); on DeepGO-SE's benchmark, Finch on ArchipelaGO minus Finch on DeepGO-SE's data by
-    how each metric pools the pairs (retrain.outside.masked pooling deepgose)."""
+def stacked(row):
+    """A paired difference over its interval (the SI's \\est), so that the table fits the page in readable type."""
+    value, interval = paired(row, 3).split(' ', 1)
+    return rf'\est{{{value}}}{{{interval}}}'
+
+
+def outside_table(results, out):
+    """Supplementary Table 17: Finch on each published method's own benchmark (table_outside.tex)."""
     folder = results / 'outside_masked'
-    models = ('finch_A', 'finch_A_screened', 'finch_B', 'method', 'released')  # A-screened: TransFew and DPFunc only
-    for metric, name in (('micro_AUPRC', 'table_outside_auprc.tex'), ('micro_Fmax', 'table_outside_fmax.tex')):
-        lines = []
-        for method, label, test_set in BENCHMARKS:
-            if lines:
-                lines.append(r'\midrule')
-            bench_lines = label.replace(', ', ',\n').split('\n')  # names over two rows, so that the table fits the page
-            k = 0
-            for version, vname in (('unmasked', "Paper's"), ('computational', 'Computational masked'), ('all_goa', 'All GOA masked')):
-                version_lines = vname.replace(' masked', '\nmasked').split('\n')
-                for j, (subset, sname) in enumerate((('all', 'All'), ('no_relative', 'No relative'))):
-                    cell, diff = outside_cell(folder, method, test_set, subset, version, metric)
-                    values = [r3(cell[m][metric + '_mean']) if m in cell else DASH for m in models]
-                    screened = diff.get('finch_B - finch_A_screened')
-                    lines.append(' & '.join([bench_lines[k] if k < len(bench_lines) else '',
-                                             version_lines[j] if j < len(version_lines) else '',
-                                             f"{sname} ({int(cell['finch_A']['proteins']):,})", *values,
-                                             paired(diff['finch_B - finch_A'], 3), paired(screened, 3) if screened else DASH,
-                                             paired(diff['finch_A - method'], 3)]) + r' \\')
-                    k += 1
-        write(out, name, lines)
-
     lines = []
-    for method, label, test_set in BENCHMARKS:
-        relatives = read(results / 'outside_compare' / method / 'relatives.tsv')
-        if lines:
-            lines.append(r'\midrule')
-        first = True
-        for group, name in (('identical', 'Identical sequence'), ('diamond', 'DIAMOND hit only'), ('none', 'No relative')):
-            cell = {r['model']: r for r in relatives if (r['test_set'], r['group']) == (test_set, group)}
-            if not cell:
-                continue
-            values = [r3(cell[m]['micro_AUPRC_mean']) if m in cell else DASH for m in ('finch_A', 'finch_B', 'method', 'released')]
-            lines.append(' & '.join([label if first else '', f"{name} ({int(cell['finch_A']['proteins']):,})", *values]) + r' \\')
-            first = False
-    write(out, 'table_outside_relatives.tex', lines)
-
-    pooling = {(r['version'], r['metric']): r for r in read(folder / 'deepgose' / 'pooling_contrasts.tsv')
-               if r['test_set'] == 'test' and r['contrast'] == 'finch_B - finch_A'}
-    lines = []
-    for k, name in (('micro_AUPRC', 'Micro-AUPRC'), ('micro_Fmax', 'Micro-Fmax'), ('protein_Fmax', 'Protein-centric Fmax'),
-                    ('macro_AUPRC', 'Term-centric AUPRC')):
-        lines.append(f'{name} & ' + ' & '.join(paired(pooling[version, k], 3) for version in ('unmasked', 'computational', 'all_goa'))
-                     + r' \\')
-    write(out, 'table_outside_deepgose.tex', lines)
-
-
-def vocabulary_table(results, out):
-    """Supplementary Table 20: the data comparisons over every term and over the terms each original training set covers
-    (retrain.scoring.shared_terms, results/shared_terms/summary.tsv)."""
-    vocab = {(r['comparison'], r['terms'], r['metric']): r for r in read(results / 'shared_terms' / 'summary.tsv')}
-    lines = []
-    for method in ('deepgose', 'transfew', 'dpfunc'):
-        own, name = f'original_{method}', NAMES[method]
+    for method, test_set, name in BENCHMARKS:
         if lines:
             lines.append(r'\addlinespace')
-        lines.append(rf"\multicolumn{{8}}{{@{{}}l}}{{\textit{{Terms of {name}'s original data: "
-                     rf"{int(vocab[f'{name}, original to HQ', own, 'auprc']['n_terms']):,} of 8,739}}}} \\")
-        for comparison, model, label in ((f'{name}, original to HQ', name, 'HQ $-$ Original'),
-                                         (f'{name}, HQ to ArchipelaGO', '', 'ArchipelaGO $-$ HQ'),
-                                         (f'{name}, original to ArchipelaGO', '', 'ArchipelaGO $-$ Original'),
-                                         (f"Finch, {name}'s original set to ArchipelaGO", 'Finch', 'ArchipelaGO $-$ Original'),
-                                         ('Spread of the published methods on ArchipelaGO', 'Spread', 'Best $-$ worst method')):
-            cells = [paired(vocab[comparison, t, 'auprc'], 3) for t in ('all', own)]
-            cells += [r3(vocab[comparison, t, 'fmax']['difference'], True) for t in ('all', own)]
-            cells += [r3(vocab[comparison, t, 'smin']['difference'], True, 2) for t in ('all', own)]
-            lines.append(f'{model} & {label} & ' + ' & '.join(cells) + r' \\')
-    write(out, 'table_vocab.tex', lines)
+        cell, _ = outside(folder, method, test_set, 'unmasked')
+        lines.append(rf"\multicolumn{{8}}{{@{{}}l}}{{\textit{{{name}, {int(cell['method']['proteins']):,} test proteins}}}} \\")
+        for version, label in VERSIONS:
+            cell, diff = outside(folder, method, test_set, version)
+            values = [r3(cell[m]['micro_AUPRC_mean']) if m in cell else DASH for m in ('method', 'finch_A', 'finch_A_screened', 'finch_B')]
+            diffs = [stacked(diff[c]) if c in diff else DASH for c in ('finch_A - method', 'finch_B - finch_A', 'finch_B - finch_A_screened')]
+            lines.append(' & '.join([label, *values, *diffs]) + r' \\' + (r'[2pt]' if version == 'unmasked' else ''))
+    write(out, 'table_outside.tex', lines)
 
 
-# Supplementary Figures 3 and 4, in the look of main-text Fig. 4b: one row per benchmark and test labels, a dot per model,
-# the differences printed to the right of each panel. Micro-AUPRC, seed means (retrain.outside.masked's tables).
+# Supplementary Figure 3, in the look of main-text Fig. 4b (figures/main.py). a: Finch against the method retrained, both
+# trained on the method's training split, on the paper's labels, Finch's lead at the right. b: Finch on ArchipelaGO minus
+# Finch on the method's data, with the paired interval, on the paper's labels, with the computational annotations masked,
+# and masked against the method's data without the test proteins' relatives (TransFew and DPFunc). One colour, Finch's
+# violet; the fill counts the corrections. Drawn at the SI's text width, so that 7 pt is 7 pt on the page.
 MARK = {'deepgose': ('o', 4.2), 'transfew': ('s', 3.8), 'dpfunc': ('^', 4.6)}  # as Fig. 4b
-DOT_INK, ROW_LINE, FINCH_MS = '#55595f', '#e6e7e9', 5.6
-ROW_VERSIONS = (('unmasked', "Paper's labels"), ('computational', 'Computational masked'), ('all_goa', 'All GOA masked'))
-GROUP_GAP, HEADER = 0.9, 0.8  # rows between benchmarks; the benchmark's name, above its first row
-OUTSIDE_X = 0.25, 0.80
-FINCH_OWN = dict(marker='o', ms=FINCH_MS, mfc=COLOURS['original'], mec='white', mew=0.5)
-FINCH_SCREENED = dict(marker='o', ms=FINCH_MS - 0.8, mfc='white', mec=COLOURS['original'], mew=1.0)
-FINCH_ARCHIPELAGO = dict(marker='o', ms=FINCH_MS, mfc=COLOURS['archipelago'], mec='white', mew=0.5)
-FINCH = FINCH_ARCHIPELAGO  # Fig. 4b's Finch
+FINCH, DOT_INK, ROW_LINE, ZERO_LINE = COLOURS['archipelago'], '#55595f', '#e6e7e9', '#8f939a'
+TEXT = 7  # points, every text of the figure
+WIDTH, LEFT, RIGHT = 6.85, 1.25, 0.55  # inches: the SI's text width (174 mm); the row names; panel a's leads
+STEPS = (('unmasked', 'finch_B - finch_A', "Paper's labels", dict(mfc='white')),
+         ('computational', 'finch_B - finch_A', 'Computational annotations masked', dict(fillstyle='left', mfc=FINCH,
+                                                                                         markerfacecoloralt='white')),
+         ('computational', 'finch_B - finch_A_screened', 'Masked, and relatives removed from own data', dict(mfc=FINCH)))
+SUBROW = (0.28, 0.0, -0.28)  # panel b: each step's place within its row
+ROW_A, ROW_B = 0.3, 0.44  # inches per row
+BOTTOM, KEY, GAP = 0.42, 0.24, 0.1  # inches: x axis and its label; the key above each panel; between the panels
 
 
-def row_positions():
-    """[(benchmark, version, version name, y)], top row first, and [(benchmark, y of its name)]: one row per test-label
-    version, the benchmark's name above its rows."""
-    rows, groups, y = [], [], 0.0
-    for benchmark in BENCHMARKS:
-        groups.append((benchmark, y + HEADER))
-        for version, vname in ROW_VERSIONS:
-            rows.append((benchmark, version, vname, y))
-            y -= 1
-        y -= GROUP_GAP
-    return rows, groups
+def signed_text(value):
+    return half_up(value, sign=True).replace('-', '−')
 
 
-def dodge(values, width):
-    """Vertical offsets for dots closer than `width` along x (Fig. 4b's rule for two near dots, for any number): each run
-    of near dots spreads over the row, the higher value higher."""
-    order = sorted(values, key=values.get)
-    runs = [[order[0]]]
-    for k in order[1:]:
-        if values[k] - values[runs[-1][-1]] < width:
-            runs[-1].append(k)
-        else:
-            runs.append([k])
-    out = {}
-    for run in runs:
-        step = 0.34 if len(run) == 2 else 0.24  # two dots: +-0.17 of a row, as Fig. 4b
-        for i, k in enumerate(run):
-            out[k] = (i - (len(run) - 1) / 2) * step
-    return out
-
-
-def dot_panel(fig, ax, folder, rows, groups, subset, xlim, names=True):
-    """Row lines, test-label names (names=True: and the benchmarks' names at the figure's left), each benchmark's number
-    of test proteins in the subset, and the micro-AUPRC axis."""
-    for *_, y in rows:
-        ax.axhline(y, color=ROW_LINE, lw=0.6, zorder=1)
-    ax.set_yticks([y for *_, y in rows], [v for _, _, v, _ in rows] if names else [], fontsize=fs(6.5))
-    ax.tick_params(axis='y', length=0, pad=3)
-    ax.spines['left'].set_visible(False)
-    ax.set_ylim(rows[-1][3] - 0.6, rows[0][3] + HEADER + 0.45)
-    ax.set_xlim(*xlim)
-    ax.set_xticks(np.arange(np.ceil(xlim[0] * 10) / 10, xlim[1] + 0.001, 0.1))
-    ax.tick_params(axis='x', labelsize=fs(6.5))
-    ax.set_xlabel('Micro-AUPRC', fontsize=fs(7))
+def rows(fig, ax, folder):
+    """Each benchmark's row: its name and number of test proteins at the figure's left, top row first."""
     left = blended_transform_factory(fig.transFigure, ax.transData)
-    for (method, label, test_set), y in groups:
-        if names:
-            ax.text(0.06 / fig.get_figwidth(), y, label.replace(r'\_', '_'), transform=left, ha='left', va='center',
-                    fontsize=fs(6.5))
-        cell, _ = outside_cell(folder, method, test_set, subset, 'unmasked', 'micro_AUPRC')
-        ax.text(0.005, y, f"{int(cell['finch_A']['proteins']):,} test proteins", transform=ax.get_yaxis_transform(),
-                ha='left', va='center', fontsize=fs(6), color=GREY)
+    for i, (method, test_set, name) in enumerate(BENCHMARKS):
+        cell, _ = outside(folder, method, test_set, 'unmasked')
+        for text, dy, color in ((name.replace(r'\_', '_'), 4.2, 'black'), (f"{int(cell['method']['proteins']):,} test proteins", -4.2, GREY)):
+            ax.annotate(text, (0.06 / WIDTH, 2 - i), xycoords=left, xytext=(0, dy), textcoords='offset points', ha='left',
+                        va='center', fontsize=TEXT, color=color)
+    ax.set_yticks([])
+    ax.spines['left'].set_visible(False)
+    ax.set_ylim(-0.6, 2.6)
+    ax.tick_params(axis='x', labelsize=TEXT)
 
 
-def dot_width(fig, ax, points=5.0):
-    """`points` of the page as a length along the x axis."""
-    lo, hi = ax.get_xlim()
-    return points / 72 / (ax.get_position().width * fig.get_figwidth()) * (hi - lo)
+def key(fig, ax, letter, entries):
+    """The panel letter at the figure's left and the panel's key above its axes, in one row."""
+    handle = lambda s: plt.Line2D([], [], **s)  # noqa: E731
+    ax.legend([tuple(handle(s) for s in style) if isinstance(style, list) else handle(style) for _, style in entries],
+              [label for label, _ in entries], loc='lower left', bbox_to_anchor=(0.0, 1.0), ncol=len(entries), frameon=False,
+              fontsize=TEXT, handletextpad=0.4, columnspacing=1.6, borderaxespad=0.25, borderpad=0,
+              handler_map={tuple: HandlerTuple(ndivide=None, pad=0.2)})
+    fig.text(0.06 / WIDTH, ax.get_position().y1 + 0.1 / fig.get_figheight(), letter, fontsize=8, fontweight='bold',
+             ha='left', va='center')
 
 
-def signed(row):
-    return half_up(row['difference'], sign=True).replace('-', '\u2212')
-
-
-def method_style(method, hollow=False):
-    shape, ms = MARK[method]
-    return dict(marker=shape, ms=ms - (0.5 if hollow else 0), mfc='white' if hollow else DOT_INK, mec=DOT_INK if hollow else 'white',
-                mew=0.8 if hollow else 0.5)
-
-
-def key(fig, entries):
-    """The figure's key above the panels, in one row: (label, style or [styles]); a list shares one entry (one per method)."""
-    handle = lambda s: plt.Line2D([], [], ls='', **s)  # noqa: E731
-    fig.legend([tuple(handle(s) for s in style) if isinstance(style, list) else handle(style) for _, style in entries],
-               [label for label, _ in entries], loc='upper left', bbox_to_anchor=(0.06 / fig.get_figwidth(), 0.995),
-               ncol=len(entries), frameon=False, fontsize=fs(6.5), handletextpad=0.3, columnspacing=1.4, borderaxespad=0,
-               borderpad=0, handler_map={tuple: HandlerTuple(ndivide=None, pad=0.15)})
-
-
-def column_head(ax, x, text, **kw):
-    """A head over a number column (x in axes widths), `text` ending at the top of the axes."""
-    ax.annotate(text, (x, 1.0), xycoords='axes fraction', xytext=(0, 2), textcoords='offset points', va='bottom',
-                fontsize=fs(6), color=GREY, linespacing=1.0, **kw)
-
-
-def outside_figures(results, out):
-    """Supplementary Figure 3 (si_fig_outside_data): Finch trained on ArchipelaGO, on each method's training split and on
-    that split screened against the method's test proteins, and the method retrained by us, on all test proteins and on
-    those without a relative; Supplementary Figure 4 (si_fig_outside_methods): Finch on the method's data against the
-    method retrained by us and the authors' model, all test proteins."""
+def outside_figure(results, out):
+    """Supplementary Figure 3 (si_fig_outside)."""
     folder = results / 'outside_masked'
-    rows, groups = row_positions()
-    unit = 0.215  # inches per row
-    axes_h = unit * (rows[0][3] + HEADER + 0.45 - rows[-1][3] + 0.6)
-    left_in, bottom_in, top_in = 1.08, 0.42, 0.5  # inches: the label column, the x axis, the key and column heads
+    height_b, height_a = 3.2 * ROW_B, 3.2 * ROW_A
+    height = BOTTOM + height_b + KEY + GAP + BOTTOM + height_a + KEY
+    fig = plt.figure(figsize=(WIDTH, height))
+    inch = lambda x, y, w, h: [x / WIDTH, y / height, w / WIDTH, h / height]  # noqa: E731
+    a = fig.add_axes(inch(LEFT, height - KEY - height_a, WIDTH - LEFT - RIGHT, height_a))
+    b = fig.add_axes(inch(LEFT, BOTTOM, WIDTH - LEFT - RIGHT, height_b))
 
-    panel_w, column, gap = 2.2, 0.37, 0.16
-    height = bottom_in + axes_h + top_in
-    fig = plt.figure(figsize=(DOUBLE, height))
-    panels = [fig.add_axes([(left_in + i * (panel_w + 2 * column + gap)) / DOUBLE, bottom_in / height, panel_w / DOUBLE,
-                            axes_h / height]) for i in range(2)]
-    for ax, subset, title in ((panels[0], 'all', 'All test proteins'),
-                              (panels[1], 'no_relative', "No relative in the method's training split")):
-        dot_panel(fig, ax, folder, rows, groups, subset, OUTSIDE_X, names=ax is panels[0])
-        ax.set_title(title, fontsize=fs(6.5), fontweight='normal', loc='left', pad=3)
-        own, screened_x = 1 + column / panel_w, 1 + 2 * column / panel_w  # right ends of the number columns, in axes widths
-        column_head(ax, own, 'own\ndata', ha='right')
-        column_head(ax, screened_x, 'screened\ndata', ha='right')
-        ax.annotate('ArchipelaGO minus', ((own + screened_x) / 2 - column / panel_w / 2 + 0.01, 1.0), xycoords='axes fraction',
-                    xytext=(0, 16), textcoords='offset points', ha='center', va='bottom', fontsize=fs(6), color=GREY)
-        width = dot_width(fig, ax)
-        for (method, label, test_set), version, _, y in rows:
-            cell, diff = outside_cell(folder, method, test_set, subset, version, 'micro_AUPRC')
-            v = {m: float(cell[m]['micro_AUPRC_mean']) for m in ('method', 'finch_A', 'finch_A_screened', 'finch_B') if m in cell}
-            shift = dodge(v, width)
-            ax.plot([v['finch_A'], v['finch_B']], [y + shift['finch_A'], y + shift['finch_B']], color=COLOURS['archipelago'],
-                    lw=1.4, alpha=0.35, solid_capstyle='butt', zorder=2)
-            ax.plot(v['method'], y + shift['method'], **method_style(method), zorder=3)
-            ax.plot(v['finch_A'], y + shift['finch_A'], **FINCH_OWN, zorder=4)
-            if 'finch_A_screened' in v:
-                ax.plot(v['finch_A_screened'], y + shift['finch_A_screened'], **FINCH_SCREENED, zorder=4)
-            ax.plot(v['finch_B'], y + shift['finch_B'], **FINCH_ARCHIPELAGO, zorder=5)
-            screened = diff.get('finch_B - finch_A_screened')
-            for x, text in ((own, signed(diff['finch_B - finch_A'])), (screened_x, signed(screened) if screened else '\u2013')):
-                ax.text(x, y, text, transform=ax.get_yaxis_transform(), ha='right', va='center', fontsize=fs(6.5))
-    key(fig, [("Finch on the method's data", FINCH_OWN), ('Finch on the screened data', FINCH_SCREENED),
-              ('Finch on ArchipelaGO', FINCH_ARCHIPELAGO),
-              ('Method on its data, retrained by us', [method_style(m) for m in ('deepgose', 'transfew', 'dpfunc')])])
-    save(fig, out, 'si_fig_outside_data')
+    # a: Finch and the method, both on the method's data
+    rows(fig, a, folder)
+    for i, (method, test_set, _) in enumerate(BENCHMARKS):
+        y = 2 - i
+        cell, diff = outside(folder, method, test_set, 'unmasked')
+        own, finch = float(cell['method']['micro_AUPRC_mean']), float(cell['finch_A']['micro_AUPRC_mean'])
+        a.axhline(y, color=ROW_LINE, lw=0.6, zorder=1)
+        a.plot([own, finch], [y, y], color=FINCH, lw=1.4, alpha=0.35, solid_capstyle='butt', zorder=2)
+        a.plot(own, y, MARK[method][0], ms=MARK[method][1], mfc=DOT_INK, mec='white', mew=0.5, zorder=3)
+        a.plot(finch, y, 'o', ms=5.6, mfc=FINCH, mec='white', mew=0.5, zorder=4)
+        a.text(finch, y + 0.24, r3(finch), ha='center', va='bottom', fontsize=TEXT, zorder=5)
+        a.text(1.015, y, signed_text(diff['finch_A - method']['difference']), transform=a.get_yaxis_transform(), ha='left',
+               va='center', fontsize=TEXT)
+    a.annotate('Lead', (1.015, 1.0), xycoords='axes fraction', xytext=(0, 5.5), textcoords='offset points', ha='left',
+               va='center', fontsize=TEXT, color=GREY)  # level with the key
+    a.set_xlim(0.42, 0.68)
+    a.set_xticks(np.arange(0.45, 0.651, 0.05))
+    a.set_xlabel("Micro-AUPRC, paper's test labels", fontsize=TEXT)
+    key(fig, a, 'a', [('Finch', dict(ls='', marker='o', ms=5.6, mfc=FINCH, mec='white', mew=0.5)),
+                      ("The method, retrained by us (both trained on the method's own data)",
+                       [dict(ls='', marker=MARK[m][0], ms=MARK[m][1], mfc=DOT_INK, mec='white', mew=0.5) for m in ORDER])])
 
-    width4, panel4 = 5.1, 3.3
-    fig = plt.figure(figsize=(width4, height))
-    ax = fig.add_axes([left_in / width4, bottom_in / height, panel4 / width4, axes_h / height])
-    dot_panel(fig, ax, folder, rows, groups, 'all', (0.40, 0.80))
-    column_head(ax, 1.02, 'Finch minus\nmethod', ha='left')
-    width = dot_width(fig, ax)
-    for (method, label, test_set), version, _, y in rows:
-        cell, diff = outside_cell(folder, method, test_set, 'all', version, 'micro_AUPRC')
-        v = {m: float(cell[m]['micro_AUPRC_mean']) for m in ('method', 'released', 'finch_A')}
-        shift = dodge({m: v[m] for m in ('method', 'released')}, width)  # as Fig. 4b: Finch stays on the row
-        ax.plot([v['method'], v['finch_A']], [y, y], color=COLOURS['archipelago'], lw=1.4, alpha=0.35, solid_capstyle='butt',
-                zorder=2)
-        ax.plot(v['method'], y + shift['method'], **method_style(method), zorder=3)
-        ax.plot(v['released'], y + shift['released'], **method_style(method, hollow=True), zorder=3)
-        ax.plot(v['finch_A'], y, **FINCH, zorder=4)
-        ax.text(v['finch_A'], y + 0.2, r3(v['finch_A']), ha='center', va='bottom', fontsize=fs(6.5), zorder=5)
-        ax.text(1.02, y, signed(diff['finch_A - method']), transform=ax.get_yaxis_transform(), ha='left', va='center',
-                fontsize=fs(6.5))
-    key(fig, [("Finch on the method's data", FINCH), ('Method, retrained by us', [method_style(m) for m in ('deepgose', 'transfew', 'dpfunc')]),
-              ("Method, authors' model", [method_style(m, hollow=True) for m in ('deepgose', 'transfew', 'dpfunc')])])
-    save(fig, out, 'si_fig_outside_methods')
+    # b: what closes ArchipelaGO's gap
+    rows(fig, b, folder)
+    b.axvline(0, color=ZERO_LINE, lw=0.7, zorder=1)
+    for i, (method, test_set, _) in enumerate(BENCHMARKS):
+        for (version, contrast, _, style), dy in zip(STEPS, SUBROW):
+            _, diff = outside(folder, method, test_set, version)
+            if contrast not in diff:  # DeepGO-SE: no screened run
+                continue
+            d, y = diff[contrast], 2 - i + dy
+            b.plot([float(d['ci_low']), float(d['ci_high'])], [y, y], color=FINCH, lw=1.0, solid_capstyle='butt', zorder=2)
+            b.plot(float(d['difference']), y, 'o', ms=5.6, mec=FINCH, mew=1.0, zorder=3, **style)
+    b.set_xlim(-0.27, 0.17)
+    b.set_xticks([-0.2, -0.1, 0, 0.1], ['−0.2', '−0.1', '0', '+0.1'])
+    b.set_xlabel("Finch trained on ArchipelaGO minus Finch trained on the method's own data (micro-AUPRC)", fontsize=TEXT)
+    key(fig, b, 'b', [(label, dict(color=FINCH, lw=1.0, marker='o', ms=5.6, mec=FINCH, mew=1.0, **style))
+                      for _, _, label, style in STEPS])
+    save(fig, out, 'si_fig_outside')
 
 
 def draw(results, out):
@@ -642,6 +552,6 @@ def draw(results, out):
     recipe_tables(results, out)
     cost_table(results, out)
     shared(results, out)
-    outside_tables(results, out)
-    vocabulary_table(results, out)
-    outside_figures(results, out)
+    macro_table(results, out)
+    outside_table(results, out)
+    outside_figure(results, out)
