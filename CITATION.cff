@@ -2,7 +2,8 @@ cff-version: 1.2.0
 message: "If you use this code, please cite the paper below."
 title: "archipelago-paper: reproduction of the ArchipelaGO paper"
 type: software
-version: 0.1.0
+version: 0.2.0
+date-released: 2026-11-10
 license: MIT
 repository-code: "https://github.com/jacksonstempel/archipelago-paper"
 authors:
@@ -18,8 +19,8 @@ authors:
     affiliation: "UT/ORNL Center for Molecular Biophysics, Oak Ridge National Laboratory"
 preferred-citation:
   type: article
-  title: "ArchipelaGO: better training data for protein function prediction"
-  status: in-preparation
+  title: "ArchipelaGO: training data matter more than model design in protein function prediction"
+  status: submitted
   year: 2026
   authors:
     - family-names: Stempel

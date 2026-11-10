@@ -1,27 +1,59 @@
 # ArchipelaGO: reproducing the paper
 
-The code behind every number, figure and table of **ArchipelaGO: better training data for protein function prediction**
-(Jackson C. Stempel, Jason Andrew Amburn and Jeremy C. Smith; manuscript in preparation): building the training sets,
-retraining Finch, DeepGO-SE, TransFew, DPFunc and three baselines on each of them, scoring, and drawing the figures.
+The code behind every number, figure and table of **ArchipelaGO: training data matter more than model design in protein
+function prediction** (Jackson C. Stempel, Jason Andrew Amburn and Jeremy C. Smith; manuscript submitted): building the
+training sets, retraining Finch, DeepGO-SE, TransFew, DPFunc and three baselines on each of them, scoring, the checks of
+the label review, and drawing the figures.
 
 **To use the dataset, the Finch predictor or the benchmark scorer, you do not need this repository:** see
 [archipelago](https://github.com/jacksonstempel/archipelago), which this repository builds on.
 
-Contact: Jackson C. Stempel, jstempel@vols.utk.edu.
+Both repositories and the Hugging Face repositories (`ut-ornl-cmb/ArchipelaGO`, `ut-ornl-cmb/finch`) are private until the
+paper is published, and then public. Contact: Jackson C. Stempel, jstempel@vols.utk.edu.
+
+## System requirements
+
+- Python 3.10 or later; Linux for the full pipeline (the GPU stages use Triton and the external programs below), any
+  platform for the scoring analyses, the figures, the label-review checks and the tests.
+- The paper's runs: Linux x86-64, Python 3.11, PyTorch 2.10.0 with CUDA 12.6, Triton 3.6.0, NumPy 1.26.4, NVIDIA H100
+  80 GB GPUs, 16 to 64 CPU cores and up to about 300 GB of host memory per job. Version pins of each published method's
+  dependencies are in `pyproject.toml`.
+- The tests and the demo run on a CPU (tested on Windows 11 with Python 3.10 and 3.14, and on Linux).
 
 ## Install
 
-Python 3.10 or later. Install PyTorch for your hardware first (a CUDA build for GPUs), then, in a checkout:
+Install PyTorch for your hardware first (a CUDA build for GPUs), then, in a checkout:
 
 ```bash
-pip install -e .                 # the pipeline (installs the archipelago package)
+pip install -e .                 # the pipeline (installs the archipelago package from GitHub)
 pip install -e .[finch,embed,figures]  # Finch's training (GPU), embeddings, figures; add deepgose, transfew or dpfunc
 pip install -e .[test]           # the tests: python -m pytest
+pip install -e .[review]         # the label-review checks (review/) and the training-cost harnesses
 ```
 
-Install the repository in place (`-e`): the pipeline reads `configs/finch.json` from the checkout. The extras `deepgose`,
-`transfew` and `dpfunc` pin the versions the paper's runs used where they were recorded. External programs (DIAMOND,
-InterProScan, ColabFold, Java with Groovy) are called from the command line and are found on `PATH`.
+A fresh `pip install -e .[test,figures]` took 5 minutes on a laptop (most of it PyTorch). Install the repository in place
+(`-e`): the pipeline reads `configs/finch.json` from the checkout. The extras `deepgose`, `transfew` and `dpfunc` pin the
+versions the paper's runs used where they were recorded. External programs (DIAMOND 2.2.4, InterProScan, ColabFold, Java
+with Groovy) are called from the command line and are found on `PATH`.
+
+## Demo and tests
+
+`python -m pytest` (CPU, about a minute; GPU-only tests are skipped) runs the pipeline's stages on tiny synthetic data:
+building datasets from a release, Finch's training engine and its reload check, the published methods' data handling,
+the scorer's bundle and contrasts, the test-label versions, TransFew's re-tuning choice, and the training-cost arithmetic.
+Expected: `40 passed, 6 skipped` on a CPU.
+
+Three steps reproduce paper numbers in seconds, from files in this repository:
+
+```bash
+python review/second_review/agreement.py   # Supplementary Note 3: the second language-model review of 100 test assertions
+python -m retrain.cost.table               # Supplementary Note 9: training cost with the authors' original code
+```
+
+The first prints, as in the paper, `sample: agreement 0.85 [0.78, 0.92], Cohen kappa 0.69 [0.54, 0.84]`; the second ends
+with the table of the paper (`DeepGO-SE 62.0 / 143.1 ... TransFew 0.73 / 4.3 ...`). Reproducing a result from the
+paper's data starts from the released dataset (section 1 below); scoring the paper's main comparison takes about half a
+minute on one H100.
 
 ## The data root
 
@@ -37,12 +69,13 @@ plain command; `examples/slurm/stage.sbatch` is an example of running one as a S
 hardware (NVIDIA H100 80 GB GPUs; CPU stages on 16 to 64 cores).
 
 The code here is the code that produced the paper's numbers, with the original runs' paths, logging and bookkeeping
-removed. Three stages were rerun with it and reproduced the paper bit for bit on H100 GPUs (PyTorch 2.10.0 with CUDA 12.6,
-Triton 3.6.0): Finch's training (`retrain/finch/engine.py`; run 9301 on ArchipelaGO, from the released data: both
-checkpoints and every development and test score), the coverage ranking (both rankings, from the paper's input vectors)
-and the embeddings (whole work units of ESM2-15B and ProtT5). The published methods are not bit-reproducible (GPU
-nondeterminism), and where inputs that are not released change a result, the stage says so: the structure bank (section
-4), the no-hit subsets (section 5) and the sets that need files available on request (data/README.md).
+removed. Reruns verified it: Finch's training (`retrain/finch/engine.py`; run 9301 on ArchipelaGO, from the released data:
+both checkpoints and every development and test score bit for bit), the coverage ranking (both rankings, from the
+paper's input vectors), the embeddings (whole work units of ESM2-15B and ProtT5), the screen of the published methods'
+own data, and every scoring analysis of section 5 from the paper's saved predictions (each table equal to the paper's
+to 1e-9 or better). The published methods are not bit-reproducible (GPU nondeterminism), and where inputs that are not
+released change a result, the stage says so: the structure bank (section 4), the no-hit subsets (section 5) and the sets
+that need files available on request (data/README.md).
 
 ### 1. Datasets
 
@@ -57,11 +90,13 @@ released labels. CPU, minutes.
 
 ### 2. The coverage ranking and the sets built from computational proteins
 
-These stages need the candidate pool (8,952,628 proteins; `python -m retrain.datasets.candidates` converts its release
-files into `datasets/candidates`) and its ESM2-15B embeddings, which are not part of the public release (data/README.md). The candidates are one random member of each 50%-identity cluster of the
-77.9 million TrEMBL proteins with computational molecular-function annotations only (DIAMOND 2.2.8 `cluster --id 50
---mutual-cover 80 --evalue 0.001`), with relatives of the benchmark and the 102 proteins with labels outside the
-vocabulary removed.
+The dataset (from version 1.2) deposits the paper's coverage ranking (`coverage_ranking`) and the proteins of the control
+sets (`control_sets`). Building the sets needs the candidate pool (8,952,628 proteins; `python -m
+retrain.datasets.candidates` converts its files into `datasets/candidates`), which is available on request
+(data/README.md); recomputing the ranking also needs the candidates' ESM2-15B embeddings. The candidates are one random
+member of each 50%-identity cluster of the 77.9 million TrEMBL proteins with computational molecular-function annotations
+only (DIAMOND 2.2.8 `cluster --id 50 --mutual-cover 80 --evalue 0.001`), with relatives of the benchmark and the 102
+proteins with labels outside the vocabulary removed.
 
 ```bash
 python scripts/rank_coverage.py --picks 600000                 # selection/coverage_ranking.tsv (four GPUs, minutes)
@@ -69,14 +104,15 @@ python scripts/rank_coverage.py --picks 500000 --no-filter     # selection/cover
 python -m retrain.datasets.selected check-archipelago          # the ranking's first 150,000 = the released selected proteins
 python -m retrain.datasets.selected dose                       # archipelago_300k, archipelago_600k
 python -m retrain.datasets.selected controls                   # pool_random, filter_random, coverage_unfiltered (DIAMOND)
-python -m retrain.datasets.random_draw                         # hq_random, from its released protein list
+python -m retrain.datasets.random_draw                         # hq_random
 ```
 
 The ranking is the paper's code (`archipelago.coverage`): run on the paper's candidate and HQ vectors on four H100 GPUs, it
 reproduced both of the paper's rankings exactly. The paper's ranking read HQ vectors from an earlier extraction than the
 released training embeddings (same encoder and windows; it handled X and U differently, and every row differs in the
 last digits), so a ranking computed from the released embeddings can differ from the paper's among near-tied
-candidates; the dataset builders use the paper's rankings instead when they are present (data/README.md).
+candidates; the dataset builders use the deposited ranking instead when it is present, and every control set built is
+checked against the deposited one (release/control_sets) when that is present.
 
 ### 3. Finch and the baselines
 
@@ -148,6 +184,21 @@ python -m retrain.transfew.label_gcn                # label graph and its GCN (G
 python -m retrain.transfew.train <training set> <seed>         # seeds 0-2; 10 minutes to 1 hour per fit
 ```
 
+**TransFew re-tuned on ArchipelaGO** (Results, Methods, Supplementary Note 8 and Table 15). Twenty fits with seed 0 cross
+five learning rates (1e-5, 3e-5, 1e-4, 3e-4, 1e-3; published 1e-4) with four values of the dropout after the hidden
+layers of TransFew's two protein networks (0.2, 0.4, 0.6, 0.8; published 0.2), everything else as published; each fit
+keeps the epoch with the highest development micro-AUPRC. The best setting (the paper's: 1e-4 and 0.6) is trained with
+seeds 1 and 2 and scored once on the test set (re-tuned TransFew 0.568 micro-AUPRC on the main labels, against 0.564 with
+the published recipe). About 38 minutes per fit on an H100; 14.1 H100-hours for the paper's search.
+
+```bash
+python -m retrain.transfew.retune grid              # prints the 20 commands of the search (retrain.transfew.train --lr --dropout --out)
+python -m retrain.transfew.retune log               # retune_transfew/search_log.tsv: every fit, and the current best
+python -m retrain.transfew.retune choose            # retune_transfew/chosen.json, written once
+python -m retrain.transfew.retune grid --seed 1     # and --seed 2: the chosen setting's other two seeds
+python -m retrain.transfew.retune score             # results_masked/retune and results/retune (needs section 5's main scoring)
+```
+
 **DPFunc** (extra `dpfunc`; InterProScan 5.78-109.0; ColabFold 1.6.3 with MMseqs2 release 18 and its databases for the structures)
 
 ```bash
@@ -189,35 +240,73 @@ python -m retrain.finch.train --training-set archipelago --seed 9301 --readouts 
 python -m retrain.finch.combine --training-set archipelago --model ladder_hidden_esm1b
 ```
 
+**Training cost with the authors' original code** (Supplementary Note 9). The paper times each published method's own
+training code on one H100 and multiplies it out to the epochs its runs trained (`retrain/cost/`):
+
+```bash
+python -m retrain.cost.deepgose [--march AXIOMS]    # the official step, ms per batch (needs external/deepgose/deepgo2)
+python -m retrain.cost.dpfunc                       # the released data path and validation (needs external/dpfunc/DPFunc)
+python -m retrain.cost.transfew off                 # and released: the released loop without and with its diagnostics
+python -m retrain.cost.table                        # the table, from the measured and the recorded times
+```
+
 ### 5. Scoring, analyses and figures
+
+The paper's main test labels leave the test proteins' computational and author-statement GOA annotations (the 4,429 that
+the label review considered, and the pairs they add) out of scoring. The scorer bundle and configs are written for the
+reviewed labels first (`results/`), and `retrain.scoring.headline` scores every result that depends on the main test labels
+again from the same predictions (`results_masked/`, the same folders and files), which the figures read.
 
 ```bash
 python -m retrain.scoring.score main                 # every model of Table 1 and Figs. 2 and 4b -> results/main
 python -m retrain.scoring.score selection            # Finch on the Fig. 3a control sets and the dose sets
 python -m retrain.scoring.score ladder               # the recipe ablation of Fig. 4a, its variants, Finch, published methods
 python -m retrain.scoring.score explabels_training    # models trained on HQ with experimental labels only
-python -m retrain.scoring.pr_curves                  # precision-recall curves on every shared training set (SI)
+python -m retrain.scoring.test_labels experimental   # Table 2's versions of the test labels: experimental labels only,
+python -m retrain.scoring.test_labels masked         # ... computational annotations unscored (the main labels),
+python -m retrain.scoring.test_labels all_goa        # ... every GOA assertion the label review considered
+python -m retrain.scoring.no_hit                     # test proteins without training relatives (the paper's subsets)
+python -m retrain.scoring.headline                   # every result above on the main test labels -> results_masked/ (GPU):
+                                                     # the four runs, no-hit subsets, term strata, macro, PR curves, sizes
+python -m retrain.scoring.label_grid                 # Table 2: computational annotations negative, direct evidence only;
+                                                     # every model on every version (Supplementary Table 6, Fig. 1) (GPU)
+python -m retrain.scoring.reward_terms               # the main gains on the terms rewarded for computational support (GPU)
+python -m retrain.scoring.shared_terms --labels masked   # the data comparisons on the terms each original set covers (GPU)
 python -m retrain.scoring.distances                  # distances of the added proteins to HQ (Fig. 3b; GPU)
-python -m retrain.scoring.test_labels experimental   # scoring against experimental-only test labels
-python -m retrain.scoring.test_labels all_goa        # ... with every GOA assertion the label review considered
-python -m retrain.scoring.test_labels masked         # ... with the reviewed GOA assertions masked
-python -m retrain.scoring.term_strata                # the main gains on common and rare terms (GPU)
-python -m retrain.scoring.shared_terms               # the data comparisons on the terms each original set covers (GPU)
-python -m retrain.scoring.macro                      # the main comparisons in term-centric (macro) AUPRC (GPU)
-python -m retrain.scoring.no_hit                     # test proteins without training relatives (Fig. 3c; the paper's subsets)
-python -m retrain.scoring.label_grid                 # direct-evidence test labels (Table 2), every model on every version (GPU)
-python -m retrain.scoring.headline                   # the results that depend on the test labels on the main test labels (masked) -> results_masked/ (GPU)
 python -m retrain.scoring.sizes                      # sizes of every training set
 python -m retrain.scoring.parameters                 # trainable parameters of the models on ArchipelaGO (CPU)
 python -m retrain.scoring.training_cost              # GPU-hours of the training runs, from the fits' records
-python -m figures.make_all                           # every figure and table -> <data root>/figures (HEADLINE=masked: on the main test labels)
+python -m figures.make_all                           # every figure and table -> <data root>/figures
 ```
 
 Scoring the main comparison takes about half a minute on one H100 (a few seconds per run on 32 CPU cores). The figure
 scripts need only the result files; `--tikz` draws Fig. 1's PDF with true colour gradients through TikZ, as in the paper
 (needs `tectonic` and the Arial font).
 
-### 6. The published methods on their own benchmarks (Supplementary Note 14)
+### 6. The label review
+
+The test labels' computational annotations were reviewed against the literature by a language model before any model was
+scored; every decision is released with its reasoning and sources (`benchmark_reviews`). Two checks of that review are
+reported in Supplementary Note 3 (`review/`):
+
+```bash
+python -I review/citations/audit_citations.py --release <root>/release --cache CACHE --out OUT extract resolve match report
+python review/second_review/agreement.py
+```
+
+- **Citation check** (Supplementary Table 8): every cited identifier is resolved against public records (PubMed, PMC,
+  Crossref and doi.org, UniProt, RCSB PDB, the cited web pages) and matched against the decision's protein; public APIs
+  only, tens of minutes uncached. The paper ran it on the review records as the review wrote them, which also hold the
+  sources' reference text and the first review's sources where an adjudication settled a decision; the release keeps the
+  deciding record's source URLs, so a run from the release sees fewer citations (10,735 rather than 11,548) and gives
+  nearly the same shares (97.0% resolve rather than 97.2%; 81.7% of resolving citations name the protein rather than
+  80.6%; 87.6% of decisions cite such a record rather than 87.3%). `review/citations/unmatched/` holds the reading of the
+  147 decisions without a protein match (`manual_labels.tsv`, the hand labels) and the script that gathered them.
+- **Second review** (Supplementary Note 3): 100 test assertions reviewed again by a different language model, blind to the
+  first review; `review/second_review/` holds the sample, the packets as sent, the second review's results and the
+  agreement and Cohen's kappa with their intervals.
+
+### 7. The published methods on their own benchmarks (Supplementary Note 14)
 
 **Replication.** Each published method is trained with this repository's code on its authors' own training split and scored
 on their test set with their own evaluation code (`retrain.replicate`). A method's vocabulary and GO release are the
@@ -283,8 +372,8 @@ like `original_<method>` and scored with `retrain.outside.score --screened-origi
 when its Finch runs exist.
 
 One table per benchmark with every model (both Finch arms, the method's own retrain, the authors' model) and paired
-bootstrap intervals, and the scoring behind Supplementary Table 18 and Supplementary Figure 4, on the papers' test labels
-and with the test proteins' current GOA annotations masked (our evaluator, micro-Fmax and micro-AUPRC; the bootstrap runs
+bootstrap intervals, and the scoring behind Supplementary Table 21 and Supplementary Figure 4, on the papers' test labels
+and with the test proteins' current GOA annotations unscored (our evaluator, micro-Fmax and micro-AUPRC; the bootstrap runs
 on a GPU):
 
 ```bash
@@ -293,22 +382,60 @@ M="--data <root>/results/outside_masked --outside out --replication rep"        
 python -m retrain.outside.masked fetch $M                                   # UniProt sec_ac.txt; DPFunc's entry names
 python -m retrain.outside.masked scan $M --goa <GOA folder> --swissprot uniprot_sprot.fasta.gz   # goa_uniprot_all.{gaf,gpi}.gz
 python -m retrain.outside.masked prepare deepgose $M                        # and transfew, dpfunc (CPU)
-python -m retrain.outside.masked bootstrap deepgose $M                      # (GPU) -> Table 17, Fig. 3
+python -m retrain.outside.masked bootstrap deepgose $M                      # (GPU) -> Supplementary Table 21, Figure 4
 ```
+
+## Where each result comes from
+
+Figures and tables are written by `python -m figures.make_all` from the result folders of section 5 (`figures/__init__.py`
+lists the files each reads); everything that depends on the test labels is on the main labels unless a version is named.
+
+| Paper | Code |
+|---|---|
+| Fig. 1 (the dataset) | `figures/fig1.py`, from the recorded counts in `figures/sankey_counts.json` |
+| Fig. 2, Table 1 | `figures/main.py` from `retrain.scoring.score main` and `explabels_training` |
+| Fig. 3a, b, c | `figures/fig3.py` from `score selection`, `retrain.scoring.distances`, `retrain.scoring.no_hit` |
+| Fig. 4a, b | `figures/main.py` from `score ladder`, `main`, `explabels_training` |
+| Table 2 (and Supplementary Table 5) | `figures/main.py` `table2` from `retrain.scoring.test_labels`, `label_grid`, `no_hit` |
+| Extended Data Fig. 1 | `figures/ed_fig1.py` (schematic) |
+| Supplementary Table 2 | `figures/si.py` from `retrain.scoring.sizes` |
+| Supplementary Tables 3, 4 | `figures/si.py` from `score main` and `explabels_training` |
+| Supplementary Table 6, Supplementary Fig. 1 | `figures/si.py` from `retrain.scoring.label_grid` |
+| Supplementary Table 8, the 147 decisions | `review/citations/` |
+| The second review (Supplementary Note 3) | `review/second_review/agreement.py` |
+| Supplementary Table 9 | `figures/si.py` from `retrain.scoring.no_hit` |
+| Supplementary Table 10, the number of picks | `figures/si.py` from `score selection` |
+| Supplementary Tables 11, 12 | `figures/si.py` from `score ladder` and `retrain.scoring.parameters` |
+| Supplementary Table 13, Supplementary Figs. 2, 3 | `figures/si.py` from `score main`, `explabels_training`, `retrain.scoring.pr_curves` |
+| Supplementary Table 14 | `figures/si.py` from `score main` (TransFew's three checkpoints) |
+| Supplementary Table 15, re-tuned TransFew | `retrain.transfew.retune`; `figures/si.py` `retune_table` |
+| Supplementary Table 16 | `retrain.cost`, `retrain.scoring.training_cost`; `figures/si.py` `cost_table` |
+| Supplementary Table 17 | `figures/si.py` from `retrain.scoring.term_strata` |
+| Supplementary Table 18 | `retrain.scoring.reward_terms` (with `rewarded_terms.tsv`); `figures/si.py` |
+| Supplementary Note 10, terms each original set covers | `retrain.scoring.shared_terms` |
+| Supplementary Table 19 | `retrain.scoring.macro`; `figures/si.py` |
+| Supplementary Note 12 (structures) | `retrain.structures` |
+| Supplementary Table 20 | `retrain.replicate` |
+| Supplementary Table 21, Supplementary Fig. 4 | `retrain.outside`; `figures/si.py` |
+
+Not in this repository: the assembly of HQ from GOA, UniProt and the 16 specialist databases, the rule-based label
+additions, the search that chose the benchmark split, and the label review itself (their results are the released
+dataset: annotations with their sources, the split, and every review decision); Supplementary Table 1 and the label
+review's counts (Supplementary Table 7) are counts of the release.
 
 ### External inputs
 
 | Input | Source | Place under the data root | Checksum (SHA-256) |
 |---|---|---|---|
-| ArchipelaGO dataset release | Hugging Face, `ut-ornl-cmb/ArchipelaGO`, tag `v1.0` (to be released): `hf download ut-ornl-cmb/ArchipelaGO --repo-type dataset --revision v1.0 --local-dir <root>/release` | `release/` | `SHA256SUMS` in the release |
+| ArchipelaGO dataset release | Hugging Face, `ut-ornl-cmb/ArchipelaGO`, tag `v1.2` (private until publication; v1.0 and v1.1 have the same benchmark and training tables but not the deposited ranking and control sets): `hf download ut-ornl-cmb/ArchipelaGO --repo-type dataset --revision v1.2 --local-dir <root>/release` | `release/` | `SHA256SUMS` in the release |
 | DeepGO-SE training data | https://bio2vec.net/data/deepgo/deepgo2/training-data.tar.gz | `external/deepgose/` | `80cc5446ef2d32cfccd19ff6a634cb6c2946370caf0ec7b9fd1bfb3c2dc07a44` |
 | GO-Plus (GO release 2026-07-26) | https://release.geneontology.org/2026-08-05/ontology/extensions/go-plus.owl | `external/deepgose/go-plus.owl` | `52f51e70a94667f887f89205daeb442abe5f6f8b6cd8dda51ff5ad7fe7524bf5` |
 | TransFew release `TFewData.tar.gz` | https://doi.org/10.5281/zenodo.22139108 (21.0 GB) | `external/transfew/` (extracted) | `2f9007f96b1fdd28cb12c35e452f4415eaa69e8e6b2ae4e5026d100de672bf40` |
 | DPFunc data archive (December 2025 version) | https://drive.google.com/file/d/1qrxbkk450GJzhVfqnAN9Ms798owrq96n | `external/dpfunc/dpfunc_published_dataset.zip` | `3fa11fc181b5db435c0ebe1ac6005ed38c1d0073283130b4b5767d163c1d56e2` |
 | DPFunc InterPro vocabulary `inter_idx.pkl` | https://github.com/CSUBioGroup/DPFunc (commit `c5faf4df`), `data/inter_idx.pkl` | `external/dpfunc/` | |
-| DeepGO-SE code (replication: its metrics) | https://github.com/bio-ontology-research-group/deepgo2, commit `6c77c98` | `external/deepgose/deepgo2/` | |
+| DeepGO-SE code (replication: its metrics; training cost: its loader) | https://github.com/bio-ontology-research-group/deepgo2, commit `6c77c98` | `external/deepgose/deepgo2/` | |
 | DeepGO-SE trained models (replication) | https://bio2vec.net/data/deepgo/deepgo2/data.tar.gz (15.0 GB) | `external/deepgose/data.tar.gz` | |
-| DPFunc code and label list (replication) | https://github.com/CSUBioGroup/DPFunc, commit `c5faf4df` | `external/dpfunc/DPFunc/` | |
+| DPFunc code and label list (replication; training cost) | https://github.com/CSUBioGroup/DPFunc, commit `c5faf4df` | `external/dpfunc/DPFunc/` | |
 | DPFunc trained models (replication) | https://drive.google.com/file/d/1V0VTFTiB29ilbAIOZn0okBQWPlbOI3wN (`save_models.tar.gz`, 14.3 GB) | `external/dpfunc/save_models.tar.gz` | |
 | GO release 2022-12-04 (replication: DPFunc's labels) | https://release.geneontology.org/2022-12-04/ontology/go.obo | `external/go/2022-12-04/go.obo` | |
 | Language models | ESM2-15B, ESM2-3B, ESM-1b (fair-esm / Hugging Face), ProtT5-XL-U50 | downloaded on first use | |
@@ -322,8 +449,10 @@ The scoring bundle written from the released benchmark should have the SHA-256 c
 
 ```
 retrain/        common.py (datasets, ontology, fits, the homology screen), paths.py (the data root), and one package per
-                stage: datasets, finch (training recipe, training, combination), baselines, deepgose, transfew, dpfunc,
-                structures, scoring, replicate (the methods on their own benchmarks), outside (Finch on them)
+                stage: datasets, finch (training recipe, training, combination), baselines, deepgose, transfew (with the
+                re-tuning), dpfunc, structures, scoring, cost (training cost with the authors' code), replicate (the
+                methods on their own benchmarks), outside (Finch on them)
+review/         citations (the citation check of the label review), second_review (the second language-model review)
 scripts/        rank_coverage.py (the coverage ranking), embed.py (language-model embeddings), export_package.py (Finch's
                 model package)
 figures/        the paper's figures and tables (python -m figures.make_all)
@@ -333,8 +462,22 @@ examples/slurm/ an example job script
 tests/          CPU tests: python -m pytest
 ```
 
+## Citation
+
+```bibtex
+@unpublished{stempel2026archipelago,
+  title  = {{ArchipelaGO}: training data matter more than model design in protein function prediction},
+  author = {Stempel, Jackson C. and Amburn, Jason Andrew and Smith, Jeremy C.},
+  note   = {Manuscript submitted},
+  year   = {2026}
+}
+```
+
 ## License
 
 The code is released under the MIT License (`LICENSE`). Code adapted from DeepGO-SE (BSD 3-Clause), TransFew (MIT),
 DPFunc (MIT) and fair-esm (MIT) keeps its license next to it; see `THIRD_PARTY_NOTICES.md`. The ArchipelaGO dataset is
-released separately under CC BY-NC 4.0.
+released separately and licensed by source (CC BY 4.0 by default, CC BY-NC 4.0 for the parts drawn from OrganiZymeDB, KEGG
+and P450Rdb); Finch's trained weights and benchmark predictions (`ut-ornl-cmb/finch`) are under CC BY 4.0. The label
+review's second-review packets and results in `review/second_review/` hold public UniProt and GO records and the review's
+text, released with the code under the MIT License.

@@ -31,7 +31,9 @@ libraries download into their own caches).
 
 ## The dataset release (`release/`)
 
-The Hugging Face dataset, as downloaded (Parquet, one folder per table):
+The Hugging Face dataset, as downloaded (Parquet, one folder per table). From version 1.2 every table ends with a `license`
+column (`cc-by-4.0`, or `cc-by-nc-4.0` for rows drawn from OrganiZymeDB, KEGG or P450Rdb; `licenses/nc_proteins.tsv` lists
+the proteins whose FASTA and embedding entries are CC BY-NC 4.0); the pipeline reads columns by name and ignores it.
 
 | Table | Rows | Columns |
 |---|---|---|
@@ -49,6 +51,8 @@ The Hugging Face dataset, as downloaded (Parquet, one folder per table):
 | `ontology/go-basic.obo.gz` | the GO release of every label | |
 | `fasta/` | the sequences of the training, development and test proteins | |
 | `embeddings/<encoder>/{training,development,test}.npy` | the embeddings the paper's Finch was trained on, `esm2_15b_l48` and `prott5_l21` | float16, rows in the order of `training` and `benchmark` |
+| `coverage_ranking/` (v1.2) | the first 600,000 ranks of the paper's coverage ranking (of the 5,287,663 candidates that pass the rare-function filter) | `rank`, `protein_id`, `accessions`, `coverage_score` |
+| `control_sets/{hq_random,pool_random,filter_random,coverage_unfiltered}` (v1.2) | the 150,000 proteins each control set of Fig. 3a adds to HQ, in order | `position`, `protein_id`, `accessions`, `order_rank` |
 
 `python -m retrain.datasets.release` turns these into `datasets/{ontology,hq,archipelago,development,test}`. The scoring with
 other test labels (`retrain.scoring.test_labels`) rebuilds each version from the test annotations and reviews, checks it
@@ -76,19 +80,24 @@ for encoder in ("esm2_15b_l48", "prott5_l21"):
         Path(f"{stem}.ids.txt").write_text("\n".join(ids) + "\n", encoding="utf-8")
 ```
 
-### Files not in the public release
+### Deposited ranking and control sets, and files available on request
 
-The public release is the dataset above. Rebuilding some of the paper's other training sets exactly also needs files
-that are available from the corresponding author on request; the code reads them from these places when present and
-otherwise rebuilds an equivalent (it says so in its log):
+From version 1.2 the release deposits the paper's coverage ranking (its first 600,000 ranks: `coverage_ranking/`) and the
+protein identifiers of the four control sets of Fig. 3a (`control_sets/`). `retrain.datasets.selected` reads the deposited
+ranking in place of `release/selection/coverage_ranking.tsv`, and every control set and HQ + random that the pipeline
+builds is checked against its deposited table (the same proteins in the same order, with the same ranks).
+
+Building those sets, and a few others exactly, also needs files that are available from the corresponding author on
+request (the screened candidate pool is large, and the structures are DPFunc inputs); the code reads them from these
+places when present and otherwise rebuilds an equivalent (it says so in its log):
 
 | File | Used for |
 |---|---|
-| `release/candidates/{proteins,annotations}.parquet` and `inputs/embeddings/esm2_15b_l48/candidates.{npy,ids.txt}` | the coverage ranking's 8,952,628 candidates and their embeddings (the ranking itself and the Fig. 3a controls) |
-| `release/selection/coverage_ranking.tsv`, `coverage_ranking_unfiltered.tsv` (`rank`, `seq_id`, `score`) | the paper's rankings (dose sets, Fig. 3a control); a ranking recomputed from other HQ or candidate vectors than the ones the paper's ranking read can order near-tied candidates differently |
-| `release/hq_random/{proteins,annotations}.parquet` | the 150,000 random computational proteins of HQ + random |
+| `release/candidates/{proteins,annotations}.parquet` and `inputs/embeddings/esm2_15b_l48/candidates.{npy,ids.txt}` | the screened candidate pool: the coverage ranking's 8,952,628 candidates and their embeddings (recomputing the ranking, and the sequences and labels of the dose sets and the Fig. 3a controls) |
+| `release/selection/coverage_ranking_unfiltered.tsv` (`rank`, `seq_id`, `score`) | the unfiltered ranking beyond the 150,000 deposited proteins of `coverage_unfiltered` (the control set screens the first 165,000); a ranking recomputed from other HQ or candidate vectors than the ones the paper's ranking read can order near-tied candidates differently |
+| `release/hq_random/{proteins,annotations}.parquet` | the sequences and annotations of the 150,000 random computational proteins of HQ + random (their identifiers and accessions are deposited in `control_sets/hq_random`) |
 | `release/hq_support.tsv` (`seq_id`, `go_id`, `evidence`, `assigned_by`, `route`) | the GOA and experimental-label sets exactly (without it they are approximated from the release annotations) |
-| `inputs/structures/chosen.tsv` (`seq_id`, `source`, `entry`, `version`) | the paper's AlphaFold Database models for DPFunc |
+| `inputs/structures/chosen.tsv` (`seq_id`, `source`, `entry`, `version`) and the structures | the paper's AlphaFold Database models and ColabFold structures for DPFunc |
 
 ## Working formats
 

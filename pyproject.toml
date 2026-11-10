@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "archipelago-paper"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reproduction of the ArchipelaGO paper: training sets, retraining of every model, scoring and figures"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -23,13 +23,14 @@ transfew = ["transformers==4.39.3", "torch_geometric==2.5.3", "sentence-transfor
 dpfunc = ["fair-esm==2.0.0", "dgl"]
 figures = ["matplotlib>=3.8"]
 test = ["pytest", "scikit-learn", "safetensors", "matplotlib>=3.8"]
+review = ["pymupdf", "scikit-learn"]  # review/citations (PDF text), retrain.cost (the authors' ROC calls)
 
 [tool.setuptools.packages.find]
 include = ["retrain*", "figures*"]
 
 [tool.setuptools.package-data]
 figures = ["sankey_counts.json"]
-retrain = ["deepgose/axioms/*", "*/LICENSE-*"]
+retrain = ["deepgose/axioms/*", "*/LICENSE-*", "scoring/rewarded_terms.tsv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
