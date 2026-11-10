@@ -18,7 +18,12 @@ training script's rule; `bcebest`) and the epoch with the highest propagated dev
 After training, a fresh model loads each checkpoint and must reproduce the development scores saved with it before
 its test scores are written.
 
-    python -m retrain.transfew.train TRAINING_SET SEED [--data DIR] [--allow-shared-proteins]
+Re-tuning (Supplementary Note 8; retrain.transfew.retune): --lr and --dropout train the same model with another learning
+rate or another dropout after the two hidden layers of the protein networks (published 1e-4 and 0.2; the input dropout 0.1
+and the label GCN's 0.1 stay). Such a fit must name its own folder with --out (under the data root, outside runs/);
+everything else is the published recipe, and the three checkpoints and their predictions are written as above.
+
+    python -m retrain.transfew.train TRAINING_SET SEED [--data DIR] [--allow-shared-proteins] [--lr LR --dropout P --out DIR]
 
 TRAINING_SET: original (datasets/original_transfew), goa, hq or archipelago. Inputs: retrain.transfew.features and
 retrain.transfew.label_gcn. Output: runs/transfew/<training set>/seed<k>/ (raw scores, vocabulary order). One GPU;
@@ -30,6 +35,7 @@ import math
 import os
 import random
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -38,7 +44,7 @@ from archipelago.io import read_matrix
 from retrain import common
 from retrain.transfew import features, label_gcn
 
-RECIPE = dict(epochs=150, batch_size=256, lr=1e-4, weight_decay=1e-4, cosine_t_max=50, weight_factor=3,
+RECIPE = dict(epochs=150, batch_size=256, lr=1e-4, hidden_dropout=0.2, weight_decay=1e-4, cosine_t_max=50, weight_factor=3,
               frequent_threshold=30)
 SIDE = ('bcebest', 'auprcbest')
 
@@ -88,11 +94,11 @@ def split(counts, threshold):
     return torch.as_tensor(freq), torch.as_tensor(rare)
 
 
-def build(root, n_terms, freq, rare):
+def build(root, n_terms, freq, rare, hidden_dropout=RECIPE['hidden_dropout']):
     from retrain.transfew.model import TFun
     gcn = torch.load(label_gcn.folder(root) / 'gcn.pt', map_location='cpu')
     graph = torch.load(label_gcn.folder(root) / 'graph.pt', map_location='cpu')
-    model = TFun(n_terms, freq, rare, gcn['state_dict'], graph)
+    model = TFun(n_terms, freq, rare, gcn['state_dict'], graph, hidden_dropout)
     for name, p in model.named_parameters():      # training.py: label_embedding frozen
         if name.startswith('label_embedding'):
             p.requires_grad = False
@@ -115,11 +121,22 @@ def main():
     parser.add_argument('--allow-shared-proteins', action='store_true',
                         help="train although training proteins are also development or test proteins (an authors' own "
                              'split, used as released: retrain.replicate)')
+    parser.add_argument('--lr', type=float, default=RECIPE['lr'], help='re-tuning: learning rate')
+    parser.add_argument('--dropout', type=float, default=RECIPE['hidden_dropout'], help='re-tuning: hidden-layer dropout')
+    parser.add_argument('--out', type=Path, help='re-tuning: the fit folder (under the data root, outside runs/), required '
+                        'with --lr / --dropout')
     args = parser.parse_args()
     root = common.data_root(args.data)
+    recipe = dict(RECIPE, lr=args.lr, hidden_dropout=args.dropout)
+    retune = args.out is not None
+    if recipe != RECIPE and not retune:
+        raise ValueError('--lr and --dropout need --out: the standard folders hold the published recipe only')
+    if retune and (root.resolve() not in args.out.resolve().parents or
+                   (root / 'runs').resolve() in args.out.resolve().parents):
+        raise ValueError('--out must be a folder under the data root outside runs/')
     from retrain.transfew.model import weighted_bce
     began = time.monotonic()
-    out = common.fit_folder(root, 'transfew', args.training_set, args.seed)
+    out = args.out if retune else common.fit_folder(root, 'transfew', args.training_set, args.seed)
     if (out / 'record.json').exists():
         common.log(f'{out} is complete; skipped (remove record.json to retrain)')
         return
@@ -140,16 +157,17 @@ def main():
         raise ValueError('a final training batch of one protein would break BatchNorm in train mode')
     counts = np.asarray(train.labels.sum(0)).ravel()
     freq, rare = split(counts, RECIPE['frequent_threshold'])
-    model = build(root, n_terms, freq, rare).to(device)
+    model = build(root, n_terms, freq, rare, recipe['hidden_dropout']).to(device)
 
     xt = torch.as_tensor(np.asarray(x_train, dtype=np.float32)).to(device)
     yt = torch.from_numpy(train.labels.toarray()).to(device)   # uint8 on the GPU; float per batch
     xd = torch.as_tensor(np.asarray(x_dev, dtype=np.float32)).to(device)
     yd = torch.from_numpy(dev.labels.toarray().astype(np.float32)).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=RECIPE['lr'], weight_decay=RECIPE['weight_decay'])
+    optimizer = torch.optim.Adam(model.parameters(), lr=recipe['lr'], weight_decay=RECIPE['weight_decay'])
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, RECIPE['cosine_t_max'])
     common.log(f'transfew {args.training_set} seed {args.seed}: {len(xt):,} proteins, {len(freq):,} frequent and '
-               f'{len(rare):,} rare terms')
+               f'{len(rare):,} rare terms' + (f"; learning rate {recipe['lr']:g}, hidden dropout {recipe['hidden_dropout']:g}, "
+                                              f'into {out}' if retune else ''))
 
     best_bce, bce_epoch, best_auprc, auprc_epoch, history = math.inf, None, -math.inf, None, []
     started = time.monotonic()
@@ -187,14 +205,15 @@ def main():
     xs = torch.as_tensor(np.asarray(x_test, dtype=np.float32)).to(device)
     scores, reproduced = {}, {}
     for name in ('last', *SIDE):
-        fresh = build(root, n_terms, freq, rare)
+        fresh = build(root, n_terms, freq, rare, recipe['hidden_dropout'])
         fresh.load_state_dict(torch.load(out / f'checkpoint_{name}.pt', map_location='cpu'))
         fresh.to(device)
         dev_scores = predict(fresh, xd).cpu().numpy()
         reproduced[name] = common.check_reproduced(np.load(out / f'saved_dev_{name}.npy'), dev_scores)
         scores[name] = dev_scores, predict(fresh, xs).cpu().numpy()
         (out / f'saved_dev_{name}.npy').unlink()
-    record = dict(method='transfew', training_set=args.training_set, dataset=dataset, seed=args.seed, recipe=RECIPE,
+    record = dict(method='transfew', training_set=args.training_set, dataset=dataset, seed=args.seed, recipe=recipe,
+                  lr=recipe['lr'], hidden_dropout=recipe['hidden_dropout'], retune=retune,
                   epochs_run=args.epochs, primary='last epoch',
                   side=dict(bcebest=dict(epoch=bce_epoch, rule='lowest development BCE'),
                             auprcbest=dict(epoch=auprc_epoch, rule='highest propagated development micro-AUPRC')),

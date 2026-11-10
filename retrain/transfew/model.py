@@ -27,11 +27,12 @@ LABEL_DIM = 1024          # LabelEncoder out_channels
 ATTENTION_DIM = 256
 
 
-def esm_layers(out):
+def esm_layers(out, hidden_dropout=0.2):
     """models/config.py esm_layers_freq_mf / esm_layers_rare_mf with the last layer sized `out`:
-    (in, out, bias, activation, norm, dropout, inputs)."""
-    return [(ESM_DIM, 1024, True, 'gelu', 'batchnorm', 0.2, (0,)),
-            (1024, 256, True, 'gelu', 'batchnorm', 0.2, (1,)),
+    (in, out, bias, activation, norm, dropout, inputs). hidden_dropout: the dropout after the two hidden layers
+    (published 0.2; another value only in the re-tuning, retrain.transfew.retune)."""
+    return [(ESM_DIM, 1024, True, 'gelu', 'batchnorm', hidden_dropout, (0,)),
+            (1024, 256, True, 'gelu', 'batchnorm', hidden_dropout, (1,)),
             (256, out, True, 'gelu', 'batchnorm', 'none', (2,))]
 
 
@@ -80,9 +81,9 @@ class MLP(nn.Module):
 class TFun_submodel(nn.Module):
     """models/model.py TFun_submodel, sub_model 'esm2_t48', full=True (no sigmoid)."""
 
-    def __init__(self, out):
+    def __init__(self, out, hidden_dropout=0.2):
         super().__init__()
-        self.esm_mlp = MLP(esm_layers(out), in_dropout=0.1)
+        self.esm_mlp = MLP(esm_layers(out, hidden_dropout), in_dropout=0.1)
 
     def forward(self, data):
         return self.esm_mlp(data, residual=True)
@@ -145,7 +146,7 @@ class TFun(nn.Module):
     column once); `label_state` is the pretrained GAE state dict; `graph` holds `biobert` (terms x 768, vocabulary
     order) and `edge_index`. The caller freezes the label GAE's parameters, as training.py does."""
 
-    def __init__(self, n_terms, freq, rare, label_state, graph):
+    def __init__(self, n_terms, freq, rare, label_state, graph, hidden_dropout=0.2):
         super().__init__()
         if sorted(torch.cat([freq, rare]).tolist()) != list(range(n_terms)):
             raise ValueError('frequent and rare columns must cover every output exactly once')
@@ -154,10 +155,10 @@ class TFun(nn.Module):
         self.register_buffer('rare_indicies', rare.clone())
         self.dropout = nn.Dropout(0.1)    # unused in forward, as in the source
         self.dropout2 = nn.Dropout(0.1)
-        self.esm_freq_mlp = TFun_submodel(len(freq))   # official: load_submodel(...) then TFun_submodel(...)
-        self.esm_freq_mlp = TFun_submodel(len(freq))
-        self.esm_rare_mlp = TFun_submodel(len(rare))   # official: TFun_submodel(...) then load_submodel(...)
-        self.esm_rare_mlp = TFun_submodel(len(rare))
+        self.esm_freq_mlp = TFun_submodel(len(freq), hidden_dropout)   # official: load_submodel(...) then TFun_submodel(...)
+        self.esm_freq_mlp = TFun_submodel(len(freq), hidden_dropout)
+        self.esm_rare_mlp = TFun_submodel(len(rare), hidden_dropout)   # official: TFun_submodel(...) then load_submodel(...)
+        self.esm_rare_mlp = TFun_submodel(len(rare), hidden_dropout)
         self.label_embedding = label_gae()
         self.label_embedding.load_state_dict(label_state)
         self.joint_embedding = Attention(concat_hidden=n_terms, label_dimension=LABEL_DIM,
