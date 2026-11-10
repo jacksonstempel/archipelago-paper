@@ -137,8 +137,7 @@ The recipe ablation (Fig. 4a) builds Finch up on ArchipelaGO: a linear readout o
 hidden layer (width 1,024, dropout 0.3), the full hidden layer (width 8,192, dropout 0.8), ASAM (Finch's ESM2-15B readout),
 and Finch. A control averages two ESM2-15B networks trained with different seeds; two comparisons train the full hidden
 layer on ESM2-3B and on ESM-1b. Each model is listed under `ladder` in
-`configs/finch.json` with the learning rate and dropout that the paper chose for it on the development set (the search
-itself is not part of this repository). Finch with its ProtT5 readout on ProtT5's last layer (24) instead of layer 21,
+`configs/finch.json` with the learning rate and dropout that the paper chose for it on the development set. Finch with its ProtT5 readout on ProtT5's last layer (24) instead of layer 21,
 same weights, is listed under `variants`:
 
 ```bash
@@ -417,11 +416,6 @@ lists the files each reads); everything that depends on the test labels is on th
 | Supplementary Note 12 (structures) | `retrain.structures` |
 | Supplementary Table 20 | `retrain.replicate` |
 | Supplementary Table 21, Supplementary Fig. 4 | `retrain.outside`; `figures/si.py` |
-
-Not in this repository: the assembly of HQ from GOA, UniProt and the 16 specialist databases, the rule-based label
-additions, the search that chose the benchmark split, and the label review itself (their results are the released
-dataset: annotations with their sources, the split, and every review decision); Supplementary Table 1 and the label
-review's counts (Supplementary Table 7) are counts of the release.
 
 ### External inputs
 
