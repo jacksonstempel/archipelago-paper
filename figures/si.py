@@ -1,5 +1,6 @@
 """Tables and figures of the Supplementary Information: LaTeX table bodies (rows only; the SI typesets the headers) and
-the figures, written into <out>/si/. Reads, under <root>/results/:
+the figures, written into <out>/si/. Reads, under <root>/results_masked/ for every result that depends on the main test
+labels (figures.style.labelled) and <root>/results/ otherwise:
 
   main/{metrics.tsv,contrasts.tsv}                         every model on every training set (retrain.scoring.score main)
   dataset_sizes.tsv                                        retrain.scoring.sizes
@@ -9,18 +10,22 @@ the figures, written into <out>/si/. Reads, under <root>/results/:
   no_hit/{subsets.tsv,differences.tsv,E<cutoff>/}          retrain.scoring.no_hit
   pr_curves/curves.tsv                                     retrain.scoring.pr_curves
   selection/{metrics.tsv,contrasts.tsv}                    retrain.scoring.score selection
-  term_strata/gains.tsv                                    retrain.scoring.term_strata
+  term_strata/gains.tsv                                    retrain.scoring.term_strata (Supplementary Table 17)
+  reward_terms/gains.tsv                                   retrain.scoring.reward_terms (Supplementary Table 18)
+  <root>/retune_transfew/{search_log.tsv,chosen.json}      retrain.transfew.retune (Supplementary Table 15)
   ladder/{metrics.tsv,contrasts.tsv}                       retrain.scoring.score ladder
   parameters.json                                          retrain.scoring.parameters
-  training_cost.tsv                                        retrain.scoring.training_cost
-  macro/contrasts.tsv                                      retrain.scoring.macro (Supplementary Table 16)
+  training_cost.tsv                                        retrain.scoring.training_cost, with retrain.cost.table
+                                                           (Supplementary Table 16)
+  macro/contrasts.tsv                                      retrain.scoring.macro (Supplementary Table 19)
   outside_masked/<method>/{table,contrasts}.tsv            retrain.outside.masked bootstrap (its work folder; Supplementary
-                                                           Table 18, Supplementary Figure 4)
+                                                           Table 21, Supplementary Figure 4)
 
 Main-text Table 2 with intervals (table2_intervals.tex) is written beside Table 2 by figures/main.py.
 
-Supplementary Table 1 (the annotation sources) is typed in the SI and the label-review prompt is released with the
-reviewed labels; neither is generated here.
+Supplementary Table 1 (the annotation sources) and Supplementary Table 7 (the label review in numbers) are counts of the
+release, typed in the SI; Supplementary Table 8 is the summary of review/citations/audit_citations.py, Supplementary Table
+20 that of retrain.replicate; the label-review prompt is printed in the SI. None is generated here.
 """
 import json
 
@@ -29,7 +34,7 @@ import numpy as np
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.transforms import blended_transform_factory
 
-from figures.style import (COLOURS, DOUBLE, GREY, HEADLINE, INK, NAMES, PUBLISHED, contrasts, fs, half_up, labelled, pr_curves, read, save,
+from figures.style import (COLOURS, DOUBLE, GREY, INK, NAMES, PUBLISHED, contrasts, fs, half_up, labelled, pr_curves, read, save,
                            seed_means)
 from retrain.finch import config as finch_config
 
@@ -168,12 +173,28 @@ def tables(results, out):
     nohit = {(r['subset'], r['method'], r['base']): r for r in read(labelled(folder / 'differences.tsv'))}
     cutname = {'none': 'all test proteins', '1e-10': r'$10^{-10}$', '1e-06': r'$10^{-6}$', '0.001': r'$10^{-3}$',
                '0.01': r'$10^{-2}$', '0.1': r'$10^{-1}$', '1': '1', '10': '10'}
+    def relative(scores, a, b, difference):
+        """The difference as a percentage of the subtracted model's score, checked against the two scores."""
+        a, b = scores[(*a, 'auprc')], scores[(*b, 'auprc')]
+        a, b = float(a['value']), float(b['value'])
+        if abs(a - b - float(difference)) > 1e-6:
+            raise ValueError(f'no-hit scores {a} - {b} do not give the difference {difference}')
+        v = 100 * float(difference) / b
+        s = f'{abs(v):.0f}'
+        return r'\,{\scriptsize\color{black!55}' + (('+' if v >= 0 else '$-$') if s != '0' else '') + s + r'\%}'
+
     lines = []
     for cut, n, k in subsets:
-        random_gain = (contrast if cut == 'none' else contrasts(labelled(folder / f'E{cut}')))['auprc', 'finch', 'hq_random', 'finch', 'hq']
-        rows = [nohit[cut, 'finch', 'hq'], nohit[cut, 'finch', 'hq_random'], random_gain,
-                *(nohit[cut, p, 'original'] for p in PUBLISHED)]
-        cells = [f"{r3(r['difference'], True)} {ci(r['ci_low'], r['ci_high'])}" for r in rows]
+        scored = labelled(results / 'main') if cut == 'none' else labelled(folder / f'E{cut}')  # the subset's scores
+        scores = seed_means(scored)
+        random_gain = (contrast if cut == 'none' else contrasts(scored))['auprc', 'finch', 'hq_random', 'finch', 'hq']
+        rows = [(nohit[cut, 'finch', 'hq'], ('finch', 'archipelago'), ('finch', 'hq')),
+                (nohit[cut, 'finch', 'hq_random'], ('finch', 'archipelago'), ('finch', 'hq_random')),
+                (random_gain, ('finch', 'hq_random'), ('finch', 'hq')),
+                *((nohit[cut, p, 'original'], (p, 'archipelago'), (p, 'original')) for p in PUBLISHED)]
+        # (value and relative gain, the interval in small type below: two lines keep the table at text width)
+        cells = [r'\st{' + f"{r3(r['difference'], True)}{relative(scores, a, b, r['difference'])}" + '}{'
+                 + ci(r['ci_low'], r['ci_high']) + '}' for r, a, b in rows]
         lines.append(f'{cutname[cut]} & {n:,} & {k:,} & ' + ' & '.join(cells) + r' \\')
     write(out, 'table_nohit.tex', lines)
 
@@ -209,6 +230,24 @@ def tables(results, out):
         lines.append(f'{NAMES[method]} & {SETNAME[a]} $-$ {SETNAME[b]} & '
                      + ' & '.join(paired(strata[s, method, a, b], 3) for s in ('all', 'common', 'rare')) + r' \\')
     write(out, 'table_term_strata.tex', lines)
+
+    # the main gains on the terms the split rewarded for computational support and on the other terms
+    reward = {(r['stratum'], r['method'], r['training_set'], r['minus_method'], r['minus_training_set']): r
+              for r in read(labelled(results / 'reward_terms' / 'gains.tsv'))}
+    lines = []
+    for method in PUBLISHED + ['finch']:
+        if method == 'finch':
+            pairs = [('finch', 'archipelago', 'hq_random'), ('finch', 'archipelago', 'hq')]
+            pairs += [(p, 'archipelago', 'archipelago') for p in PUBLISHED]
+        else:
+            pairs = [(method, 'archipelago', 'original'), (method, 'hq', 'original'), (method, 'hq', 'hq_explabels'),
+                     (method, 'archipelago', 'hq')]
+        for i, (minus, a, b) in enumerate(pairs):
+            label = f'Finch $-$ {NAMES[minus]} (ArchipelaGO)' if minus != method else f'{SETNAME[a]} $-$ {SETNAME[b]}'
+            lines.append(f"{NAMES[method] if i == 0 else ''} & {label} & "
+                         + ' & '.join(paired(reward[s, method, a, minus, b], 3) for s in ('all', 'rewarded', 'other')) + r' \\')
+        lines.append(r'\addlinespace')
+    write(out, 'table_reward_terms.tex', lines[:-1])
 
 
 def label_counts(results, out):
@@ -263,7 +302,7 @@ def label_grid_figure(results, out):
     original = {'deepgose': 'original_deepgose', 'transfew': 'original_transfew', 'dpfunc': 'original_dpfunc'}
     shift = {'deepgose': -0.2, 'transfew': 0.0, 'dpfunc': 0.2}  # Finch's three original-data markers side by side
     ink, line, violet = '#55595f', '#8f939a', COLOURS['archipelago']
-    main_version = 'masked' if HEADLINE == 'masked' else 'reviewed'
+    main_version = 'masked'  # the paper's main test labels
     grid = {(r['method'], r['training_set']): r for r in read(labelled(results / 'label_grid' / 'grid.tsv'))}
     proteins = {r['version']: int(r['proteins']) for r in read(labelled(results / 'label_grid' / 'versions.tsv'))}
     gx = {s: i for i, s in enumerate(x_sets)}
@@ -312,17 +351,22 @@ def label_grid_figure(results, out):
 
 
 def cost_table(results, out):
-    """Training cost (table_cost.tex, from retrain.scoring.training_cost): per method, GPU-hours of one run on ArchipelaGO
-    (the mean over its runs), of all its runs on ArchipelaGO, and of all its runs on every training set of the main
-    comparison; methods from the cheapest run."""
+    """Supplementary Table 16 (table_cost.tex): H100-hours of one run on ArchipelaGO and of all runs, with the authors'
+    original training code (retrain.cost.table, diagnostics off) and as trained here. Finch, which has only its own
+    implementation: one run is the mean over its ArchipelaGO runs and all runs are its runs on every training set of the main
+    comparison (retrain.scoring.training_cost); the published methods' "as trained here" columns are the arithmetic of
+    retrain.cost.table (DPFunc's ArchipelaGO runs on a normal-node basis)."""
+    from retrain.cost.table import table
     rows = read(results / 'training_cost.tsv')
-    archipelago = {r['method']: r for r in rows if r['training_set'] == 'archipelago'}
-    one = {m: float(r['gpu_hours']) / int(r['runs']) for m, r in archipelago.items()}
-    lines = []
-    for method in sorted(one, key=one.get):
-        total = sum(float(r['gpu_hours']) for r in rows if r['method'] == method)
-        lines.append(f"{NAMES[method]} & {half_up(one[method], places=2 if one[method] < 1 else 1)} & "
-                     f"{half_up(archipelago[method]['gpu_hours'], places=1)} & {half_up(total, places=1)} \\\\")
+    finch = [r for r in rows if r['method'] == 'finch']
+    archipelago = next(r for r in finch if r['training_set'] == 'archipelago')
+    hours = {'finch': (None, None, float(archipelago['gpu_hours']) / int(archipelago['runs']),
+                       sum(float(r['gpu_hours']) for r in finch)), **table()[1]}
+
+    def h(value):
+        return '--' if value is None else half_up(value, places=2 if value < 1 else 1)
+
+    lines = [f"{NAMES[m]} & " + ' & '.join(h(v) for v in hours[m]) + r' \\' for m in ('finch', 'transfew', 'dpfunc', 'deepgose')]
     write(out, 'table_cost.tex', lines)
 
 
@@ -664,6 +708,30 @@ def outside_figure(results, out):
     save(fig, out, 'si_fig_outside')
 
 
+def retune_table(results, out):
+    """Supplementary Table 15 (table_retune.tex): TransFew re-tuned on ArchipelaGO, the development micro-AUPRC of each
+    seed-0 fit at its best-development-AUPRC epoch by learning rate and hidden-layer dropout, the chosen setting in bold
+    (retrain.transfew.retune log and choose: <root>/retune_transfew/{search_log.tsv,chosen.json})."""
+    folder = results.parent / 'retune_transfew'
+    rows = [r for r in read(folder / 'search_log.tsv') if r['seed'] == '0' and r['status'] == 'complete']
+    chosen = json.loads((folder / 'chosen.json').read_text())
+    value = {(float(r['lr']), float(r['dropout'])): float(r['dev_auprc_best']) for r in rows}
+    lrs, dropouts = sorted({k[0] for k in value}), sorted({k[1] for k in value})
+    if len(value) != len(lrs) * len(dropouts):
+        raise ValueError('the search log does not hold one seed-0 fit per setting')
+
+    def rate(lr):
+        mantissa, exponent = f'{lr:.0e}'.split('e')
+        return (r'$' if mantissa == '1' else rf'${mantissa}\times') + rf'10^{{{int(exponent)}}}$'
+
+    lines = []
+    for lr in lrs:
+        cells = [rf'\textbf{{{r3(value[lr, d])}}}' if (lr, d) == (chosen['lr'], chosen['dropout']) else r3(value[lr, d])
+                 for d in dropouts]
+        lines.append(f'{rate(lr)} & ' + ' & '.join(cells) + r' \\')
+    write(out, 'table_retune.tex', lines)
+
+
 def draw(results, out):
     out = out / 'si'
     out.mkdir(parents=True, exist_ok=True)
@@ -671,6 +739,7 @@ def draw(results, out):
     label_grid_table(results, out)
     label_grid_figure(results, out)
     recipe_tables(results, out)
+    retune_table(results, out)
     cost_table(results, out)
     shared(results, out)
     macro_table(results, out)

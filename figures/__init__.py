@@ -1,5 +1,10 @@
 """The paper's figures and tables, drawn from result files under the data root (python -m figures.make_all).
 
+Every result that depends on the main test labels (computational annotations unscored, the paper's main labels) is read
+from <root>/results_masked/ (retrain.scoring.headline and the stages it names), with the same folders and files as listed
+here under <root>/results/; a missing file is an error. The label versions' own folders (experimental, direct evidence,
+computational annotations negative or unscored, all GOA) and the no-hit subset sizes are read from <root>/results/.
+
 Files read, under <root>/results/ (each written by the retrain.scoring stage named):
 
   main/metrics.tsv, main/contrasts.tsv      score main          Tables 1 and 2, Figs. 2 and 4b, SI tables
@@ -13,8 +18,10 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   experimental_test_labels/                 test_labels experimental   Table 2, SI: the test versions
   all_goa_test_labels/                      test_labels all_goa        Table 2
   masked_test_labels/                       test_labels masked         Table 2
-  direct_masked_test_labels/contrasts.tsv   label_grid          Table 2
-  label_grid/grid.tsv, versions.tsv         label_grid          SI: every model on every version of the test set
+  direct_masked_test_labels/, masked_negatives_test_labels/   label_grid   Table 2
+  label_grid/grid.tsv, versions.tsv         label_grid          Table 2 (relative gains), SI: every model on every version
+                                                                of the test set (results_masked/label_grid)
+  reward_terms/gains.tsv                    reward_terms        SI: the main gains on the rewarded terms (results_masked)
   explabels_training/                       score explabels_training   Fig. 4b, SI: HQ with experimental labels only
   no_hit/subsets.tsv, differences.tsv,      no_hit              Table 2, Fig. 3c, SI: test proteins without training
     E<cutoff>/{metrics.tsv,contrasts.tsv}                       relatives
@@ -22,11 +29,6 @@ Files read, under <root>/results/ (each written by the retrain.scoring stage nam
   macro/contrasts.tsv                       macro               SI: the main comparisons in term-centric AUPRC
   training_cost.tsv                         training_cost       SI: training cost
   outside_masked/                           retrain.outside.masked     SI: the published methods' own benchmarks
-
-HEADLINE=masked (environment variable; default reviewed) draws every result that depends on the main test labels from 
-<root>/results_masked/ instead (same folders and files; a missing file is an error) and shades the Computational annotations unscored row of
-Table 2 instead of the Reviewed labels row. Everything is then written to <root>/figures_masked/, so that the two sets of figures share no file. The label versions' own folders (experimental, direct, masked, all GOA) and the
-no-hit subset sizes are read from results/ either way.
 
 Fig. 1 reads the counts in figures/sankey_counts.json; Extended Data Fig. 1 is a schematic.
 DIAMOND-kNN is the method `diamond_knn` of the main run (no E-value cutoff, as reported).

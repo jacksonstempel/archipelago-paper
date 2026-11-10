@@ -2,8 +2,10 @@
 methods on every training set they share) and the bodies of Tables 1 and 2, from the results: <root>/results/main/
 {metrics,contrasts}.tsv (test, seed means), <root>/results/explabels_training/{metrics,contrasts}.tsv and <root>/results/
 ladder/metrics.tsv; Table 2 also reads the contrasts.tsv of every version of the test set (main,
-experimental_test_labels, direct_masked_test_labels, masked_test_labels, all_goa_test_labels, no_hit/E0.001, no_hit/E10)
-with the label versions' counts.tsv and no_hit/subsets.tsv."""
+experimental_test_labels, masked_negatives_test_labels, direct_masked_test_labels, masked_test_labels, all_goa_test_labels,
+no_hit/E0.001, no_hit/E10) with the label versions' counts.tsv, no_hit/subsets.tsv, and, for the relative gains,
+label_grid/grid.tsv, masked_negatives_test_labels/models.tsv and the no-hit subsets' metrics.tsv. Every result that depends
+on the main test labels is read from <root>/results_masked/ (figures.style.labelled)."""
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import blended_transform_factory
@@ -210,28 +212,72 @@ def figures(results, out):
         handle.write('\n'.join(lines))
 
 
+def percent(v):
+    """A relative gain in whole percent, with its sign (none for 0)."""
+    s = f'{abs(v):.0f}'
+    return (('+' if v >= 0 else '$-$') if s != '0' else '') + s + r'\%'
+
+
 def table2(results, out):
     """Table 2: the paper's three comparisons in test micro-AUPRC (each published method's gain from its original data to
     ArchipelaGO; Finch on ArchipelaGO minus Finch on HQ + random, and minus each published method on ArchipelaGO), on
-    every version of the test set, read from each version's contrasts.tsv. table2.tex is the tabular the manuscript
-    inputs (full text width, the main test labels shaded, per HEADLINE: colortbl, with `rowshade` defined by the document);
-    table2_intervals.tex, the SI's copy at natural width, adds the paired 95% cluster-bootstrap intervals."""
-    metric = seed_means(labelled(results / 'main'))
+    every version of the test set, read from each version's contrasts.tsv, each difference with its relative gain (the
+    difference as a percentage of the score it is taken from; the two scores, from the version's own results, must give
+    the difference). table2.tex is the tabular the manuscript inputs (full text width, the main test labels shaded:
+    colortbl, with `rowshade`, and the macros \st (a cell's second line in small type) and \tn (a row name in a box two
+    lines high) defined by the document); table2_intervals.tex, the SI's copy at natural width, adds the paired 95%
+    cluster-bootstrap intervals."""
     comparators = ['deepgose', 'transfew', 'dpfunc']  # the paper's order of the methods
     proteins = lambda folder, variant: next(int(r['proteins']) for r in read(results / folder / 'counts.tsv')  # noqa: E731
                                             if r['variant'] == variant)
     subsets = {float(r['cutoff']): int(r['proteins']) for r in read(results / 'no_hit' / 'subsets.tsv')}
-    # (name, proteins, results folder) per group: the label versions from strictest to loosest, then the
-    # protein subsets; the groups are separated by a rule, not labelled
-    groups = [[('Experimental labels only', proteins('experimental_test_labels', 'exp'), 'experimental_test_labels'),
-               ('Direct evidence only', proteins('experimental_test_labels', 'all'), 'direct_masked_test_labels'),
-               ('Computational annotations unscored', proteins('masked_test_labels', 'masked'), 'masked_test_labels'),
-               ('Reviewed labels', proteins('experimental_test_labels', 'all'), 'main'),
-               ('All GOA annotations', proteins('all_goa_test_labels', 'all_goa'), 'all_goa_test_labels')],
-              [(r'No training hit, E\,$\leq$\,10\textsuperscript{-3}', subsets[1e-3], 'no_hit/E0.001'),
-               (r'No training hit, E\,$\leq$\,10', subsets[10.0], 'no_hit/E10')]]
+    # each version's scores (seed means; DeepGO-SE its ensemble) by (method, training set), for the relative gains: the label
+    # versions from the label grid, the computational annotations as negatives from their own run, the protein subsets from
+    # their scoring on the main labels
+    grid_rows = read(results / 'label_grid' / 'grid.tsv')
+    grid = lambda version: {(r['method'], r['training_set']): float(r[version]) for r in grid_rows}  # noqa: E731
+    negatives = {(r['method'], r['training_set']): float(r['value'])
+                 for r in read(results / 'masked_negatives_test_labels' / 'models.tsv')
+                 if r['seed'] == 'mean' and r['metric'] == 'auprc'}
+
+    def nohit(cutoff):
+        return {(m, t): float(r['value']) for (m, t, metric), r in seed_means(labelled(results / 'no_hit' / f'E{cutoff}')).items()
+                if metric == 'auprc'}
+
+    # (name, proteins, results folder, scores) per group: the label versions from strictest to loosest, then the protein
+    # subsets; the groups are separated by a rule, not labelled
+    groups = [[('Experimental labels only', proteins('experimental_test_labels', 'exp'), results / 'experimental_test_labels',
+                grid('experimental')),
+               ('Computational annotations negative', proteins('experimental_test_labels', 'all'),
+                results / 'masked_negatives_test_labels', negatives),
+               ('Direct evidence only', proteins('experimental_test_labels', 'all'), results / 'direct_masked_test_labels',
+                grid('direct_masked')),
+               ('Computational annotations unscored', proteins('masked_test_labels', 'masked'), results / 'masked_test_labels',
+                grid('masked')),
+               ('Reviewed labels', proteins('experimental_test_labels', 'all'), results / 'main', grid('reviewed')),
+               ('All GOA annotations', proteins('all_goa_test_labels', 'all_goa'), results / 'all_goa_test_labels',
+                grid('all_goa'))],
+              [(r'No training hit, E\,$\leq$\,10\textsuperscript{-3}', subsets[1e-3], labelled(results / 'no_hit' / 'E0.001'),
+                nohit('0.001')),
+               (r'No training hit, E\,$\leq$\,10', subsets[10.0], labelled(results / 'no_hit' / 'E10'), nohit('10'))]]
+
+    def relative(r, scores):
+        """The difference as a percentage of the subtracted model's score; its two scores must give the difference."""
+        a, b = scores[r['method'], r['training_set']], scores[r['minus_method'], r['minus_training_set']]
+        if abs(a - b - float(r['difference'])) > 1e-6:
+            raise ValueError(f"scores {a} - {b} do not give the difference {r['difference']} ({r['method']} {r['training_set']})")
+        return 100 * float(r['difference']) / b
+
     n = len(comparators)
     for name, intervals in (('table2.tex', False), ('table2_intervals.tex', True)):
+        def cell(r, scores):
+            d = half_up(r['difference'])
+            if not intervals:  # main text: the relative gain under the value
+                return r'\st[c]{' + d + r'}{\color{black!55}' + percent(relative(r, scores)) + '}'
+            # SI copy: the value and its relative gain, the interval under them
+            p = r'\,{\scriptsize\color{black!55}' + percent(relative(r, scores)) + '}'
+            return r'\st[c]{' + d + p + '}{' + f"({half_up(r['ci_low'])}--{half_up(r['ci_high'])})" + '}'
+
         # full width through tabularx's stretched first column, not tabular*'s stretched gaps, which a shaded row leaves
         # white; no @{} at the edges, so that the shading ends with the rules instead of reaching \tabcolsep beyond them
         lines = [r'\begin{tabular}{lr' + 'c' * (2 * n + 1) + '}' if intervals else
@@ -242,17 +288,20 @@ def table2(results, out):
                  rf'\cmidrule(lr){{3-{2 + n}}}\cmidrule(lr){{{3 + n}-{3 + 2 * n}}}',
                  r'\bfseries Test set & Proteins & ' + ' & '.join(NAMES[m] for m in comparators) + r' & HQ + random & '
                  + ' & '.join(NAMES[m] for m in comparators) + r' \\']
+        lowest = 1.0
         for group in groups:
             lines.append(r'\midrule')
-            for version, count, folder in group:
-                c = contrasts(labelled(results / folder) if folder.startswith('no_hit/') else results / folder)
+            for version, count, folder, scores in group:
+                c = contrasts(folder)
                 row = [c['auprc', m, 'archipelago', m, 'original'] for m in comparators] + \
                       [c['auprc', 'finch', 'archipelago', 'finch', 'hq_random']] + \
                       [c['auprc', 'finch', 'archipelago', m, 'archipelago'] for m in comparators]
-                cells = [f"{half_up(r['difference'])} ({half_up(r['ci_low'])}--{half_up(r['ci_high'])})" if intervals
-                         else half_up(r['difference']) for r in row]
-                lines.append((r'\rowcolor{rowshade}' if version == MAIN_LABELS else '') + f'{version} & {count:,} & ' + ' & '.join(cells)
-                             + r' \\')
+                lowest = min(lowest, *(float(r['ci_low']) for r in row))
+                label = version if intervals else r'\tn{' + version + '}'
+                lines.append((r'\rowcolor{rowshade}' if version == MAIN_LABELS else '') + f'{label} & {count:,} & '
+                             + ' & '.join(cell(r, scores) for r in row) + r' \\')
         lines += [r'\bottomrule', r'\end{tabular}' if intervals else r'\end{tabularx}', '']
+        if lowest <= 0:  # the main-text footnote says every interval lies above zero
+            raise ValueError(f'a Table 2 interval reaches {lowest}')
         with open(out / name, 'w', encoding='utf-8', newline='\n') as handle:
             handle.write('\n'.join(lines))
