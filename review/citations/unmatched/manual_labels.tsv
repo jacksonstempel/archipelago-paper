@@ -1,0 +1,148 @@
+decision_id	category	confidence	hand_read	reason
+dev:0ed0a713f7271e2a2ec094322dcbe5a50bab2642bc975802d06e151a94d0a1fa:GO:0050660	b	medium	title+abstract+rationale	Cited PDB 1EFV is human ETF; the rationale states a fly-ortholog inference from the human structure.
+dev:0efe93247251ba9b4890aea841dd3808e8168c7469ff530faa773402190aca9f:GO:0046872	a	low	title+abstract+rationale+full-text context	Only the body of PMC6698739 (a P. marinus ligase paper) mentions T7 DNA ligase, in passing; the 1996 NAR page is unreachable. Weak.
+dev:17237be172755364b31058d8d377d629ea6bc76bc21dee726903d7ab4f34689d:GO:0070326	b	medium	title+abstract+rationale	"Rat Lrpap1; paper is on mammalian RAP (""39-kDa receptor-associated protein"" is the common name) and VLDLR; ortholog inference stated."
+dev:28b27604a70a3fce7049441828e489bcf901579985c210f23691ac7c71693e56:GO:0001540	a	medium	title+abstract+rationale+full-text context	Zebrafish proSAAS is tested in the body of PMC3946950 (Fig 5C); abstract only covers mouse/human proSAAS.
+dev:28b27604a70a3fce7049441828e489bcf901579985c210f23691ac7c71693e56:GO:0140776	a	medium	title+abstract+rationale+full-text context	Same paper and fish result as the accepted proSAAS decision; used to reject the complex-destabilising term.
+dev:337d772905304b93a4b232fbb4459f6b25231f36c76af39f3ccdc22d64cc290d:GO:0030674	b	medium	title+abstract+rationale	Human TPGS1 paper (regulators of polyglutamylation); mouse ortholog inference stated; publisher bars XML full text.
+dev:5f778cc5d704ac2dca30e0120f878db622f36beffd9cf63205547354808ce8b2:GO:0015078	b	medium	title+abstract+rationale+full-text context	"Human assembly paper names ""core subunit b"" in its abstract; rat ortholog inference stated."
+dev:5f778cc5d704ac2dca30e0120f878db622f36beffd9cf63205547354808ce8b2:GO:0046933	b	medium	title+abstract+rationale+full-text context	Same human subunit-b paper; rat transfer stated.
+dev:67f29f92d1bc4140e550196b3dafbbe3f13451f559ba2820855d0b0769dc59ff:GO:0016787	a	high	title+abstract+rationale+full-text context	P5 is the phi6 lysin (gp5); named in abstract and body of PMC3510033, same virus.
+dev:6b27cc5200e5de748fb8a5407b6b32f6440b6668af85ca878a6b3afe159860ce:GO:0002162	b	low	title+abstract+rationale	Human platelet paper (beta-dystroglycan with microtubules) plus a blocked BioGRID page; MAP2 not in abstract and not verifiable; mouse transfer stated.
+dev:6cbe70d543bec2da3ce53ec163b9c2220b776ad678ccc5e0a4a0979cfa67b0c1:GO:0008201	b	medium	title+abstract+rationale	Mammalian RAP-heparin paper (common name in title); mouse ortholog stated.
+dev:6cbe70d543bec2da3ce53ec163b9c2220b776ad678ccc5e0a4a0979cfa67b0c1:GO:0048018	b	medium	title+abstract+rationale	Mammalian RAP-VLDLR paper (common name in title); ortholog stated.
+dev:6cbe70d543bec2da3ce53ec163b9c2220b776ad678ccc5e0a4a0979cfa67b0c1:GO:0048019	b	medium	title+abstract+rationale	Same RAP-VLDLR paper; ortholog stated.
+dev:6cbe70d543bec2da3ce53ec163b9c2220b776ad678ccc5e0a4a0979cfa67b0c1:GO:0070326	b	medium	title+abstract+rationale	Same RAP-VLDLR paper; ortholog stated.
+dev:85d75ca7505acbff84c4caf4fa27161fd2b7c8a2bb4344b6a7def1621007da3b:GO:0001540	b	medium	title+abstract+rationale	PMC3597823 body names PrP; N-terminal fragment of (mouse/human) PrP binds Abeta; bovine ortholog transfer stated.
+dev:85d75ca7505acbff84c4caf4fa27161fd2b7c8a2bb4344b6a7def1621007da3b:GO:0044877	b	medium	title+abstract+rationale	Same PrP-Abeta paper; bovine transfer stated.
+dev:85d75ca7505acbff84c4caf4fa27161fd2b7c8a2bb4344b6a7def1621007da3b:GO:0140693	b	medium	title+abstract+rationale	PrP-alpha-synuclein condensate paper; PrP named in body; transfer to bovine PrP stated.
+dev:9d67f26685afe77dda8e4e0caaed517d4844758d62a8f66ad29a7a31adb55988:GO:0003676	a	high	title+abstract+rationale	"MuA is the Mu transposase (UniProt gene is ""A""); named throughout PMC3362531, same phage."
+dev:9d67f26685afe77dda8e4e0caaed517d4844758d62a8f66ad29a7a31adb55988:GO:0003677	a	high	title+abstract+rationale	Same MuA paper; DNA-recognition regions.
+dev:a44d985ca30cb9a0357c451a297e14f3c50c5c8032794d98e3d65eab098bc0c7:GO:0030695	b	medium	title+abstract+rationale	Mammalian eRF1-eRF3 cryo-EM paper (eRF1 in title); Neurospora transfer stated.
+dev:adf38f26afdc5047ee46e54fe9fa5ebdaff88b23a262441cbebf282c5bfd4894:GO:0004842	c	medium	title+abstract+rationale	GO_REF:0000118 (TreeGrafter) method page cited as the annotation method; rejected decision.
+dev:d0c69fa4a015d85fcd533bb333079fe86b20064286751ee62b38a64c0f1f2426:GO:0005198	b	medium	title+abstract+rationale	Mammalian clathrin light/heavy chain interface paper; mouse CLTA transfer stated; no full text.
+dev:d0c69fa4a015d85fcd533bb333079fe86b20064286751ee62b38a64c0f1f2426:GO:0032050	b	medium	title+abstract+rationale	Same clathrin interface paper; mouse transfer stated.
+dev:e0e33c8022d05a5d66c37d00e098e5e3d1d7eae280d6a7a99c8016016b1e50d6:GO:0015078	b	medium	title+abstract+rationale	Human ATP synthase review names ATP5I/subunit e in body; rat transfer; rejected.
+dev:e0e33c8022d05a5d66c37d00e098e5e3d1d7eae280d6a7a99c8016016b1e50d6:GO:0046933	b	medium	title+abstract+rationale	Human ATP synthase review names ATP5I in body; rat transfer stated.
+dev:e64f371e1f917510c2c5d69825740968186610641f80aee5831f6cc183b6f27f:GO:0003779	b	medium	title+abstract+rationale+full-text context	Human cardiac thin-filament cryo-EM paper names TnI and actin contacts in body; bison transfer stated.
+dev:e64f371e1f917510c2c5d69825740968186610641f80aee5831f6cc183b6f27f:GO:0051015	b	medium	title+abstract+rationale+full-text context	Same thin-filament paper; F-actin partner.
+dev:eec4e51b2bd221468f48d7dac821336f6d4f1f007abb7647191e3d2e28eed7f8:GO:0106006	b	medium	title+abstract+rationale	Plakoglobin (common name of JUP) named in title; mammalian chimera experiments; rat JUP transfer stated.
+dev:f3196f31446f99109959aaeccbf2d43660d1ea3f88f5bd35f0963c7101b11901:GO:0042393	b	medium	title+abstract+rationale	Paper is on human CAP-D2 (CNAP1); decision rejects transfer to Drosophila CAP-D2.
+test:00ab9ce7cbc5c9bfb84f322f4b5bcee0ef26192cf68dd147ca87fc1c2eba5f4c:GO:0016251	c	medium	title+abstract+rationale	GO_REF:0000104 (ortholog-transfer method page); no study cited.
+test:00d1a7202fa751bd58490793fa0b9cc85ee1d3b725fb3962d7ccb179661fe401:GO:0051575	b	medium	title+abstract+rationale	Human POLG 5'-dRP lyase paper (title); rat transfer stated.
+test:0123519080fc7907409a956855202f9d8665ca30401b7fc51ba746dd69c39536:GO:0005102	b	medium	title+abstract+rationale	PMC6309025 is human H2 relaxin binding RXFP1 (relaxin B chain in body); rat prorelaxin transfer stated.
+test:02112fe0eafa05c8e331d5164269b2b41365f708c597defdec2a02dc57a4bb85:GO:0000166	c	medium	title+abstract+rationale	InterPro IPR002305 (aminoacyl-tRNA synthetase class Ic family) is the right family for TrpRS.
+test:02112fe0eafa05c8e331d5164269b2b41365f708c597defdec2a02dc57a4bb85:GO:0005524	c	medium	title+abstract+rationale	Same InterPro family entry for the ATP-binding claim.
+test:0b33530c6839e21f69e4fc05685c59e8bcf8bbb9a7b7d5183ec54d8117954718:GO:0005507	b	medium	title+abstract+rationale+full-text context	PgeF paper tests E. coli, B. subtilis and G. stearothermophilus orthologs; Thermomicrobium not named; rejected.
+test:0fd667eafca37c722b768fddfb54d2234b14ea69d480c9f0203c93ec0bef1133:GO:0000978	d	high	title+abstract+rationale	Cited InterPro IPR004827 is the bZIP domain; the protein is described as a C2H2 zinc-finger protein. Looks like the wrong entry (rejected decision).
+test:0fd667eafca37c722b768fddfb54d2234b14ea69d480c9f0203c93ec0bef1133:GO:0000981	d	high	title+abstract+rationale	Same wrong InterPro entry (bZIP) for a C2H2 zinc-finger protein (rejected decision).
+test:10e347d4f41be873d6ea288c42a9d55fcf2e49238bc7a4a99c9c3a3a068a08c2:GO:0003723	b	medium	title+abstract+rationale+full-text context	Human KU86/Ku80 irCLIP paper names Ku80 in body; rat ortholog transfer stated.
+test:10e347d4f41be873d6ea288c42a9d55fcf2e49238bc7a4a99c9c3a3a068a08c2:GO:0034511	b	medium	title+abstract+rationale+full-text context	Same human Ku paper; U3 snoRNA binding.
+test:110333e172f10c01ffbdccc4001637adaf519dab718fc35f54ff76a62a1650b8:GO:0035727	a	medium	title+abstract+rationale	GAP43 peptide paper names Neuromodulin/GAP43 in body; the peptide matches the supplied residues 34-56.
+test:11bf09525931d3daf28901e9c47d7e9f8ca9e8e6864f5a753d6e0fd037b2b52b:GO:0008962	c	medium	title+abstract+rationale	InterPro IPR007686 (YutG/PgpA domain) consistent with a predicted lipid phosphatase; rejected.
+test:1513b326b03d4cd7356c8661757ffdcd9267bdfe9445acad055c8d7ffa1d81a9:GO:0000977	b	medium	title+abstract+rationale	E4F is the older name of E4F1 (1990 paper, human cells); mouse E4F1 transfer by conservation.
+test:1513b326b03d4cd7356c8661757ffdcd9267bdfe9445acad055c8d7ffa1d81a9:GO:0000978	b	medium	title+abstract+rationale	Same E4F paper.
+test:1513b326b03d4cd7356c8661757ffdcd9267bdfe9445acad055c8d7ffa1d81a9:GO:0001227	b	medium	title+abstract+rationale	Same E4F paper.
+test:1513b326b03d4cd7356c8661757ffdcd9267bdfe9445acad055c8d7ffa1d81a9:GO:0001228	b	medium	title+abstract+rationale	Same E4F paper.
+test:1513b326b03d4cd7356c8661757ffdcd9267bdfe9445acad055c8d7ffa1d81a9:GO:0003700	b	medium	title+abstract+rationale	Same E4F paper.
+test:1513b326b03d4cd7356c8661757ffdcd9267bdfe9445acad055c8d7ffa1d81a9:GO:0035497	b	medium	title+abstract+rationale	Same E4F paper, cited to reject the CRE-binding term.
+test:16c31ae9f730d5497e2102a3945750dcb9f2e8273f4771dbc85f5a03b9bdeb0f:GO:0016763	c	medium	title+abstract+rationale	GO_REF:0000118 method page; rejected.
+test:170862bcab7de13bf3aef559115a2251100f0d9d0375405916a5dc981f7c1fbb:GO:0004553	c	medium	title+abstract+rationale	InterPro IPR012291 (CBM2 superfamily) matches the carbohydrate-binding module the rationale mentions; rejected.
+test:18156ccb4a2e91c99f3036fb8ffcdf8615bb27bbc90fd426d1685c4d5dd43a7d:GO:0051011	a	high	title+abstract+rationale+full-text context	Human HAUS7 named in body of the human augmin structure paper; same species; rejected.
+test:18559df880a23728a152a92afa1055d9a813bd97397626f480945c483d7a4bdb:GO:0031711	b	medium	title+abstract+rationale	Human ACE-B2 receptor paper (title); bovine ACE transfer stated.
+test:1b2058a478956b7f716c64572874d9e91c9226f8c24dd67967c16b37f45c8db8:GO:0000287	c	medium	title+abstract+rationale	InterPro IPR045001 (DRG family) matches the protein.
+test:1b2058a478956b7f716c64572874d9e91c9226f8c24dd67967c16b37f45c8db8:GO:0003924	c	medium	title+abstract+rationale	InterPro IPR045001 (DRG family) matches the protein.
+test:1b2058a478956b7f716c64572874d9e91c9226f8c24dd67967c16b37f45c8db8:GO:0046872	c	medium	title+abstract+rationale	InterPro IPR045001 (DRG family) matches the protein.
+test:201a39d3a8ac6272551e846a915d28df785534918cc70139d2e2958d4bf43a5a:GO:0048487	b	medium	title+abstract+rationale+full-text context	Review of IFT-cargo interactions names IFT81/74 tubulin-binding module in body; mouse transfer stated.
+test:214fa86df7a332998220488cdb01aeed153278650f969c85730d55ea7e170fcf:GO:0003697	c	medium	title+abstract+rationale	SGD page for S. cerevisiae CDC45 cited for an S. pombe homolog; resource citation.
+test:219d6d3105c63b6f47893d92cdad1e790b211810e285c4355f0a40fe29795800:GO:0051539	a	high	title+abstract+rationale+full-text context	S. solfataricus PriL-CTD Fe-S cluster is in the body of PMC2268749 (same protein).
+test:21eb0698b06278f147a07d176938eecb47d97d853611fc608e2c6af644a33b44:GO:0051287	c	medium	title+abstract+rationale	InterPro IPR000534 (semialdehyde dehydrogenase NAD-binding) fits an acylating aldehyde dehydrogenase.
+test:2aee40fd89341cca68f258930eb74a9149f273967f180c8f22b8a79c13ae7a19:GO:0003723	c	medium	title+abstract+rationale	InterPro IPR036986 (S4 RNA-binding domain) fits a TyrRS; domain-level evidence for RNA binding.
+test:2aee40fd89341cca68f258930eb74a9149f273967f180c8f22b8a79c13ae7a19:GO:0042803	c	medium	title+abstract+rationale	GO_REF:0000117 (ARBA) method page.
+test:340f1d29050d630cb1497d040b7bc0a11d8f465ff30fd0cf0ec705c95b419fb7:GO:0004622	c	low	title+abstract+rationale	Generic InterPro home page, not an entry; rejected.
+test:3452e968c4a0f20d995667ff47be7725b65016d27a48f230c96ad8e1ebc27794:GO:0016651	c	medium	title+abstract+rationale	InterPro IPR010226 (NADH-quinone oxidoreductase chain I) fits; rejected.
+test:3452e968c4a0f20d995667ff47be7725b65016d27a48f230c96ad8e1ebc27794:GO:0051539	c	medium	title+abstract+rationale	InterPro IPR010226 fits the 4Fe-4S claim.
+test:3b2b69fed0c36508bc49125acfe873df76e21f21fc636d4b8c5631c6f86520d7:GO:0031711	b	low	title+abstract+rationale+full-text context	Semantic Scholar page (title: ACE activity modulated by kinin B2 receptor) not retrievable; rat transfer stated.
+test:3edb9bb39e3e02fefe41b7a5e7f18b38dfca2ef823f37b029b33bb4d5fd153f4:GO:0008097	c	medium	title+abstract+rationale	InterPro IPR005485 (uL18 eukaryota/archaea) fits RPL5B.
+test:42c84b1f43e382658da0a8b493bddc83e8fc5db522b1235ec7c9ef214b838ea7:GO:0051287	c	medium	title+abstract+rationale	InterPro IPR000534 fits an acetaldehyde dehydrogenase.
+test:44bd5f0940688421fac08616344cfcae202b511742d42270288186cc97efe8a1:GO:0004788	a	high	title+abstract+rationale+full-text context	PF0930/MptE named in body of PMC3500442 (same archaeon); rejected.
+test:46c3d2c34b5424b06c500f77429683e454e99639b8763c4b6365844947ca4cae:GO:0031490	b	medium	title+abstract+rationale+full-text context	DFF-ChIP method paper (HeLa MED1 profiling); human vs mouse; rejected.
+test:46c3d2c34b5424b06c500f77429683e454e99639b8763c4b6365844947ca4cae:GO:0061630	b	medium	title+abstract+rationale+full-text context	Same method paper; rejected.
+test:488b81606e4483f55051d22db7c8d16239ac767877df08c4b605dd0e854627cc:GO:0005516	b	medium	title+abstract+rationale	Rabbit phosphorylase kinase calmodulin-binding paper (title); PHKB transfer stated.
+test:4da7bc1f8c55412463afaef8a7a68e53ceaac0bdc2bbcceeae95f92049568ad9:GO:0097718	e	low	title+abstract+rationale	Primary source (ResearchGate) blocked; second source concerns H1 folding, not CAD.
+test:51268a552f903a9e5d04d911b075bf7508ddab4c20b16bc64236176f74085e6b:GO:0046872	b	low	title+abstract+rationale+full-text context	VSV L capping paper for an RVFV L metal-ion claim; distant relative and the claim is not in the abstract.
+test:59706eeac5868ed41311f017dcebde7fafa441c8d2a16f40c1f8618f7910cfde:GO:0005516	a	medium	title+abstract+rationale	Caldesmon purified from chicken gizzard (title omits the name); turkey protein, so species transfer is implicit.
+test:5bed0069674647ca182aa6d7eb4c6aa45c9a97fa8f568bc58542039bffcdc79c:GO:0003677	a	high	title+abstract+rationale	"Title writes ""Eco RI"" with a space, which the audit's matcher missed."
+test:60b45f3b42efa75465181b887aed75fc749568169b645523673fb5705c7a5a1d:GO:0043531	b	medium	title+abstract+rationale	Yeast glutamate-cysteine ligase structure paper; rat GCLC transfer stated; no full text.
+test:6363ba8409bb75d92d87bf76d97c5935a8ba73ec418618a95dff596d8b953060:GO:0004144	b	low	title+abstract+rationale+full-text context	Acinetobacter/Marinobacter WS/DGAT paper for a Euglena WSD2; family inference, paper is on alcohol selectivity.
+test:649d98134d6a246888588c3e09e597a2b82a68ad985bdd4e554ec60f9eebe49c:GO:0000977	c	medium	title+abstract+rationale	InterPro IPR004827 (bZIP) matches a bZIP-containing protein.
+test:649d98134d6a246888588c3e09e597a2b82a68ad985bdd4e554ec60f9eebe49c:GO:0001228	c	medium	title+abstract+rationale	Same InterPro bZIP entry; rejected.
+test:662e527e523e33d91e9e933887d8bee02bed0c6a7ee27d2bd130a97c5fa4c078:GO:0003676	b	medium	title+abstract+rationale+full-text context	Review names Nup53 in body (RRM-like domain, no RNA binding); Drosophila Nup35 family argument; rejected.
+test:6c1efe2ee9c429e4832d89e49c0067c32db4c7400beed36961e6ba1035e4d66c:GO:0019901	b	medium	title+abstract+rationale	Chicken erythroid ankyrin-R paper (title) cited to reject Ank2; accurate use as paralog evidence.
+test:6e91e298fa0cb3737c4e708362925928f34fe9f9316c29ae16c187d01b0b34e3:GO:0003677	b	medium	title+abstract+rationale	E. coli RNAP alpha DNA-binding paper (title); Thermus ortholog stated.
+test:6e91e298fa0cb3737c4e708362925928f34fe9f9316c29ae16c187d01b0b34e3:GO:0003899	b	medium	title+abstract+rationale	E. coli RNAP review; Thermus transfer stated; no full text.
+test:6e91e298fa0cb3737c4e708362925928f34fe9f9316c29ae16c187d01b0b34e3:GO:0046983	b	medium	title+abstract+rationale	Same E. coli RNAP review.
+test:6f0e00c8148365226998ebeaa0576dde1a6b6215f04a0356d1c659873b45b107:GO:0000287	a	high	title+abstract+rationale	OkrAI is in the title and body of PMC3025578.
+test:6f0e00c8148365226998ebeaa0576dde1a6b6215f04a0356d1c659873b45b107:GO:0003677	a	high	title+abstract+rationale	OkrAI-DNA structure in PMC3025578.
+test:7692819e223e3c2bca2f5f3fdb0cce8a00265cfffc25f434afdfe9b081742424:GO:0003676	c	medium	title+abstract+rationale	InterPro IPR002052 (N6-adenine DNA methylase site) fits Dam.
+test:7692819e223e3c2bca2f5f3fdb0cce8a00265cfffc25f434afdfe9b081742424:GO:0043565	c	medium	title+abstract+rationale	Same InterPro entry.
+test:7692819e223e3c2bca2f5f3fdb0cce8a00265cfffc25f434afdfe9b081742424:GO:1904047	c	medium	title+abstract+rationale	Same InterPro entry.
+test:7a050346034a07e52f8077050a4147965acc51df8e650fefa719bb8a012f2194:GO:0015078	b	medium	title+abstract+rationale	Review of the mitochondrial ATP synthase peripheral stalk (title); rat transfer; no full text.
+test:7eddfa529ddbb62c996163e7f95331470a9baf7c805d17ea8f6a9856efa55232:GO:0016787	a	medium	title+abstract+rationale	Abstract names F-TflI (hyphen variant), same phage.
+test:7fec16b6e84654ff77fafde4f614e066e465a9c4d859b601a2714d643fa57713:GO:0070974	c	medium	title+abstract+rationale	InterPro IPR047571 (OCA domain) fits POU2AF1.
+test:804c89ee49b1edded4d103ef67a8edcce6bc27eed188cc40f3fa84eacd6fa625:GO:0015631	b	medium	title+abstract+rationale	Eukaryotic prefoldin subunit paper plus Reactome; Pan paniscus protein by orthology.
+test:874321cde7c83dda463670ec7d0998d0d28dbbb1384dbc6dfe8b03d06184a72a:GO:0003700	c	medium	title+abstract+rationale	InterPro bZIP entry; rejected.
+test:91c138bbc123435e7eafc0fcb5251f1ea172a62788c1b6b672c4f89097f8a9b2:GO:0042393	b	medium	title+abstract+rationale+full-text context	Human NASP paper; C. elegans NASP-1 by homology.
+test:93f6d6761a9b2b5a23ace0c82aeeeb126360c4f02e5f41647fa9a7955d2bdc69:GO:0004175	b	medium	title+abstract+rationale	ACE substance P hydrolysis papers (human/other mammal); mouse transfer.
+test:93f6d6761a9b2b5a23ace0c82aeeeb126360c4f02e5f41647fa9a7955d2bdc69:GO:0031711	b	medium	title+abstract+rationale	Human ACE-B2 receptor paper; mouse transfer.
+test:942600ae800631ef6d3a063410372a88f7d16d2e261f28b0e5a5102480d5fb62:GO:0005549	c	medium	title+abstract+rationale	InterPro IPR006170 (odorant-binding family) fits the fold named in the rationale; rejected.
+test:94b4f6c811a4fb500eed74742f3c0f46099a7131bcb87b0053514dae2f6632f2:GO:0019172	b	medium	title+abstract+rationale	E. coli YhbO DJ-1 family glyoxalase paper (title); cited to reject transfer to a Vibrio DJ-1 family protein.
+test:9db3f6fd5425174a93847e74253096ca583c4c1b4f38552c0f6c26dba8386584:GO:0097367	c	medium	title+abstract+rationale	InterPro IPR047640 (RpiR-like regulator family) fits; rejected.
+test:9f24c14717ded399500a826b96e397598037d9a32ca8c516facc689949b0a57c:GO:0008170	a	high	title+abstract+rationale	BcgIA named in body of PMC3592466 (abstract/DOI same paper); same enzyme.
+test:a30a0bd5976d5000297a538f42932802e94618dc983afcc247498e3b7470354e:GO:0016150	b	medium	title+abstract+rationale+full-text context	T. brucei Pth4 ortholog paper names S. pombe Pth4 in body; rejected.
+test:a33a5b317fa0835f36b5aa360dda71de9e8ac41639ab6f53d264f570539e927d:GO:0016491	a	high	title+abstract+rationale	BlScV AlkB domain is the subject of PMC2553587; name differs from UniProt entry name.
+test:a33a5b317fa0835f36b5aa360dda71de9e8ac41639ab6f53d264f570539e927d:GO:0051213	a	high	title+abstract+rationale	Same AlkB paper.
+test:aa1557392cf055434112ec2b7bb94f47baf6deee5be6f8be301198ad031147e2:GO:0046983	a	high	title+abstract+rationale	H-NS from S. typhimurium is the subject of PMC2936596 (H-NS in title).
+test:aadba1972ac1284ea06e4b3338f725bb0538423bc74780b3a50c7c3ffd41ac0e:GO:0003677	a	medium	title+abstract+rationale	Abstract names F-TflIV; same phage.
+test:aadba1972ac1284ea06e4b3338f725bb0538423bc74780b3a50c7c3ffd41ac0e:GO:0016787	a	medium	title+abstract+rationale	Same F-TflIV paper.
+test:ab3964e762507922e0a8142349fadd0633247d1fdb170797140ec5f4197ee710:GO:0004197	c	medium	title+abstract+rationale	MEROPS C50 and InterPro separase family pages; protein has no UniProt name.
+test:ad01998f885c74f201d55ecb8aa1b0d580a04150df1cef8fde582cb365432de8:GO:0003697	e	low	title+abstract+rationale	J chain not named in the accessible record (human IgM idiotope paper); ResearchGate copy blocked; rejected.
+test:ad01998f885c74f201d55ecb8aa1b0d580a04150df1cef8fde582cb365432de8:GO:0031210	e	low	title+abstract+rationale	Same IgM paper; rejected.
+test:ad01998f885c74f201d55ecb8aa1b0d580a04150df1cef8fde582cb365432de8:GO:0042803	e	low	title+abstract+rationale	Same IgM paper; rejected.
+test:ad01998f885c74f201d55ecb8aa1b0d580a04150df1cef8fde582cb365432de8:GO:0042834	e	low	title+abstract+rationale	Same IgM paper; rejected.
+test:adc7915808dce1eb257890fc2d40281ff2a38d4130c4bb37e93d8d7a9505d278:GO:0004074	b	medium	title+abstract+rationale	Human BLVRA/BLVRB substrate specificity paper; used to reject bullfrog transfer.
+test:b2df82ff4b847564c27683f889700421c88e20cf9800bbbc978e16a62a9cc5ec:GO:1905394	b	medium	title+abstract+rationale	Retromer / cation-independent M6PR paper; used to reject CD-MPR transfer; names CD-MPR in body.
+test:b3567f2359b552d762ae70673cd2483235d82beeee185503cc02fff4e6b8bc38:GO:0019869	b	medium	title+abstract+rationale	Syntaxin 1A / CFTR paper; used to reject VAMP8 transfer.
+test:b62e36b8404520f946df874839e1ff2e8f63a81ef3d86d6014e22bcb9aeed858:GO:0009055	a	medium	title+abstract+rationale+full-text context	RNF/NQR review names rsxG/RsxG in body; E. coli Rsx.
+test:b62e36b8404520f946df874839e1ff2e8f63a81ef3d86d6014e22bcb9aeed858:GO:0010181	a	medium	title+abstract+rationale+full-text context	Same review.
+test:ba98e95b6d8ee2e269d4f6f55ee0d8c658d6e7b8af5bf92ce694a06231843c33:GO:0000287	c	medium	title+abstract+rationale	InterPro IPR014100 (Obg/CgtA) fits GTPBP10.
+test:ba98e95b6d8ee2e269d4f6f55ee0d8c658d6e7b8af5bf92ce694a06231843c33:GO:0005525	c	medium	title+abstract+rationale	Same InterPro entry.
+test:bceaabf4c4f2952c73b035b59b0792a611c49c1775870f53d814a8cfd2f12e0b:GO:0036094	c	medium	title+abstract+rationale	InterPro IPR002345 (lipocalin) fits; rejected.
+test:c07004d4b1b09cac9e635801b9b31e64b3672c4c3eae63e0118c58d9b06623aa:GO:0000981	e	low	title+abstract+rationale+full-text context	NuRD architecture review: no full text, p66-beta not in abstract; rejected.
+test:c07004d4b1b09cac9e635801b9b31e64b3672c4c3eae63e0118c58d9b06623aa:GO:0008270	e	low	title+abstract+rationale+full-text context	Same NuRD review for the zinc-finger claim; no full text.
+test:c07004d4b1b09cac9e635801b9b31e64b3672c4c3eae63e0118c58d9b06623aa:GO:0043565	e	low	title+abstract+rationale+full-text context	Same NuRD review; rejected.
+test:c1703ef6c571a822d9888024390a7741a237de0afd153e76e1dadef9ca90eeb7:GO:0046872	c	medium	title+abstract+rationale	InterPro IPR000347 (plant metallothionein) fits.
+test:c1d20572ea2e9e2354fc19719bf2750cfcf20be67234b3628ec575d6523d6fec:GO:0003677	a	high	title+abstract+rationale	RsrI is in the title of PMID 1918025 (gene symbol rsrIR in UniProt).
+test:c480f663db6bd69c37f762c17768834eb3b64c98e17f7895411ce19bb34caf3d:GO:0020037	c	medium	title+abstract+rationale	InterPro IPR002326 (cytochrome c1) fits.
+test:deba3b2287dde9aba22e21b15009008cd98a37f8eacb2c35f36238790095f56f:GO:0005524	c	medium	title+abstract+rationale	InterPro IPR006204 is the GHMP kinase domain; M. jannaschii shikimate kinase is a GHMP kinase, though the rationale says P-loop.
+test:e5773d96b7ca6239454235b64c298b6e25d63baba097bf1970aff67391a24c16:GO:0034452	b	medium	title+abstract+rationale+full-text context	Human HOOK3-dynactin cryo-EM paper names Hook3; mouse transfer stated.
+test:e879838a7ccd715a1a199f39ad7287c8dee83bc270fc199930d6fed168a1f5d4:GO:0015459	a	medium	title+abstract+rationale	beta2 BK-subunit paper; name variant of the beta-2 subunit; species of the experiments not checked.
+test:e9faf3bf6bf30fabc71e6620f5f39f4e8544aa141abcd8d92c754a060b76a1ca:GO:0042803	b	medium	title+abstract+rationale	Human FXR1 interactions paper (title); Xenopus transfer.
+test:e9faf3bf6bf30fabc71e6620f5f39f4e8544aa141abcd8d92c754a060b76a1ca:GO:0046982	b	medium	title+abstract+rationale	Same FXR1 paper.
+test:ea7e348a20e2587e282c9129019a44de9fa951ec888808ad83d9d6b456d62986:GO:0000978	c	medium	title+abstract+rationale	UniProt entry for human ZNF692 cited for the Candida Ofi1p; rejected.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0000166	b	medium	title+abstract+rationale	Human FANCJ (= BRIP1) paper; rat Brip1 transfer stated.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0003676	b	medium	title+abstract+rationale	Same FANCJ paper.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0003677	b	medium	title+abstract+rationale	Same FANCJ papers.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0003678	b	medium	title+abstract+rationale	Same FANCJ paper.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0004386	b	medium	title+abstract+rationale	Same FANCJ paper.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0005524	b	medium	title+abstract+rationale	Same FANCJ paper.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0016787	b	medium	title+abstract+rationale	Same FANCJ paper.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0016818	b	medium	title+abstract+rationale	Same FANCJ paper.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0016887	b	medium	title+abstract+rationale	Same FANCJ paper.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0043139	b	medium	title+abstract+rationale	Same FANCJ paper.
+test:f1798bbc6477498281e17200ba39cbb3745ae74678fd6d4d918abdde0d46f482:GO:0160225	b	medium	title+abstract+rationale	Same FANCJ papers.
+test:f285d0afc26c0255bac2544b1b4cbbc190b553f86e5f91a42fc95fc84fbd752c:GO:0043565	c	medium	title+abstract+rationale	InterPro bZIP entry fits a bZIP transcription factor.
+test:f984341b39601606a54f21a02e73298a468168e04d4463b5cef8c7d9ca3e5e79:GO:0005184	d	low	title+abstract+rationale+full-text context	"Paper is on dopamine and feeding in mice; CCK appears only as MeSH ""Sincalide"" (CCK-8 used as a tool); does not address CCK processing or hormone action. Weak, not a certain mismatch."
+test:f989d872bbb73ee3918b5ba9497a0549dc80c4ed6edb8c4a470344d93afd4a5d:GO:0003677	a	medium	title+abstract+rationale	Abstract names F-TflII; same phage.
+test:f989d872bbb73ee3918b5ba9497a0549dc80c4ed6edb8c4a470344d93afd4a5d:GO:0016787	a	medium	title+abstract+rationale	Same F-TflII paper.
+test:f989d872bbb73ee3918b5ba9497a0549dc80c4ed6edb8c4a470344d93afd4a5d:GO:0016788	a	medium	title+abstract+rationale	Same F-TflII paper.

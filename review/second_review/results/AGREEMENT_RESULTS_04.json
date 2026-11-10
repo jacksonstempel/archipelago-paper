@@ -1,0 +1,382 @@
+{
+ "assertions": [
+  {
+   "assertion_id": "25ff0a17247e29815e03098be80bf0042c4e2fdae93174e3ee8b98fc321fcffb:GO:0033862",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "GO:0033862 is defined by the reaction ATP + UMP = ADP + UDP. Recombinant human CMPK2 (Q5EBM0), the orthologue named in the ISO/IEA 'with' field, was shown to phosphorylate dUMP, dCMP, CMP and UMP with ATP as phosphate donor, with kinetic parameters determined for each (Xu et al. 2008). UMP is the poorest of the four substrates, but the activity is a specific, kinetically characterised NMP-kinase reaction and so is not a marginal/nonspecific signal. The packet sequence is rat Cmpk2 (D3ZC63), the 1:1 orthologue of human CMPK2: in a pairwise global alignment I ran (Biopython PairwiseAligner, BLOSUM62) the two proteins are 74.0% identical over 443 aligned positions and 82.5% identical over the C-terminal nucleoside-monophosphate-kinase domain (human residues 250-449), with the P-loop motif conserved (rat GLDATGKTT / human GLDATGKTT). Conserved orthology plus a conserved catalytic domain supports transferring the measured activity to the rat protein.",
+   "sources": [
+    "https://europepmc.org/abstract/MED/17999954 - Xu Y, Johansson M, Karlsson A, J Biol Chem 2008 (PMID 17999954): human UMP-CMPK2 cloned, expressed, purified; 'The enzyme was able to phosphorylate dUMP, dCMP, CMP, and UMP with ATP as phosphate donor... Its efficacy to convert dUMP was highest, followed by dCMP, whereas CMP and UMP were the poorest substrates.' Abstract only; the JBC full text and PDF were not accessible to me (403).",
+    "https://rest.uniprot.org/uniprotkb/Q5EBM0.json - UniProt human CMPK2 FUNCTION text citing PubMed 17999954 for the same substrate range; catalytic-activity blocks list CMP/dCMP (EC 2.7.4.14) and NDP kinase reactions from PubMed 23416111.",
+    "https://rest.uniprot.org/uniprotkb/D3ZC63.json - rat Cmpk2, 447 aa, named 'UMP-CMP kinase 2, mitochondrial'.",
+    "Sequence comparison performed locally by me: rat D3ZC63 (packet sequence) vs human Q5EBM0 FASTA downloaded from https://rest.uniprot.org/uniprotkb/Q5EBM0.fasta."
+   ],
+   "limitations": "No assay has been reported on the rat protein itself; the decision rests on orthology to the assayed human enzyme. I read only the abstract of Xu et al. 2008, so I did not see the UMP kcat/Km numbers; the abstract and UniProt both state UMP is a poor substrate. The GO definition cites EC 2.7.4.22 (bacterial-type UMP kinase), a different enzyme family, but the term is defined by the reaction, which CMPK2 catalyses.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "3f6a3bac413527b7bac6f2a6983780f653985da2f4d12fc7aed047acc0d7b6a9:GO:0004525",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "Q86MW2 is Trypanosoma brucei MP67 = KREPB2, later renamed KREN3, one of the three RNase III-motif editing endonucleases of the ~20S editosome. Good experimental evidence exists that it is an RNA endonuclease: editosomes purified via tagged KREPB2 cleave a COII insertion-editing-site substrate at editing site 1, cleavage is lost when the RNase III-motif residues are substituted (E197V, D204A, E271A), and conditional repression abolishes COII editing in vivo. I confirmed by indexing the packet sequence that E197, D204 and E271 are present in the supplied protein. However, the requested term is defined mechanistically as 'two staggered cuts in both strands of dsRNA, leaving a 3' overhang of 2 nt'. The editing endonucleases make a single site-specific cut in the mRNA strand of an mRNA/gRNA duplex (one product mapping to a single editing site; the guide strand is not reported as cleaved), which is a related but distinct activity. The IEA source is also only a structural superfamily (IPR036389, RNase III endonuclease domain fold), which does not by itself establish the canonical double-strand staggered cleavage. Under the exact-definition rule the specific claim is not established.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2223309/ - Carnes J et al., Mol Cell Biol 2008 (PMID 17954557), 'RNA editing in Trypanosoma brucei requires three different editosomes': KREPB2 renamed KREN3; Fig. 5 (COIIcisU1/COIItransU1 cleavage by ~20S and TAP-purified editosomes; 'cleavage only occurs in editosomes that contain KREN3'); Fig. 6 (E197V, D204A, E271A abolish cleavage; D204A and E271A fail to rescue growth). Catalysis was assayed with purified editosomes, not with recombinant KREPB2 alone.",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC1464856/ - Panigrahi AK et al., RNA 2006 (PMID 16611942): editosomes purified via KREN1, KREPB2 (TbMP67) and KREN2; KREN1 complexes cleave deletion sites, KREN2 complexes insertion sites; nuclease activity abolished by mutations in the putative RNase III catalytic domain.",
+    "https://api.geneontology.org/api/ontology/term/GO:0004525 - current GO definition retrieved, identical to the packet text, including the 'two staggered cuts in both strands of dsRNA ... 2 nt' clause; no child terms other than the complex term GO:1903095.",
+    "https://www.ebi.ac.uk/interpro/entry/InterPro/IPR036389/ - InterPro description confirms IPR036389 is a homologous_superfamily (fold-level) entry.",
+    "https://rest.uniprot.org/uniprotkb/Q86MW2.json - UniProt entry (unreviewed) with the single reference PMID 12649499 (editosome component identification); no catalytic-activity or function annotation."
+   ],
+   "limitations": "This is a definition-match rejection, not a claim that the protein lacks endonuclease activity: KREN3/KREPB2 is well supported as the catalytic endonuclease subunit for COII insertion-site cleavage. If GO:0004525 is used by curators as a family-level term for RNase III-motif enzymes rather than strictly as written, the assertion would be acceptable (relation 'enables', since the catalytic residues are required). No study has reported the termini chemistry of KREN3 cleavage products directly, nor tested a canonical dsRNA substrate.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "46c3d2c34b5424b06c500f77429683e454e99639b8763c4b6365844947ca4cae:GO:0000978",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "Mouse MED1 (Q925J9) is a Mediator complex subunit and a nuclear-receptor-binding coactivator; it has no known sequence-specific DNA-binding domain (its characterised DNA-contacting partners are LXXLL-motif-dependent nuclear receptors). I traced the ISO route: the rat source annotation (RGD:1559552 / D3ZRN2) is IDA from PMID 20702579, a chromatin-immunoprecipitation study of growth-hormone-responsive rat liver promoters, which shows Med1 occupancy at the Igf1 promoter. ChIP occupancy demonstrates that the protein is present at a cis-regulatory region; it does not show that MED1 itself binds a specific recognition sequence, and for a complex subunit recruited by DNA-binding activators the occupancy is expected to be indirect. The other mouse IDA DNA-binding annotations (PMID 15681609, PMID 18722179) are likewise promoter-occupancy/recruitment studies (PPARgamma-response element recruitment of coactivators; TFIID promoter occupancy), not direct DNA-sequence recognition. GO:1990841 (promoter-specific chromatin binding) rather than GO:0000978 is what such data support, and mouse Med1 already carries that term by IDA.",
+   "sources": [
+    "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:D3ZRN2&goId=GO:0000978 - the rat source annotation is 'enables GO:0000978, IDA, ECO:0000314, PMID:20702579, RGD'.",
+    "https://europepmc.org/abstract/MED/20702579 - Chia DJ, Rotwein P, Mol Endocrinol 2010: ChIP in pituitary-deficient rat liver; Med1/Trap220 binding at Igf1 promoter 1 among coactivators; no DNA-sequence-specific binding assay (abstract read).",
+    "https://europepmc.org/abstract/MED/15681609 - Guan HP et al., Genes Dev 2005: PPARgamma-response-element occupancy and coactivator/corepressor recruitment at the GyK locus (abstract read).",
+    "https://europepmc.org/abstract/MED/18722179 - Tatarakis A et al., Mol Cell 2008: TFIID promoter-occupancy analyses in liver (abstract read).",
+    "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q925J9 - mouse Med1 molecular-function annotation set, including GO:1990841 promoter-specific chromatin binding (IDA, PMID 22323595, 29519872) and many coactivator/nuclear-receptor-binding terms."
+   ],
+   "limitations": "I did not read the full texts of PMIDs 20702579, 15681609 or 18722179 (abstracts only), so I cannot exclude an EMSA or SELEX experiment reported inside one of them; nothing in their abstracts, titles or in the MED1 literature I surveyed indicates direct sequence-specific DNA binding by MED1. A Europe PMC search for MED1/TRAP220 together with 'sequence-specific DNA binding' returned only reviews and unrelated papers.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "11bf09525931d3daf28901e9c47d7e9f8ca9e8e6864f5a753d6e0fd037b2b52b:GO:0008962",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "The only support is an InterPro IEA from the PgpA-domain entries (IPR007686 YutG/PgpA domain, IPR036681 PgpA-like superfamily), which are fold/domain-level entries that include uncharacterised proteins as well as genuine PgpA phosphatases. The published functional work on this exact gene points the other way: in Bacteroides thetaiotaomicron, deletion of BT_1525 abolished phosphatidylinositol (PI-DAG and PI-DHC) synthesis and caused accumulation of phosphatidylinositol phosphate (PIP-DAG), while 'the synthesis of other glycerophospholipids was unaffected in the iSPT-delta-BT_1525 strain', which the authors note is 'in disagreement with the annotated function of BT_1525 as a PgpA'. They conclude BT_1525 is most probably a phosphatidylinositol phosphate phosphatase. A phosphatidylglycerophosphate substrate was not tested, and no phosphatidylglycerophosphatase activity has been demonstrated for this protein, so the requested reaction (phosphatidylglycerophosphate + H2O = phosphatidylglycerol + phosphate) is not established.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC9246714/ - Heaver SL et al., Nat Microbiol 2022, 'Characterization of inositol lipid metabolism in gut-associated Bacteroidetes': Fig. 2b,c knockout/complementation lipidomics; quoted sentences on unaffected other glycerophospholipids and on disagreement with the PgpA annotation; only BT_1526 (MIPS) was purified and assayed, no recombinant BT_1525 assay; PGP/PG were not tested as substrates.",
+    "https://www.ebi.ac.uk/interpro/entry/InterPro/IPR007686/ and https://www.ebi.ac.uk/interpro/entry/InterPro/IPR036681/ - InterPro descriptions retrieved: six-helix bundle domain 'found in uncharacterised proteins, including YutG from Bacillus subtilis, putative phosphatidylglycerophosphatases and bacterial phosphatidylglycerophosphatase PgpA'.",
+    "Packet provenance: single IEA annotation, GO_REF:0000002, InterPro, 20260727."
+   ],
+   "limitations": "The genetic/lipidomic evidence argues against a physiological PGP phosphatase role but does not formally exclude in vitro PGP hydrolysis, which has not been tested. The deletion was made in an iSPT background; the authors observed no change in other glycerophospholipids, which is the relevant control for PG synthesis. Heaver et al. (2022) postdates nothing relevant here - it predates the 2026 annotation snapshot, so the InterPro annotation was not made in ignorance of newer data.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "9b8972062b132bfb3e39b3ce96daa063bed09dbc4adf406d42e1d7eb87d57331:GO:0004177",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "The only support is a PANTHER/TreeGrafter IEA placing this sequence in PTHR36512 ('D-aminopeptidase'), i.e. family resemblance within peptidase clan S58 (DmpA/ArgJ fold). I aligned the packet sequence against NylC from the same strain (Q1EPR5, Agromyces sp. KY5R): the 306-residue packet protein matches NylC residues 50-355 at 99.0% identity, i.e. it is an N-terminally truncated NylC paralogue. The experimentally characterised activity of NylC is 6-aminohexanoate-oligomer endohydrolase (EC 3.5.1.117) - endo-type hydrolysis of amide bonds within nylon-6 oligomers, with Thr267 as the nucleophile generated by autoprocessing at Asn266/Thr267 and with Lys189/Tyr146 reported as nylon-specific catalytic/binding residues. That is not 'hydrolysis of a single N-terminal amino acid residue from a polypeptide chain', so the GO:0004177 definition is not matched. Two further problems weaken the attribution: UniProt records that this gene may not even be expressed (the 25 residues corresponding to NylC's N terminus are replaced by 76 residues derived from non-coding sequence and no plausible initiation codon lies in the replaced region), and the supplied sequence lacks the first 49 residues of the folded alpha subunit (NylC residues 1-266), so the autoprocessing-dependent active enzyme would probably not form.",
+   "sources": [
+    "https://rest.uniprot.org/uniprotkb/Q14T92.json - 'Putative NylC-analogous protein', Agromyces sp. KY5R, 306 aa; MISCELLANEOUS: 'This gene may not be expressed. The 25 amino acid residues corresponding to the N-terminal region of NylC are replaced with 76 residues derived from non-coding regions. No potent initiation codons are found within the replaced region of nylC'; SIMILARITY: peptidase S58 family; sole reference PMID 18215642.",
+    "https://rest.uniprot.org/uniprotkb/Q1EPR5.fasta - NylC_AGRS5, 355 aa, 6-aminohexanoate-oligomer endohydrolase EC 3.5.1.117. Alignment to the packet sequence run locally by me (Biopython PairwiseAligner, BLOSUM62): 303/306 identical, packet residue 1 = NylC residue 50.",
+    "https://ir.library.osaka-u.ac.jp/repo/ouka/all/71282/JBC_5079-90.pdf - Negoro S et al., J Biol Chem 2012: NylC structure; catalytic residue is the N-terminal Thr-267 of the 9 kDa subunit of the autoprocessed (27 + 9 kDa) heterodimer.",
+    "https://www.rcsb.org/structure/7YU0 and https://www.rcsb.org/structure/7YU1 - PDB summaries of the 2023 FEBS J study: precursor autocleaved at Asn266/Thr267; Asp308-Asp306-Thr267 triad; 'the reaction requires Lys189 and Tyr146 as additional catalytic/substrate-binding residues specific for nylon hydrolysis'.",
+    "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q79F77 - the characterised NylC proteins themselves carry GO:0004177 only as the same TreeGrafter IEA (GO_REF:0000118), i.e. the annotation is a family-propagation, not an experimental assignment."
+   ],
+   "limitations": "I found no report that NylC or this paralogue was ever tested on peptide substrates, so I cannot exclude a side aminopeptidase activity; equally, none has been demonstrated. Clan S58 does contain a true D-aminopeptidase (DmpA), which is presumably why the PANTHER family carries the term, but the NylC branch has a characterised, different specificity.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "a9edf59dafc421d7ab3ccedd05eee1d332c1758684b2a215c3573b20be545160:GO:0003676",
+   "decision": "accept",
+   "support_type": "experimental",
+   "supported_relation": "enables",
+   "rationale": "O07118 is the Haloferax volcanii tRNA-splicing endonuclease (EndA, HVO_2952), an experimentally characterised enzyme. The native enzyme and recombinant protein expressed in E. coli cleave precursor tRNAs at the 5' and 3' splice sites, and substrate-recognition experiments with a series of mutant tRNA-Trp precursors and a 35-nucleotide model RNA showed that the enzyme requires a defined bulge-helix-bulge structure at the exon-intron boundaries and that these features alone are sufficient for recognition and cleavage. Specific, structure-dependent recognition and catalysis on an RNA substrate directly establishes binding to a nucleic acid, which is all GO:0003676 requires (RNA binding is a descendant of nucleic acid binding). The supplied 339-residue sequence is the same protein as the assayed one (UniProt O07118, H. volcanii DS2, taxon 309800 as given in the packet).",
+   "sources": [
+    "https://europepmc.org/abstract/MED/1698785 - Thompson LD, Daniels CJ, J Biol Chem 1990: mutant tRNA-Trp substrate series; 'Cleavage of a 35-nucleotide model RNA substrate, containing only these features, demonstrates that sequences and structures present at the exon-intron boundaries are sufficient for recognition and cleavage' (abstract read).",
+    "https://europepmc.org/abstract/MED/9200602 - Lykke-Andersen J, Garrett RA / Kleman-Leyer et al., Cell 1997: the H. volcanii endonuclease gene cloned; 'Recombinant forms of this protein were expressed in E. coli and found to cleave precursor tRNAs lacking full mature tRNA structure' (abstract read).",
+    "https://europepmc.org/abstract/MED/3192521 - Thompson & Daniels, 1988: purified tRNA-Trp intron endonuclease, divalent-cation dependence, substrate-recognition properties (abstract read).",
+    "https://rest.uniprot.org/uniprotkb/O07118.json - FUNCTION with ECO:0000269 from PMIDs 1698785, 3192521, 9200602; EC 4.6.1.16; active sites 274, 285, 316; 'Recognizes a pseudosymmetric substrate in which 2 bulged loops of 3 bases are separated by a stem of 4 bp'.",
+    "https://www.ebi.ac.uk/interpro/entry/InterPro/IPR011856/ - the cited IEA source is a fold-level superfamily (tRNA endonuclease-like domain); the decision here rests on the direct experimental work, not on this entry."
+   ],
+   "limitations": "The term requested is a very general one; the experiments establish RNA (pre-tRNA) binding, not DNA binding, but GO:0003676 covers either. Binding was inferred from specificity of cleavage and substrate-structure requirements rather than from a binding assay such as a gel shift or filter binding. I read abstracts and the UniProt evidence records, not the full texts of the 1988/1990/1997 papers.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "da4c763421c86fa315a07859eb02dd2f66a2e1410595dc8efe716bd3ab70a9f3:GO:0106274",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "Q844J9 (Vip2Ac) is the enzymatic component of a binary Vip1/Vip2 protein pair and belongs to the Ia/C2-I/iota-toxin-like family of mono-ADP-ribosyltransferases whose protein target is actin Arg177, i.e. the GO:0106274 reaction (L-arginyl-[protein] + NAD+ = (ADP-D-ribosyl)-L-arginyl-[protein] + nicotinamide). Supporting evidence: (i) the 1.5 A crystal structure of Vip2, including a kinetically trapped Vip2-NAD complex, defines the NAD-binding cleft in the C-terminal domain and was interpreted in terms of the mechanism of actin ADP-ribosylation; the RCSB/SIFTS cross-reference for PDB 1QS1 is to Q844J9 itself, and my alignment of the 1QS1 polymer sequence to the packet sequence gives 441/462 identities (95.5%), same length; (ii) functional work on Vip2 shows it 'exerts its intracellular poisoning effect by modifying actin and preventing actin polymerization', and enzymatic activity of wild-type versus engineered pro-forms was compared directly; (iii) a review of this enzyme family states that the Ia-homologous members, VIP2 included, 'ADP-ribosylate Arg177 on actin'. (iv) I verified in the packet sequence that the arginine-specific R-S-E catalytic triad is intact at the positions UniProt marks as active sites: R349, S386, E428, plus the NAD-binding residues W350, E355, D381, R400.",
+   "sources": [
+    "https://europepmc.org/abstract/MED/10504727 - Han S, Craig JA, Putnam CD, Carozzi NB, Tainer JA, Nat Struct Biol 1999: 1.5 A structure of the ADP-ribosyltransferase component VIP2 and of the VIP2-NAD complex; NAD-binding cleft in the C-terminal enzymatic domain; mechanism of ADP-ribosylation of actin (abstract read).",
+    "https://www.rcsb.org/structure/1QS1 - 'Crystal structure of vegetative insecticidal protein2 (VIP2)'; RCSB polymer-entity record retrieved via https://data.rcsb.org/rest/v1/core/polymer_entity/1QS1/1 shows SIFTS reference_database_accession Q844J9 and EC 2.4.2.30. Alignment of that SEQRES to the packet sequence performed locally by me (Biopython, BLOSUM62): 95.5% identity.",
+    "https://europepmc.org/abstract/MED/18723852 - Shcherbik N et al., Protein Eng Des Sel 2008: 'The Vip2 protein exerts its intracellular poisoning effect by modifying actin and preventing actin polymerization'; proVip2 variants compared for enzymatic activity against wild type (abstract read).",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC7827354/ - Tsurumura T et al., Toxins 2021 review: lists VIP2 among the Ia-homologous enzymes and states 'All of these toxins ADP-ribosylate Arg177 on actin'.",
+    "https://rest.uniprot.org/uniprotkb/Q844J9.json - active sites 349, 386, 428 and binding sites 350, 355, 381, 400, 428; residues verified against the packet sequence by local indexing."
+   ],
+   "limitations": "The structural and enzymatic papers I could access worked on a Vip2 of Bacillus cereus origin that is 95.5% identical to this Bacillus thuringiensis Vip2Ac sequence rather than on Q844J9 verbatim, although RCSB maps PDB 1QS1/1QS2 to this accession; the residual differences do not touch the catalytic triad. I read abstracts (plus the RCSB and UniProt records) rather than the full texts of the 1999 and 2008 papers, so I did not inspect the primary ADP-ribosylation assay figures. UniProt carries a PROSITE-ProRule CAUTION that conserved residues are missing; this appears to concern the N-terminal pseudo-ART domain (residues 73-262), which in this family is the non-catalytic, translocation/binding domain, and the C-terminal catalytic domain retains its full triad.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "9873c0ca6c6b1a7f08a46f7c0bca7cd3f0a7456fce2c4c8c6cad9067f26dede5:GO:0003676",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "The supplied 158-residue sequence is Mycobacterium tuberculosis Rv0944 (UniProt L0T864, gene fpg2; the other four accessions are the identical protein in H37Ra, M. bovis and other M. tuberculosis complex genomes). It is a truncated Fpg/Nei protein consisting only of the C-terminal H2TH and zinc-finger region, which is why InterPro propagates GO:0003676 from the fold-level entry IPR010979 (uS13-like H2TH superfamily). Direct experiment on this very protein contradicts the claim: recombinant MtuFpg2 (Rv0944) 'contains only the C-terminal domain of an Fpg protein and has no detectable DNA binding activity or DNA glycosylase/lyase activity and thus appears to be a pseudogene'. The electrophoretic mobility-shift assay is reported in Supplementary Fig. S3 of that paper, with the text stating 'MtuFpg2 did not show any DNA binding ability'. I verified from the paper's Materials section that MtuFpg2 is Rv0944.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2836239/ - Guo Y, Bandaru V, Jaruga P et al., DNA Repair 2010 (PMID 20031487): 'two of the five were identified as putative Fpg homologs: MtuFpg1 (Rv2924c) and MtuFpg2 (Rv0944)'; Section 3.2 'MtuFpg2 did not show any DNA binding ability'; EMSA in Supplementary Fig. S3; no detectable glycosylase/lyase activity (data not shown). Abstract conclusion: MtuFpg2 'appears to be a pseudogene'.",
+    "https://rest.uniprot.org/uniprotkb/L0T864.json - FPG2_MYCTU, gene fpg2 / Rv0944, 158 aa, 'Uncharacterized formamidopyrimidine-DNA glycosylase-like protein'.",
+    "https://www.ebi.ac.uk/interpro/entry/InterPro/IPR010979/ - 'This superfamily represents the H2TH motif found in the small ribosomal subunit protein uS13' - a homologous_superfamily (fold-level) entry, the sole basis of the five IEA annotations in the packet."
+   ],
+   "limitations": "The negative binding result is from a single study using oligodeoxynucleotide substrates with defined lesions and an EMSA; a different assay or substrate might detect weak binding, and the paper's glycosylase result was 'data not shown'. The supplementary figure itself was not accessible to me, only the main-text statements. The protein does retain recognisable H2TH and CxxC zinc-finger sequence features, so a structural prediction of DNA binding is understandable, but the measured result is negative.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "1707ef48ea0463788f2996eeb4224269ffe13c8647087be050218ea3e5a16d47:GO:0004382",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "The single supporting annotation is an IBA from PANTHER node PTN000989481, whose cited reference proteins are human CANT1 (Q8WVQ1) and C. elegans apy-1. Both of those do hydrolyse GDP: recombinant human CANT1 has measured UDP > GDP >> ADP nucleotidase activity (EC 3.6.1.6, GDP + H2O = GMP + phosphate, RHEA:22156 - the exact GO:0004382 reaction), and C. elegans APY-1 depletion reduces membrane GDPase activity while heterologous expression in a yeast gda1 deletion raises it. However this PANTHER subfamily (PTHR13023:SF3) is not specificity-homogeneous: I checked that the arthropod salivary apyrases are in the same subfamily, and recombinant Phlebotomus duboscqi apyrase 'efficiently hydrolyzed ADP and ATP, but not AMP, GDP, CDP or UDP'. For the supplied Drosophila protein itself the one published measurement points to the arthropod-type specificity: CG5276 was shown to 'function as apyrases converting extracellular ATP to ADP and AMP', i.e. it has the ADPase activity that CANT1 essentially lacks. Sequence does not resolve the ambiguity: in my alignments CG5276 is 50.0% identical to human CANT1 and 49.3% identical to the Cimex lectularius apyrase. So a known functional difference inside the reference group blocks the inference, and GDP has never been tested on this protein.",
+   "sources": [
+    "https://rest.uniprot.org/uniprotkb/Q8WVQ1.json - human CANT1 (SCAN-1): FUNCTION 'Calcium-dependent nucleotidase with a preference for ribonucleosides diphosphate UDP, GDP and IDP, while having very low activity towards ADP and CDP'; CATALYTIC ACTIVITY 'GDP + H2O = GMP + phosphate' (RHEA:22156), evidence PubMed 12234496, 15006348, 15248776, 16835225.",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2291423/ - Uccelletti D et al., Mol Biol Cell 2008 (PMID 18216284), C. elegans APY-1: Fig. 1A, apy-1(RNAi) membranes show reduced UDPase and, to a smaller extent, GDPase activity; ADP activity very low and unchanged; apy-1 expression in S. cerevisiae gda1-delta raises UDPase/GDPase (Suppl. Fig. S1).",
+    "https://europepmc.org/abstract/MED/21996016 - Zurovec M / Dolezal T et al., Insect Biochem Mol Biol 2011: 'together with CG5276 belonging to another family of calcium-activated nucleotidases function as apyrases converting extracellular ATP to ADP and AMP' (abstract read; full text not accessible to me, so I could not check whether GDP was among the substrates tested).",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2749904/ - Hostomska J et al., J Insect Physiol 2009: recombinant Phlebotomus duboscqi apyrase 'efficiently hydrolyzed ADP and ATP, but not AMP, GDP, CDP or UDP, in a calcium-dependent manner'.",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2254480/ - Zimmermann/Smith & Kirley review, Purinergic Signal 2006: vertebrate CANs are 'primarily UDP/GDP hydrolyzing enzymes, with little endogenous ADPase activity' whereas the blood-feeding arthropod enzymes are 'potent ADPases'; the invertebrate and vertebrate members 'do not share common nucleotide substrate preferences'.",
+    "PANTHER/InterPro membership checked via https://rest.uniprot.org/uniprotkb/search (Drosophila CG5276, human CANT1, Cimex O96559 and Phlebotomus Q06K77 all PTHR13023:SF3, IPR009283/IPR036258). Pairwise identities computed locally by me with Biopython/BLOSUM62; I also confirmed that 5 of the 6 CANT1 Ca2+-coordinating residues (S168, E215, E284, S345, E396) are identical in CG5276 and the sixth is D169 to E."
+   ],
+   "limitations": "This is a 'not established' call, not a contradiction: CG5276 is the only Drosophila member of this family and the 1:1 orthologue of human CANT1 and C. elegans apy-1, so GDP phosphatase activity remains plausible. I could read only the abstract of the 2011 Drosophila study, so I cannot exclude that GDP was tested there. If the reviewer treats CANT1/apy-1 orthology as sufficient despite the sand-fly counter-example and the fly protein's measured ADPase activity, the call would flip to accept.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "97f334e055048d81c04ba0a6a113c16782448fe9ff0db2dc54f20cfd528f2794:GO:0005524",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "The supplied 432-residue sequence is mycobacterial EgtA (GshA, Rv3704c and its identical orthologues in other members of the complex), a glutamate--cysteine ligase of the type 2 (EgtA) family. UniProt records the catalytic activity 'L-cysteine + L-glutamate + ATP = gamma-L-glutamyl-L-cysteine + ADP + phosphate' (EC 6.3.2.2, RHEA:13285) for this protein with experimental evidence (ECO:0000269) from Harth et al. 2005, in which each of the eight genes studied, gshA included, was expressed separately in M. smegmatis and the gene product assayed for enzymatic activity by analysing the reaction products. ATP is an obligate co-substrate of that ligation, consumed to ADP + phosphate, so demonstrated ATP-dependent ligase activity establishes that the protein binds ATP, which is all GO:0005524 requires. This is a very general term and the inference from an experimentally supported ATP-consuming catalytic activity to ATP binding is direct rather than family-level guesswork.",
+   "sources": [
+    "https://rest.uniprot.org/uniprotkb/P9WPK7.json - 'Glutamate--cysteine ligase EgtA', gene egtA/gshA, Rv3704c; FUNCTION 'Catalyzes the synthesis of gamma-glutamylcysteine' with ECO:0000269 PubMed:16262797; CATALYTIC ACTIVITY block with the ATP-consuming reaction, same experimental evidence; SIMILARITY 'glutamate--cysteine ligase type 2 family, EgtA subfamily'.",
+    "https://europepmc.org/abstract/MED/16262797 - Harth G, Maslesa-Galic S, Horwitz MA, Mol Microbiol 2005: GshA is among the enzymes investigated; 'Each of the eight genes ... was expressed separately in Mycobacterium smegmatis, and its gene product was characterized and assayed for enzymatic activity by analysing the reaction products' (abstract read; Wiley full text returned 403 to me).",
+    "Packet provenance: six identical-sequence accessions, all annotated 'enables GO:0005524' by UniRule UR000184798 (GO_REF:0000104), consistent with the family's ATP-dependent ligase chemistry."
+   ],
+   "limitations": "I could not read the full text of Harth et al. 2005, so I did not see the GshA activity figure or confirm that ATP dependence was tested explicitly; I relied on the UniProt curator's ECO:0000269 assignment of EC 6.3.2.2 to this protein plus the abstract's statement that each gene product was assayed. No ATP-binding residues are annotated in the UniProt entry and no structure of this protein with a nucleotide was found by me, so the ATP-binding claim rests on the stoichiometry of the catalysed reaction rather than on a direct binding measurement.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "ae7a8231780df578d57ef36d2619bf4ff6c8d44318204a57f3a04de697f06eed:GO:0003684",
+   "decision": "accept",
+   "support_type": "experimental",
+   "supported_relation": "enables",
+   "rationale": "O80358 is Arabidopsis thaliana formamidopyrimidine-DNA glycosylase (AtFPG1/AthFpg, At1g52500), and the requested term, damaged DNA binding, has been shown directly on this protein. Duclos et al. (2012) determined the first crystal structure of a plant Fpg both unliganded and bound to DNA containing an abasic-site analogue (tetrahydrofuran); I confirmed in the RCSB records that PDB 3TWM is a protein/nucleic-acid complex (2 DNA entities) whereas 3TWK and 3TWL are protein-only, and all three map to O80358. An abasic site is a DNA lesion, so the co-crystal is a direct observation of this protein bound to damaged DNA. The same and earlier studies show lesion-specific glycosylase/AP-lyase catalysis on DNA containing FapyA, FapyG, guanidinohydantoin and spiroiminodihydantoin, which requires lesion recognition. The supplied 390-residue sequence is the displayed canonical isoform of O80358; the crystallised constructs covered residues 1-281/1-304, i.e. the catalytic domain, which the rubric allows.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC3419285/ (PMID 22789755) - Duclos S et al., DNA Repair 2012: 'the first crystal structure of a plant Fpg, Arabidopsis thaliana (AthFpg), unliganded and bound to DNA containing an abasic site analog, tetrahydrofuran (THF)' (abstract read).",
+    "https://data.rcsb.org/rest/v1/core/entry/3TWM - 'Crystal structure of Arabidopsis thaliana FPG', selected_polymer_entity_types 'Protein/NA', 2 DNA entities, 2.80 A; 3TWL (1.70 A) and 3TWK (2.30 A) are protein-only. UniProt cross-reference for all three is O80358, covering residues 1-281 / 1-304.",
+    "https://rest.uniprot.org/uniprotkb/O80358.json - FUNCTION with ECO:0000269 from PMIDs 9819050, 11272725 and 22789755: recognises and removes FapyA, FapyG, guanidinohydantoin and spiroiminodihydantoin, marginal activity on 8-oxoG, plus AP-lyase activity; EC 3.2.2.23 and 4.2.99.18 with experimental evidence; sequence length 390.",
+    "https://www.ebi.ac.uk/interpro/entry/InterPro/IPR015886/ - the packet's IEA source, the Fpg H2TH DNA-binding domain; this is consistent with, but not the basis of, the decision."
+   ],
+   "limitations": "The DNA co-crystal used an abasic-site analogue rather than an oxidised base lesion, and was obtained with a truncated construct (residues 1-304) rather than the full 390-residue protein. The lesion-specificity measurements were on recombinant protein. I read the paper abstract and the structural/UniProt records rather than the full text.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "1c71b14ddab17afc222e0d44923249d7fceda757299283f7aedb508a707bac82:GO:0003678",
+   "decision": "accept",
+   "support_type": "experimental",
+   "supported_relation": "enables",
+   "rationale": "The supplied 718-residue sequence is gp28 / NrS-1 primase-polymerase of Nitratiruptor phage NrS-1 (UniProt M5AAG8), and DNA unwinding has been measured on the full-length protein. Guo et al. (NAR 2020) solved two crystal structures of the C-terminal region, which forms a hexameric ring with a central domain resembling superfamily III helicases, and assayed unwinding of a FAM-labelled 12-nt duplex annealed to a 60-nt strand in the presence of a trap oligonucleotide: the full-length wild-type protein unwound about 40% of the substrate at 40 nM, over 65% at 100 nM and over 80% at 200 nM (Fig. 3F, 4G, 6D). The protein hydrolyses ATP as well as dNTPs (UniProt records ATP + H2O = ADP + phosphate, EC 3.6.4.12, with ECO:0000269 from this study), and the mutations that abolished or weakened NTP hydrolysis (K453A, K525A, R555A, R556A) also abolished unwinding, while N-terminal truncations (N392, N618) did not unwind. That coupling of nucleotide hydrolysis to duplex unwinding by the supplied protein matches the GO definition.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC7102993/ (PMID 32016421) - Guo Q et al., Nucleic Acids Res 2020: 'NrS-1 polymerase has DNA unwinding activity'; unwinding substrate DNA3 with trap oligo; dose response 40%/65%/80%; mutant panel K453A/K525A/R555A/R556A loses unwinding while N526A behaves like wild type; 'neither NrS-1 N392 nor NrS-1 N618 possesses DNA-unwinding activity'; NTPase activity with ATP, dCTP, dATP, dGTP and dTTP measured by malachite-green phosphate detection.",
+    "https://rest.uniprot.org/uniprotkb/M5AAG8.json - FUNCTION 'Multifunctional protein with primer synthesis, DNA polymerization, and DNA helicase activities (PubMed:28265063, PubMed:32016421)'; CATALYTIC ACTIVITY ATP + H2O = ADP + phosphate, EC 3.6.4.12, ECO:0000269 PubMed:32016421; Region 404-593 'Helicase'; mutagenesis records for K453/K525/R555/R556.",
+    "https://europepmc.org/abstract/MED/28265063 - Zhu B et al., PNAS 2017: the N-terminal domain carries the de novo polymerase activity and the C-terminal domain enhances DNA binding; NrS-1 genome predicted to encode a helicase (abstract read)."
+   ],
+   "limitations": "The unwinding reactions were run with 5 mM dCTP, the preferred nucleotide, and the authors state that 'the helicase activity of NrS-1 polymerase is not strictly ATP-dependent', so the strict reading of the GO definition ('driven by ATP hydrolysis') is satisfied only via the separately demonstrated ATPase activity rather than by an ATP-fuelled unwinding assay. The same authors note that dsDNA unwinding 'still needs further confirmation'. Unwinding was shown for the full-length protein, not for the isolated helicase domain. The packet annotation itself is only an EC-to-GO mapping (GO_REF:0000003); the decision rests on the primary study.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "a5accf714119c3a78523d6e5b48f1816d902b31f8107af60f41fced1ba43e758:GO:0050661",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "The sequence is Saccharomyces cerevisiae CBS2/CBP7 (P14905, YDR197W; B3LG86 and H0GDL5 are the identical protein in the RM11-1a and VIN7 strains), a mitochondrial translational activator of the COB (cytochrome b) mRNA. The support is family-level only: TreeGrafter/PANTHER places it in PTHR43765 (ketopantoate reductase, 2-dehydropantoate 2-reductase-related) and the IBA cites E. coli PanE (P0A9J4). That inference fails on domain architecture. Ketopantoate reductase is two-domain: an N-terminal Rossmann NAD(P)-binding domain and a C-terminal 6PGD-like domain. In UniProt, every NADP(+)-binding residue of E. coli PanE (7-12, 31, 98, 122, 256) lies in the N-terminal Rossmann domain (InterPro IPR013332 / IPR036291, residues 1-167). I queried InterPro for all matches to P14905: it matches only the C-terminal domain (PF08546/IPR013752, residues 247-376, plus the 6PGD-like superfamily entries); there is no Rossmann-fold or NAD(P)-binding-domain match anywhere in its 389 residues. The part of the reference enzyme that binds NADP is therefore absent from the supplied protein, and no reductase or dinucleotide-binding activity has been reported for Cbs2.",
+   "sources": [
+    "https://www.ebi.ac.uk/interpro/api/entry/all/protein/uniprot/P14905/ - complete InterPro match list for CBS2: G3DSA:1.10.1040.10 (244-379), IPR008927 (241-376), IPR013328 (244-379), IPR013752 Ketopantoate reductase C-terminal domain (247-376), PF08546 (247-376), PTHR43765, SSF48179. No NAD(P)-binding Rossmann entry.",
+    "https://www.ebi.ac.uk/interpro/api/entry/all/protein/uniprot/P0A9J4/ - E. coli PanE matches both PF02558/IPR013332 (N-terminal, 3-143), IPR036291 NAD(P)-binding domain superfamily (1-167) and PF08546 (168-289).",
+    "https://rest.uniprot.org/uniprotkb/P0A9J4.json - PanE NADP(+) binding sites at 7-12, 31, 98, 122, 256; EC 1.1.1.169 with experimental evidence (PubMed 10736170, 11123955).",
+    "https://rest.uniprot.org/uniprotkb/P14905.json - CBS2: 'Cytochrome B translational activator CBS2'; FUNCTION 'Translational activator of cytochrome b' with ECO:0000269 PubMed:3070350; mitochondrial; PANTHER subfamily PTHR43765:SF4 is itself named 'cytochrome b translational activator protein CBS2'."
+   ],
+   "limitations": "I did not find any study that tested Cbs2 for dinucleotide binding, so this is a 'not established' call supported by the absence of the cofactor-binding domain rather than by a negative binding experiment. The region 1-246 of Cbs2 is not covered by any InterPro domain, so I cannot exclude an unrecognised nucleotide-binding fold there, but there is no positive evidence for one.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "e2ee6aac82b25888a5428eaa5daee45e72b9aa61de6469bcaa00f15695672b4c:GO:0030674",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "The ISO source is human nicastrin (Q92542), where GO:0030674 rests on IMP/IGI work on gamma-secretase assembly. I checked the underlying biology rather than the single cited reference. Nicastrin is more than a passenger in the complex: in nicastrin-knockout mouse fibroblasts the Aph-1 to Pen-2 association is abolished and Aph-1 no longer co-precipitates the presenilin C-terminal fragment, and the nicastrin-Aph-1 subcomplex is required for the complex to associate with its substrate CTFbeta (no component co-precipitated CTFbeta in NCT-knockout or Aph-1-knockout cells). So removing this protein stops other macromolecules from being held together, which is what GO:0030674 describes - bringing two or more macromolecules into contact so they can act in a coordinated way - rather than mere complex membership. Transfer to the supplied rat Ncstn is safe: it is the 1:1 orthologue and in my alignment it is 88.8% identical to human nicastrin over essentially the full length (629/708 positions), with the same single-pass topology and large ectodomain.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC3509485/ (PMID 22973949) - Zhao G et al., J Neurochem 2012: co-IP in PS1/PS2-, NCT- and Aph-1-knockout MEFs; 'knockout of NCT abolished the interaction of Aph-1 with Pen-2'; 'NCT-Aph subcomplex formation is necessary for gamma-secretase to interact with its initial substrate CTFbeta'; Figs 1-3.",
+    "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q92542&goId=GO:0030674 - human source annotations: IMP PMID:12297508 (with annotation extensions has_input PSEN1 P49768 and PSEN2 P49810) and IGI PMID:12763021, both assigned by ARUK-UCL.",
+    "https://europepmc.org/abstract/MED/12297508 - Lee SF et al., J Biol Chem 2002: co-IP and nickel pull-down show APH-1 physically associates with nicastrin and presenilin NTF/CTF heterodimers; siRNA knockdown of any one component destabilises the others and blocks intramembrane proteolysis (abstract read).",
+    "Sequence comparison performed locally by me: packet rat Ncstn vs human Q92542 FASTA from UniProt, Biopython PairwiseAligner/BLOSUM62, 88.8% identity."
+   ],
+   "limitations": "Evidence is co-immunoprecipitation and genetic ablation rather than a reconstituted bridging assay with purified components, and the specific reference cited by the GO annotation (PMID 12297508) establishes mutual dependence of the subunits rather than adaptor activity on its own; I therefore based the decision on the broader assembly literature. Nicastrin's proposed role as the gamma-secretase substrate receptor (Shah et al. 2005) has been contested, so I did not rely on it. No experiment has been done on the rat protein itself. One could argue for 'contributes_to' instead of 'enables' since the bridging occurs inside a four-subunit complex; I kept 'enables' because the loss-of-nicastrin experiments attribute the bridging to this subunit.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "56a5c62fee4fbf845b49154edd33e50306e89013b89a6a31850315febe36204d:GO:0000166",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "The sole support is GO_REF:0000043, the automatic mapping of the UniProt keyword KW-0547 (Nucleotide-binding) to GO:0000166. In the source entry (Q77J49) that keyword traces to a single feature, 'Binding site 229-236, ATP', carried only by ECO:0000255 (sequence analysis) with no cited source - in other words a pattern prediction. I located residues 229-236 in the packet sequence: AEDDKGKT, which matches the low-specificity P-loop pattern [AG]-x(4)-G-K-[ST] but sits in a region with no recognised nucleotide-binding fold. I queried InterPro for all matches to Q77J49 and the only domains found are the RING-type zinc finger (IPR001841, 308-359) and its superfamily entries; there is no P-loop/NTPase, Rossmann or other nucleotide-binding domain anywhere in the 844-residue protein. The experimentally supported activity of this protein is RING-type E3 ubiquitin transferase (EC 2.3.2.27, ECO:0000269 PubMed:16571805), and RING E3 ligases are not nucleotide-binding enzymes; no nucleotide-binding measurement has been reported for it.",
+   "sources": [
+    "https://rest.uniprot.org/uniprotkb/Q77J49.json - keywords include KW-0067 ATP-binding and KW-0547 Nucleotide-binding; the only supporting feature is 'Binding site 229-236 ATP' with evidence ECO:0000255 and no source; FUNCTION and CATALYTIC ACTIVITY (EC 2.3.2.27) have ECO:0000269 from PubMed:16571805; Zinc finger 308-359 RING-type (atypical).",
+    "https://www.ebi.ac.uk/interpro/api/entry/all/protein/uniprot/Q77J49/ - complete InterPro/CATH/SUPFAM/PANTHER match list: RING-type zinc finger entries only (IPR001841 308-359, IPR013083 295-370, SSF57850 298-363, G3DSA:3.30.40.10 295-370, PTHR45969 220-446). No nucleotide-binding entry.",
+    "https://europepmc.org/abstract/MED/16571805 - He F et al., 2006: WSSV ORF222 encodes a viral E3 ligase that ubiquitinates a host tumour-suppressor-like protein; the characterised activity is ubiquitin transfer, not nucleotide binding.",
+    "Residue indexing of the packet sequence performed locally by me (positions 229-236 = AEDDKGKT)."
+   ],
+   "limitations": "A P-loop-like sequence is genuinely present, so nucleotide binding cannot be excluded outright; however no structural domain supports it and no binding assay exists. Of the five accessions sharing this sequence, only Q77J49 carries the nucleotide-binding keyword, and the packet lists only that one annotation for the term.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "e2f1ad690491b11f8639df861eec336bdcc78d0777504d6ec59e70bdc379f237:GO:0030674",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "The ISO source is human calreticulin (P27797), whose GO:0030674 annotation is an IDA from the cryo-EM study of the MHC class I peptide-loading complex, with annotation extensions has_input HLA-A (P04439) and occurs_in endoplasmic reticulum. In that work the editing module of the peptide-loading complex was resolved at 3.7 A and peptide-receptive MHC I is held by multivalent chaperone contacts that include the calreticulin-engulfed mono-glucosylated MHC I glycan, with calreticulin simultaneously part of the tapasin/ERp57 editing module. Calreticulin therefore physically holds a client glycoprotein and the editing machinery together so that peptide loading and glycan processing are coordinated, which matches the GO definition of bringing two or more macromolecules into contact to let them function in a coordinated way. Transfer to the supplied rat Calr is straightforward: it is the 1:1 orthologue and in my alignment it is 94.0% identical to human calreticulin over the full length (391/416 positions), including the lectin and P-domain regions that mediate glycan and ERp57 binding.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC9365787/ (PMID 35948544) - Domnick A et al., Nat Commun 2022, 'Molecular basis of MHC I quality control in the peptide loading complex': PLC editing-module cryo-EM structure at 3.7 A; 'peptide-receptive MHC I molecules are stabilized by multivalent chaperone interactions including the calreticulin-engulfed mono-glucosylated MHC I glycan' (abstract read).",
+    "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:P27797&goId=GO:0030674 - human source annotation: 'enables GO:0030674, IDA, PMID:35948544, UniProt', extensions occurs_in GO:0005783 and has_input UniProtKB:P04439.",
+    "Sequence comparison performed locally by me: packet rat P18418 vs human P27797 FASTA from UniProt, Biopython PairwiseAligner/BLOSUM62, 94.0% identity."
+   ],
+   "limitations": "No bridging experiment has been done on the rat protein; the decision is an orthology transfer from a human structural study. The evidence is a structure of an assembled complex plus functional epitope-proofreading assays rather than a reconstitution in which calreticulin is the only bridging component, so one could argue for 'contributes_to'; I kept 'enables' because calreticulin itself makes the contacts with both the client glycan and the editing module.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "689eec4d6ec2210cc2b7956699a74e51429ef6413da127acf99a5d721e551e8a:GO:0008017",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "Microtubule binding by the NDC80/HEC1 subunit is one of the best-established kinetochore activities: the reference protein named in the ISS (human NDC80, O14777) acts through an N-terminal calponin-homology domain plus a basic unstructured tail that together contact the tubulin surface, and UniProt records its microtubule-related functions with a long list of ECO:0000269 references, including the end-on attachment and SKA1-synergy work. The supplied protein is the Xenopus laevis ndc80 orthologue. In my alignments it is 57.6% identical to human NDC80 over the full length and, critically, 78.4% identical over the human CH domain (residues 81-196), the microtubule-binding module; the supplied sequence also retains the lysine/arginine-rich disordered N-terminal tail that provides the second microtubule contact. Conservation of both microtubule-contacting elements in a clear 1:1 orthologue of an extensively characterised protein makes the inference well supported.",
+   "sources": [
+    "https://rest.uniprot.org/uniprotkb/O14777.json - human NDC80 FUNCTION: component of the NDC80 complex, 'Required for kinetochore integrity and the organization of stable microtubule binding sites in the outer plate of the kinetochore', 'synergistically enhances the affinity of the SKA1 complex for microtubules', 'essential for the end-on attachment of the kinetochores to spindle microtubules', with ECO:0000269 references including PubMed 15548592, 23085020, 23891108, 25743205, 30409912; disordered N-terminal region 1-74; coiled coils 261-403 and 458-642.",
+    "https://geneontology.org/GO_REF/0000024.html - the packet's ISS reference (manual assertion inferred from sequence similarity), with_from UniProtKB:O14777.",
+    "Sequence comparisons performed locally by me: packet Q8AWF5 vs human O14777 FASTA from UniProt, Biopython PairwiseAligner/BLOSUM62: 366/635 = 57.6% overall; 91/116 = 78.4% over human residues 81-196."
+   ],
+   "limitations": "I did not find a microtubule-binding assay performed on the Xenopus protein itself, and I did not read the primary human NDC80 microtubule-binding papers in full (I relied on the UniProt evidence records and domain annotation). Microtubule binding by NDC80 is normally studied in the context of the NDC80/NUF2 heterodimer or the four-subunit complex, so a strict reading could favour 'contributes_to'; I used 'enables' because the microtubule-contacting CH domain and tail are both within this subunit.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "0c7464842c968e3865a429a57d0722e80c2736068de105c0f014a046c6cd98c6:GO:0031731",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "The only support is an IBA across the whole beta-defensin PANTHER family (PTN000464032), citing human DEFB4A/hBD-2 (O15263) and mouse Defb4 (MGI:1927667). Those two reference proteins do have real CCR6 evidence (UniProt records 'Acts as a ligand for C-C chemokine receptor CCR6' for hBD-2 with ECO:0000269 PubMed 10521347 and 20068036; mouse Defb4 carries GO:0031731 by IDA from PubMed 20068036). But CCR6 binding is not a family-wide property - beta-defensins are a large, rapidly diverging family and receptor usage differs between members - and the supplied protein is only distantly related to the reference: in my alignment mature/precursor DEFB114 shares just 19 identities with hBD-2 (38.8% over 49 aligned positions, 29.7% of the shorter sequence), with different spacing between the conserved cysteines. Everything published on DEFB114 concerns antimicrobial and LPS-neutralising activity and innate-immune signalling, not chemokine-receptor binding; a Europe PMC search turned up no CCR6 experiment for DEFB114 in any species. Sharing the six-cysteine beta-defensin scaffold is exactly the 'generic family resemblance' that is not sufficient.",
+   "sources": [
+    "https://rest.uniprot.org/uniprotkb/Q30KQ6.json - Beta-defensin 114; FUNCTION (ECO:0000269 PubMed:23482568) salt-sensitive antimicrobial activity, binds and neutralises LPS, affects sperm motility; signal 1-26, mature chain 27-69, three disulfides.",
+    "https://rest.uniprot.org/uniprotkb/O15263.json - hBD-2 FUNCTION: 'Acts as a ligand for C-C chemokine receptor CCR6 (PubMed:10521347, PubMed:20068036). Binds to CCR6 and induces chemotactic activity of CCR6-expressing cells'.",
+    "https://api.geneontology.org/api/bioentity/gene/MGI%3A1927667/function - mouse Defb4: GO:0031731 by IDA from PMID:20068036 plus IBA/ISO.",
+    "https://europepmc.org/search?query=DEFB114 - 89 hits, none reporting CCR6 binding; the functional papers are on antimicrobial activity (e.g. PMID 31360462 porcine beta-defensin 114 characterisation, PMID 38484587 fungal resistance via NOD1/2-ATG16L1-NF-kB).",
+    "Alignment of the packet sequence against the O15263 FASTA performed locally by me (Biopython PairwiseAligner, BLOSUM62)."
+   ],
+   "limitations": "DEFB114 has not been tested against CCR6, so this is an absence of support rather than disproof. Note also that the CCR6 dependence of hBD-2 chemotaxis has itself been questioned in favour of CCR2 for some beta-defensins, which further weakens a family-level transfer.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "4f8761cb76fd9e542d25a37c438a64f2c8c6d8d75884a989504f9d2c3d9541ed:GO:0004556",
+   "decision": "accept",
+   "support_type": "experimental",
+   "supported_relation": "enables",
+   "rationale": "P49067 is Pyrococcus furiosus AmyA (PF0272), and the protein was characterised directly. Laderman et al. purified the enzyme to homogeneity from P. furiosus and measured amylase activity: a homodimer of 66 kDa subunits, optimal activity near 100 C, no Ca2+ requirement, 'a broad range of substrate specificity, with the capacity to hydrolyze carbohydrates as simple as maltotriose'. The companion paper cloned the gene, which encodes a 649-residue protein - exactly the length of the supplied sequence - showed that the deduced N terminus matches the N terminus determined from the purified enzyme, and expressed it in E. coli, where the recombinant protein reproduced the characteristic temperature-dependent activation. Hydrolysis of alpha-1,4-glucosidic linkages in starch and in maltotriose is the GO:0004556 reaction. The protein belongs to glycoside hydrolase family 57 (CAZy GH57), which also contains 4-alpha-glucanotransferases and branching enzymes, but for this member the measured activity was hydrolytic amylase activity and I found no later reclassification.",
+   "sources": [
+    "https://europepmc.org/abstract/MED/8226989 - Laderman KA et al., J Biol Chem 1993: purification and characterisation of the extremely thermostable alpha-amylase of P. furiosus (abstract read).",
+    "https://europepmc.org/abstract/MED/8226990 - Laderman KA et al., J Biol Chem 1993: gene cloning and sequencing (649 aa) and expression in E. coli; deduced N terminus matches the purified enzyme (abstract read).",
+    "https://rest.uniprot.org/uniprotkb/P49067.json - Alpha-amylase, EC 3.2.1.1, gene amyA / PF0272, P. furiosus; catalytic activity 'Endohydrolysis of (1->4)-alpha-D-glucosidic linkages in polysaccharides containing three or more (1->4)-alpha-linked D-glucose units'; active sites 124 (nucleophile) and 215 (proton donor); CAZy GH57; optimum 100 C.",
+    "Europe PMC survey of GH57 reclassification papers (branching enzymes, 4-alpha-glucanotransferases, amylopullulanases, maltose-forming amylases) found no study reassigning P. furiosus AmyA."
+   ],
+   "limitations": "I read the two 1993 JBC abstracts and the UniProt record rather than the full texts, so I did not inspect the product-profile data that distinguish endo-amylase from transferase action; the UniProt entry lists the catalytic activity without an ECO:0000269 tag, and the packet annotation itself is only an EC-to-GO mapping (GO_REF:0000003). The taxon recorded in the supporting annotation (186497) matches P. furiosus DSM 3638.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "3038428ff8d5bfc09438641103de1e40984d86cac380264b1748d5c9c345b61a:GO:0003677",
+   "decision": "accept",
+   "support_type": "experimental",
+   "supported_relation": "enables",
+   "rationale": "The packet protein is SigI1 of Acetivibrio (Clostridium) thermocellum ATCC 27405, UniProt A3DBH0, a sigma-70-family (SigI subfamily) factor. Two independent kinds of direct evidence exist on this protein. First, purified sigma-I1 was shown to direct RNA polymerase to specific promoters: 'The ability of sigma(I1) to direct transcription from the sigI1 promoter and from the promoter of celS ... was demonstrated in vitro by runoff transcription assays' - promoter-specific initiation requires recognition of the promoter DNA. Second, PDB 8I23 is a 3.03 A cryo-EM structure titled 'Clostridium thermocellum RNA polymerase transcription open complex with SigI1 and its promoter'; the RCSB record shows it is a protein/nucleic-acid entry with two DNA entities, and the SigI1 chain (F) is mapped to A3DBH0 residues 1-256, i.e. the full supplied sequence. UniProt also annotates an H-T-H DNA-binding motif at residues 205-224. GO:0003677 (DNA binding) is therefore directly established for this protein.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2972930/ (PMID 20937888) - Nataf Y et al., PNAS 2010: in vitro runoff transcription assays showing sigma-I1-directed transcription from the sigI1 and celS promoters; anti-sigma RsgI1 binding affinities (abstract read).",
+    "https://data.rcsb.org/rest/v1/core/entry/8I23 - 'Clostridium thermocellum RNA polymerase transcription open complex with SigI1 and its promoter', 3.03 A cryo-EM, Protein/NA with 2 DNA entities; primary citation 'Structure of the transcription open complex of distinct sigma I factors' (PMID 37833284).",
+    "https://rest.uniprot.org/uniprotkb/A3DBH0.json - FUNCTION with ECO:0000269 PubMed:20937888 ('SigI1 promotes transcription from sigI1 and celS promoters'); DNA binding feature 205-224 H-T-H motif; PDB cross-references 6IVU (NMR, 141-249) and 8I23 (EM, chain F, 1-256).",
+    "https://www.ebi.ac.uk/interpro/api/entry/all/protein/uniprot/A3DBH0/ - matches IPR014244 RNA polymerase sigma-I type, HAMAP MF_02064, TIGR02895, sigma region 2 superfamily."
+   ],
+   "limitations": "I read the 2010 PNAS abstract and the structural records rather than the full texts of either paper; I did not independently verify the DNA contacts in 8I23 beyond the RCSB entry metadata and the UniProt chain mapping. The packet's own annotation is a UniRule IEA, but the experimental evidence is on this exact protein.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "a20347dfb24db3b0e3878f27902d11ec84e5754746c4c7ce676ceb38de7fe1c2:GO:0035591",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "The ISO source, human IRS2 (Q9Y4H2), carries GO:0035591 as an IDA from a study in which IRS2 was shown to sit between an upstream kinase module and a downstream effector: SH2-B bound IRS1 and IRS2 directly through its PH and SH2 domains both in vitro and in cells and mediated formation of a JAK2/SH2-B/IRS2 ternary complex, and tyrosine-phosphorylated IRS2 then associated with the p85 regulatory subunit of PI 3-kinase, leading to Akt activation. That is exactly the GO:0035591 description - a non-catalytic protein whose binding brings two or more signalling molecules together so they can act in a coordinated way; IRS2 has no catalytic domain of its own. The supplied protein is rat Irs2, the 1:1 orthologue, 87.9% identical to human IRS2 across the whole length in my alignment (1157/1317 aligned positions), retaining the PH/PTB region and the tyrosine motifs that create the SH2-docking sites.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC3874232/ (PMID 15316008) - Duan C et al., J Biol Chem 2004: SH2-B binds IRS1/IRS2 directly via PH and SH2 domains in vitro and in cells; JAK2/SH2-B/IRS2 ternary complex; IRS2 association with PI3K p85 and Akt activation (abstract read).",
+    "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q9Y4H2&goId=GO:0035591 - human source annotations: 'enables GO:0035591' IDA PMID:15316008 (UniProt) and IEA GO_REF:0000117.",
+    "Sequence comparison performed locally by me: packet rat F1MAL5 vs human Q9Y4H2 FASTA from UniProt, Biopython PairwiseAligner/BLOSUM62, 87.9% identity over 1317 aligned positions."
+   ],
+   "limitations": "I read the abstract of the IDA reference rather than its figures. The adaptor role of IRS proteins is supported by a very large literature beyond this single paper, but no adaptor-specific assay has been performed on the rat protein itself, so the call is an orthology transfer.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "367701a601ecb0202fd500db8dbac445812f1cc03e500ca98774209b70b0ce69:GO:0000981",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "This is an uncharacterised Neurospora crassa protein (NCU01209), but the inference rests on a dedicated, structurally defined DNA-binding module rather than on loose family resemblance. The Zn(2)Cys(6) binuclear-cluster domain (GAL4 type) is a fungal-specific, sequence-specific DNA-binding domain whose mode of DNA recognition has been solved in several protein-DNA co-crystals, and every characterised member is a transcriptional regulator of nuclear, RNA-polymerase-II-transcribed genes. Querying InterPro for all matches to Q1K836 shows the full canonical module at the N terminus: PF00172 (7-42), SMART SM00066 and CDD GAL4 (2-48), SSF57701, and - decisively for motif integrity - a hit to the PROSITE conserved-site pattern PS00463 (7-37), which requires the canonical six-cysteine spacing. I also read the spacing off the supplied sequence directly: C-x2-C-x6-C-x8-C-x2-C-x6-C. The architecture is completed by a fungal transcription-factor C-terminal/middle-homology region (PF27599 / IPR060221, residues 245-465) and PANTHER family PTHR31668 (carbohydrate metabolism and transport regulator), i.e. the standard two-module layout of a fungal Zn(2)Cys(6) transcription activator, with long predicted-disordered activation-domain-like segments in between. InterPro's own mapping of IPR001138 is to GO:0000981 plus GO:0008270 and GO:0006355.",
+   "sources": [
+    "https://www.ebi.ac.uk/interpro/api/entry/all/protein/uniprot/Q1K836/ - full match list: IPR001138 (2-48), IPR036864 (4-69), PF00172 (7-42), PROSITE PS00463 conserved site (7-37), PS50048 profile (7-39), SMART SM00066, CDD cd00067 GAL4, SSF57701, plus PF27599/IPR060221 CcsR-like C-terminal domain (245-465) and PANTHER PTHR31668.",
+    "https://www.ebi.ac.uk/interpro/api/entry/interpro/IPR001138 - description of the Zn(2)Cys(6) binuclear cluster and its DNA-bound structures (e.g. PDB 1PYI); mapped GO terms include GO:0000981.",
+    "https://rest.uniprot.org/uniprotkb/Q1K836.json - 'Zn(2)-C6 fungal-type domain-containing protein', N. crassa OR74A, ORF NCU01209; domain 7-39; disordered regions 41-72, 155-243, 301-332.",
+    "Cysteine spacing read off the packet sequence locally by me."
+   ],
+   "limitations": "Nothing has been published on NCU01209 itself (a Europe PMC search for the locus name returned no hits), so neither its DNA binding nor its target genes have been tested, and the specific gene set it regulates is unknown. The acceptance therefore depends on treating the intact Zn(2)Cys(6) module plus fungal TF C-terminal domain as a reliable functional rule; it does not establish which promoters are bound. Polymerase-II specificity is inferred from the fact that fungal nuclear protein-coding genes are transcribed by Pol II, not from an experiment.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "73135a5306ecb12c0e7f2802a8a39520dc6e427d65bfd4b12e29831bb1faed97:GO:0051959",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "The support is a single IBA whose reference protein is C. elegans zyg-12 (WBGene00006997), which does have direct evidence of dynein light-intermediate-chain binding (GO:0051959 by IPI from PMIDs 14697201 and 19635841). But zyg-12 is a Hook-family protein - UniProt Q23529, entry name HOOK_CAEEL, PANTHER subfamily PTHR18947:SF39 - whereas the supplied protein is zebrafish Daple/ccdc88c in subfamily PTHR18947:SF31. PANTHER family PTHR18947 ('CCDC88/GRDN G-protein modulator') lumps the Hook adaptors and the CCDC88/girdin signalling scaffolds, which share only the N-terminal Hook/calponin-homology module; the light-intermediate-chain-binding element of Hook adaptors lies in the coiled-coil region just after that module and is not known to be present in CCDC88 proteins, whose characterised functions are G-protein and Dishevelled-linked signalling. The nearest relevant experimental data are against the specific claim: in the human dynein interactome screen, Daple (CCDC88C) appeared in the intermediate-chain IC2 BioID dataset, not the LIC1 dataset (girdin/CCDC88A was the LIC1 hit), both Daple and girdin co-immunoprecipitated dynein and dynactin as whole complexes, and neither conclusively activated dynein/dynactin motility. Co-precipitating the dynein holocomplex, or proximity to the intermediate chain, does not establish binding to the light intermediate chain, which is what GO:0051959 requires.",
+   "sources": [
+    "https://api.geneontology.org/api/bioentity/gene/WB%3AWBGene00006997/function - zyg-12 annotations, including GO:0051959 by IPI from PMID:14697201 and PMID:19635841 and GO:0070695 FHF complex (IDA).",
+    "https://rest.uniprot.org/uniprotkb/search?query=gene:zyg-12 - Q23529 HOOK_CAEEL, 'Zygote defective protein 12', PANTHER PTHR18947:SF39, Pfam PF19047 HOOK domain.",
+    "https://www.ebi.ac.uk/interpro/api/entry/all/protein/uniprot/A0A2R8QCI3/ - zebrafish Daple: CDD cd22228 'Hook domain found in Daple', IPR001715 CH domain (11-131), IPR043936/PF19047 HOOK N-terminal (34-161), PANTHER PTHR18947 'CCDC88/GRDN G-protein modulator' (3-717), subfamily SF31.",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC5533585/ (PMID 28718761) - Redwine WB et al., eLife 2017: 'NINL and daple in the IC2 BioID dataset'; 'girdin in the LIC1 dataset'; 'daple (CCDC88C) and girdin (CCDC88A), co-immunoprecipitated dynein and dynactin' but 'did not conclusively activate dynein/dynactin motility'.",
+    "https://rest.uniprot.org/uniprotkb/A0A2R8QCI3.json - 'Protein Daple', zebrafish ccdc88c, 2023 aa."
+   ],
+   "limitations": "This is an 'insufficient support' call. CCDC88 proteins do associate with dynein/dynactin, so light-intermediate-chain binding is not excluded; it simply has not been demonstrated, and the cross-subfamily PANTHER inference from a Hook protein is not strong enough on its own. I read the Redwine et al. text through an automated page read covering roughly the first 100,000 characters, so later supplementary tables were not checked, and I did not read the zyg-12 primary papers beyond their GO records.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "6c1efe2ee9c429e4832d89e49c0067c32db4c7400beed36961e6ba1035e4d66c:GO:0019901",
+   "decision": "accept",
+   "support_type": "inference",
+   "supported_relation": "enables",
+   "rationale": "The ISO chain leads to human ANK2, whose GO:0019901 annotation is an IPI with obscurin (UniProtKB:Q5VST9) from Cunha & Mohler 2008. Obscurin is a genuine protein kinase - UniProt lists Q5VST9 as 'Obscurin (EC 2.7.11.1) ... Obscurin-myosin light chain kinase', with keywords Kinase and Serine/threonine-protein kinase, and InterPro finds two complete protein kinase domains (IPR000719/PF00069, two occurrences) - so binding it satisfies the GO:0019901 definition of binding to a protein kinase. The interaction evidence is strong and mapped rather than a single pull-down: ankyrin-B and obscurin co-localise at the myocyte M-line and co-immunoprecipitate from heart; the interaction was localised to a novel exon 43' and two motifs in the ankyrin-B regulatory domain, both of which are required; a GFP-regulatory-domain construct acts as a dominant negative by competing for obscurin at the M-line; and the human R1788W variant adjacent to the obscurin-binding motif increases obscurin binding. The authors state that the exon-43'-containing transcript is the primary cardiac isoform in human and mouse, and the co-immunoprecipitation was from heart. Transfer to the supplied mouse Ank2 is safe: it is 84.6% identical to human ANK2 over 3887 aligned positions in my alignment.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC2581558/ (PMID 18782775) - Cunha SR, Mohler PJ, J Biol Chem 2008, 'Obscurin targets ankyrin-B and protein phosphatase 2A to the cardiac M-line' (abstract read): exon 43' mediates obscurin interaction; two required motifs; co-IP from heart; dominant-negative competition; R1788W increases obscurin binding.",
+    "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q01484&goId=GO:0019901 - human ANK2 'enables GO:0019901', IPI, PMID:18782775, with UniProtKB:Q5VST9, assigned by BHF-UCL.",
+    "https://rest.uniprot.org/uniprotkb/search?query=accession:Q5VST9 - Obscurin, EC 2.7.11.1, keywords include Kinase and Serine/threonine-protein kinase; https://www.ebi.ac.uk/interpro/api/entry/all/protein/uniprot/Q5VST9/ shows two IPR000719 protein kinase domains.",
+    "Sequence comparison performed locally by me: packet mouse Q8C8R3 vs human Q01484 FASTA from UniProt, Biopython PairwiseAligner/BLOSUM62, 3287/3887 = 84.6% identity."
+   ],
+   "limitations": "The GO term is satisfied because the interaction partner happens to be a kinase; the mapped binding site is in obscurin's non-kinase region, so the annotation says nothing about kinase-domain recognition or about regulation of kinase activity. I read the abstract of the primary paper rather than its figures. The ankyrin-B isoform question matters in principle (the obscurin-binding exon 43' is alternatively spliced), and I did not verify which isoform the 3898-residue packet sequence corresponds to; the authors report that the exon-43' isoform predominates in mouse heart.",
+   "adjudication_question": null
+  },
+  {
+   "assertion_id": "928ccbd7cbbfc119d8ba7775d1093978032796836e86f47a5d0a392de6f28d5c:GO:0020037",
+   "decision": "do_not_accept",
+   "support_type": "none_established",
+   "supported_relation": null,
+   "rationale": "P13498 is p22phox (CYBA), the alpha/light subunit of flavocytochrome b558. The holoenzyme is a haemoprotein, but the haems belong to the other subunit. The cryo-EM structure of the human NOX2 core complex shows the NOX2 (gp91phox) transmembrane domain forming 'an hourglass-shaped scaffold that sandwiches two heme groups orthogonal to the membrane plane', with 'Conserved histidine residues on TM3 and TM5 coordinate the hemes (His101, His115, His209, His222)' - all four ligands on NOX2. p22 is described as a four-helix transmembrane fold (TM1-TM4) and is given no haem-coordinating residue and no cofactor. The packet's sole support is an InterPro IEA from IPR007732, whose own description states that flavocytochrome b558 'is a heterodimer that consists of a large glycoprotein gp91phox ... (beta subunit) and a small protein p22phox (alpha subunit)'; the GO:0020037 mapping on that family entry therefore reflects a property of the complex, and specifically of the partner subunit, rather than of p22phox. Nothing I found attributes haem binding to p22phox itself, so 'enables heme binding' is not supported.",
+   "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC9568551/ (PMID 36241643) - Noreng S et al., 2022, 'Structure of the core human NADPH oxidase NOX2': quoted sentences on the hourglass-shaped NOX2 scaffold sandwiching the two haems and on the coordinating histidines His101, His115, His209, His222 on NOX2 TM3/TM5; p22 described as a four-transmembrane fold with no cofactor assigned.",
+    "https://www.ebi.ac.uk/interpro/entry/InterPro/IPR007732/ - 'Cytochrome b558 alpha-subunit' family description, which assigns the haem-containing catalytic core to the heterodimer and distinguishes gp91phox (beta) from p22phox (alpha).",
+    "https://rest.uniprot.org/uniprotkb/P13498 - human CYBA, 195 aa, cytochrome b-245 light chain (record consulted for identity of the packet sequence)."
+   ],
+   "limitations": "p22phox is genuinely required for the maturation and stability of flavocytochrome b558, and loss of p22phox abolishes the cytochrome b558 spectrum in cells, so an argument could be made for a 'contributes_to' relation to haem binding by the complex. I did not find structural or biochemical evidence that p22phox contacts haem, which such a relation would need, and the asserted relation here is 'enables'. The automated read of the structure paper covered roughly the first 100,000 characters, so I did not inspect every supplementary statement about p22 ligands.",
+   "adjudication_question": null
+  }
+ ],
+ "unreviewed": [],
+ "summary": "Reviewed 25 of 25 assertions in batch 4. Decisions: accept=14, do_not_accept=11."
+}

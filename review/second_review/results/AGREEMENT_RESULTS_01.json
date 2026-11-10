@@ -1,0 +1,373 @@
+{
+  "assertions": [
+    {
+      "assertion_id": "7564ae12de848e03bee8c8542ffebcfbfb00e42928723026a4347856fad4a272:GO:0032183",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The mouse annotation is an orthology transfer from rat Tollip (A2RUW1), which RGD annotated IPI to SUMO binding from Ciarrocchi et al. 2009 (PMID:19198660). In that study, full-length SUMO-1 (aa 1-101) came out of a yeast two-hybrid screen with a rat Tollip bait. In Fig. 1A, in vitro-translated, 35S-labelled B42-SUMO-1 was then pulled down by GST-Tollip but not by GST alone, and B42 alone did not bind. I viewed the figure image and saw this directly. This is direct binding evidence for SUMO, which matches the GO definition. Mouse Tollip (supplied sequence) differs from rat Tollip A2RUW1 at only 1 of 274 residues (273/274 identical; my global alignment), so the transfer is sound.",
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC2635935/ (Ciarrocchi et al. 2009 PLoS One 4:e4404, PMID:19198660). Full text read via Europe PMC: Table 1 lists the Y2H prey SUMO-1 (1-101), 1 colony; the bait was rat Tollip (BC133067). Fig. 1A (image viewed): GST-Tollip pulls down 35S-B42-SUMO-1; GST and B42 controls are negative. Fig. 5: Tollip colocalizes with SUMO-1 in nuclear bodies. Rat Tollip.",
+        "QuickGO annotation for UniProtKB:A2RUW1 (rat Tollip): GO:0032183 IPI, PMID:19198660, with RGD:1306919, assigned by RGD.",
+        "https://rest.uniprot.org/uniprotkb/A2RUW1.fasta, compared with the supplied mouse sequence (Biopython global alignment, BLOSUM62): 273/274 identical."
+      ],
+      "limitations": "The evidence is moderate. SUMO-1 gave a single Y2H colony, compared with 45 for Ubc9 and 71 for ubiquitin. The pull-down used reticulocyte-lysate-translated prey rather than purified proteins, so the interaction may not be direct. No SUMO-binding region or SIM has been mapped, and Tollip is itself sumoylated (Fig. 3B), which could contribute to the two-hybrid signal. Within the binding assay the pull-down is specific, so I judged it adequate for this broad binding term. I found no later independent confirmation.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "676c344a7056b61c94f638b3577b18df6a3ad959e029a6f31db58a294b50ae46:GO:0016787",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "Q57YJ9 (Tb927.8.5980) is the Trypanosoma brucei Rad3/XPD-subfamily helicase (PANTHER PTHR11472:SF1, the TFIIH XPD subunit). Its ATP hydrolysis, which is phosphoric-anhydride hydrolysis, falls under the broad parent term hydrolase activity. Purified yeast Rad3 is a single-stranded-DNA-dependent ATPase (Sung et al. 1987, PMID:2957691), and its helicase depends on ATP hydrolysis (PMID:2827162). Human XPD ATPase activity has also been shown experimentally (UniProt EXP, PMID:8413672). The supplied protein is about 44% identical to human XPD over its full length. It conserves the Walker A lysine (K64, equivalent to XPD K48, whose mutation abolishes ATPase/helicase activity), the DEAH box (D240-E241, equivalent to XPD D234-E235) and the four Fe-S cysteines (C132/C150/C163/C196). This supports the inference that it hydrolyzes ATP.",
+      "sources": [
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:2957691 (Sung et al. 1987 PNAS, abstract): purified S. cerevisiae RAD3 hydrolyzes ATP to ADP + Pi in a ssDNA-dependent manner.",
+        "PMID:2827162 (Sung et al. 1987 PNAS, abstract): RAD3 is a 5'-3' DNA helicase whose activity requires ATP hydrolysis. S. cerevisiae.",
+        "QuickGO: P06839 (Rad3) GO:0016887 EXP (PMID:2827162, 2846277, 2957691); P18074 (human XPD) GO:0016887 EXP (PMID:8413672, 9771713).",
+        "UniProt Q57YJ9 entry (rest.uniprot.org): RAD3/XPD subfamily, PANTHER PTHR11472:SF1, Helicase ATP-binding domain 23-291.",
+        "My own Biopython global alignments: Q57YJ9 vs human XPD P18074 is 44% identical over aligned columns, and vs yeast Rad3 P06839 is 42%. Key residues map as stated in the rationale.",
+        "Lee et al. 2009 NAR (doi:10.1093/nar/gkp236), via search result only: TbXPD is a TFIIH subunit needed for SL RNA transcription. No ATPase assay on the T. brucei protein."
+      ],
+      "limitations": "There is no direct assay on the T. brucei protein. Acceptance rests on orthology and conservation of the catalytic motifs. The term is very broad, and it is the ATP hydrolysis (ATPase) activity that satisfies it. The helicase reaction itself is classified as EC 5.6.2.3 (isomerase).",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "ab00c9f05d6e0f42bb7f78dfe68d68b098b7d030b7ac572e5ac49ad1f3b738a7:GO:0003677",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "A0A1D8PQH0 is Candida albicans RAD3 (orf19.7119), which is 78.6% identical to S. cerevisiae Rad3 over its full length in my global alignment, so it is a clear ortholog. Purified S. cerevisiae Rad3 binds DNA. It binds UV-damaged DNA preferentially, depending on ATP and negative superhelicity (Sung et al. 1994, PMID:8132553; SGD IDA for damaged DNA binding). It is also a ssDNA-dependent ATPase and a 5'-3' helicase that translocates on single-stranded DNA (PMIDs 2957691, 2827162). Both activities require non-covalent DNA engagement, which satisfies the broad term DNA binding.",
+      "sources": [
+        "PMID:8132553 (Sung et al. 1994 J Biol Chem, abstract via Europe PMC): yeast RAD3 protein binds UV-damaged DNA preferentially, and the binding is ATP-dependent. S. cerevisiae.",
+        "PMID:2957691 and PMID:2827162 (Sung et al. 1987 PNAS, abstracts): purified RAD3 is a ssDNA-dependent ATPase and a 5'-3' DNA helicase that moves along ssDNA.",
+        "QuickGO: P06839 GO:0003684 (damaged DNA binding, a child of GO:0003677) IDA PMID:8132553, SGD.",
+        "My own Biopython global alignment: A0A1D8PQH0 vs P06839 gives 601/765 identical (78.6%). UniProt A0A1D8PQH0 is in PANTHER PTHR11472:SF1 (TFIIH XPD)."
+      ],
+      "limitations": "There is no direct assay on the C. albicans protein; acceptance is by orthology to an experimentally characterized protein in a closely related yeast. I read abstracts only for the Rad3 papers.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "7692819e223e3c2bca2f5f3fdb0cce8a00265cfffc25f434afdfe9b081742424:GO:1904047",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The supplied protein is the Dam DNA adenine methyltransferase of Edwardsiella. It is 66% identical (180/271 aligned) to E. coli Dam (P0AEE8) in my global alignment, and it keeps every residue that is known to bind AdoMet. E. coli Dam binds S-adenosyl-L-methionine experimentally: in AdoMet cross-linking, mutations in the motif IV DPPY (D181, P183) abolished AdoMet binding while other mutants still bound it (Guyot et al. 1993, PMID:8341592). Crystal structures of E. coli Dam (e.g. PDB 2G1P) contain the cofactor product AdoHcy in the motif I/IV pocket. All mapped AdoMet-contact residues are identical in the supplied sequence: W10, K14, motif I F-V-G-A-G-S (G37-S40), D54, and DPPY (D181-Y184). The same SAM-dependent enzyme function is therefore well supported.",
+      "sources": [
+        "PMID:8341592 (Guyot et al. 1993 Nucleic Acids Res, abstract via Europe PMC): Dam region IV (DPPY) mutations abolish activity and AdoMet cross-linking, while region III mutants keep AdoMet cross-linking. UniProt P0AEE8 MUTAGEN features (D181, P183) attribute these mutants to E. coli Dam.",
+        "RCSB PDB 2G1P (Horton et al. 2006 J Mol Biol): E. coli Dam-DNA complex. Its nonpolymer entities are SAH (S-adenosyl-L-homocysteine) and glycerol (RCSB API).",
+        "UniProt P0AEE8 BINDING features for S-adenosyl-L-methionine at 10, 14, 54 and 181.",
+        "My own Biopython alignment of the supplied sequence vs P0AEE8: 66% identity, with key residues mapped as stated in the rationale."
+      ],
+      "limitations": "There is no direct assay on the Edwardsiella protein. The crystal structure shows AdoHcy rather than AdoMet, and the direct AdoMet evidence comes from cross-linking (abstract only). Given near-complete conservation of the cofactor site, I consider the inference strong.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "05eb8f1a36ba790f88e4aa24996d86f186f71f1a54d3cf3bee948e9304d0ef93:GO:0070628",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "The supplied sequence is human RAD23B (hHR23B, P54727). Hiyama et al. 1999 showed experimentally that hHR23B binds the 26S proteasome subunit S5a (PSMD4/Rpn10). The evidence was a yeast two-hybrid assay and co-precipitation with deletion mutants mapping the interaction to the hHR23 ubiquitin-like (UBL) domain. In HeLa extracts, hHR23 proteins co-sedimented with S5a at the 26S proteasome position on glycerol gradients, and hHR23B inhibited proteasomal degradation in reticulocyte lysate. Binding of the UBL to a proteasome subunit, together with co-sedimentation with the 26S particle, meets the definition of proteasome binding. The interaction is also the conserved function of Rad23-family UBLs, which yeast and structural studies establish.",
+      "sources": [
+        "PMID:10488153 (Hiyama et al. 1999 J Biol Chem 274:28019, doi:10.1074/jbc.274.39.28019). I read the abstract via Europe PMC. It reports hHR23B and hHR23A binding S5a by Y2H; co-sedimentation with the 26S proteasome in HeLa S100 extracts; inhibition of 125I-lysozyme degradation by hHR23B; and co-precipitation mapping to the UBL domain. Human RAD23B."
+      ],
+      "limitations": "Only the abstract was read. Part of the evidence uses a single proteasome subunit (S5a) and co-sedimentation rather than purified intact 26S proteasome. The packet's UniProt object_name for P54727 ('Lysine-specific demethylase RAD23B') looks like a naming artifact and does not affect the assessment.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "b63a601ab2796248420d635d949b1626b4eec60203aaac43be6c4d5d667935f2:GO:0044548",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "This is an orthology transfer from human IQGAP1 (P46940) to mouse Iqgap1 (Q9JKF1). Human IQGAP1 binds S100P directly. Heil et al. 2011 showed that bacterially expressed S100P binds purified GST-IQGAP1 Ca2+-dependently but does not bind GST (Fig. 1B). They mapped binding to the IQ domain by pull-down (Fig. 3) and measured an SPR KD of about 0.2 uM for the IQ domain (Fig. 4). An S100P EF-hand-loop deletion reduced affinity about 10-fold. Independently, S100B binds IQGAP1 IQ motifs (Mbele et al. 2002). Mouse and human IQGAP1 are 96.0% identical over 1657 residues, and the IQ-motif region (human 745-864) is 117/120 identical in my alignment. The inference is therefore well supported.",
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3044979/ (Heil et al. 2011 J Biol Chem, PMID:21177863). Full text: Fig. 1B purified-protein pull-down (Ca2+-dependent); Fig. 3 IQ-domain mapping; Fig. 4 SPR KD ~0.2 uM; Fig. 5 S100P delta21-25 mutant. Human IQGAP1/S100P.",
+        "PMID:12377780 (Mbele et al. 2002 J Biol Chem, abstract): S100B interacts with IQGAP1, with IQ motifs as the minimal interaction sites.",
+        "QuickGO: P46940 GO:0044548 IPI PMID:25554515 with S100P P25815 (Nammalwar et al. 2015, abstract): Ca2+-dependent S100P-IQGAP1 complexes.",
+        "My own Biopython alignment of Q9JKF1 vs P46940: 1590/1657 identical; IQ region 117/120 identical."
+      ],
+      "limitations": "There is no direct assay on the mouse protein. The inference rests on near-identity of the binding region.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "bc09f474c8d396de8c69d6095b0d5a30eacd08de85bbb1a2fbbda4aa6329dba8:GO:0005524",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "P24425 is the thymidine kinase of equine herpesvirus 4 (EHV4-TK), an ATP-dependent nucleoside kinase (thymidine + ATP = dTMP + ADP). Gardberg et al. 2003 solved crystal structures of this exact protein (residues 23-352). PDB 1P72 has thymidine and ADP bound, and PDB 1P73/1P75 have the bisubstrate analogs Ap4T (TP4A) and Ap5T (TP5A), whose adenosine-polyphosphate part occupies the ATP donor site. UniProt records ATP binding at the P-loop (32-39, GVYGIGKST) and R192 with experimental evidence from these structures. Structural occupancy of the nucleotide-donor site by ADP and ATP-mimicking bisubstrate analogs, together with the ATP-dependent kinase activity, establishes ATP binding.",
+      "sources": [
+        "PMID:14527394 (Gardberg et al. 2003 Structure 11:1265, abstract via Europe PMC): EHV4-TK crystal structures with thymidine/ADP, thymidine/SO4, TP4A and TP5A, and dual thymidine/thymidylate kinase activity.",
+        "RCSB PDB API: 1P72 ligands ADP + THM; 1P73 ligand 4TA (P1-(5'-adenosyl)P4-(5'-(2'-deoxythymidyl)) tetraphosphate); 1P75 ligand T5A.",
+        "UniProt P24425: BINDING 32..39 ATP and 192 ATP (ECO:0000269 PubMed:14527394; PDB 1P72); catalytic activity thymidine + ATP (ECO:0000269 PubMed:14527394)."
+      ],
+      "limitations": "No crystal shows ATP itself; the bound ligands are ADP and ATP-mimicking bisubstrate analogs. I could not open the full paper (publisher 403) to confirm the kinetic assay conditions. The ATP-dependence of herpesvirus TK catalysis is standard.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "c31a46c028ae185f039a3d84753566a08576928895af4882c62345173f49fcb5:GO:0008289",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "Human ACOT11 (Them1/StarD14, Q8WXI4; the supplied 607-aa sequence) contains a C-terminal START domain (375-585). Tillman et al. 2020 showed directly that the purified human Them1 START domain binds lipids. Seven long-chain fatty acids co-purified, enriched over an MBP control (affinity purification-MS; Fig. 1A,B). Microscale thermophoresis gave binding curves for myristic, palmitic and stearic acid (Fig. 1C,D). LPC species co-purified (Fig. 2A-C), and 18:1 LPC bound with a KD of about 8.5 uM by fluorescence, with no change for MBP (Fig. 2D). A crystal structure (PDB 6VVQ) shows myristic acid in the START pocket. The authors also modeled palmitic acid into density in an earlier, higher-resolution Them1 START structure from Thorsell et al., which I take to be PDB 3FO5 (not checked). This is direct evidence for lipid binding.",
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7486800/ (Tillman et al. 2020 PNAS, PMID:32820071). Full text: Figs. 1-2 (AP-MS, MST, Cy5 fluorescence KD 8.5 uM for 18:1 LPC), Fig. 1E-G (myristic acid in PDB 6VVQ; palmitic acid from Thorsell et al. structure), Fig. 4 (DSF). Human Them1 START domain.",
+        "UniProt Q8WXI4: START domain 375-585; PDB 3FO5 and 6VVQ cover residues 339-543."
+      ],
+      "limitations": "Fatty-acid affinities are micromolar, and the crystal ligand density was seen in only one of four monomers. Binding was shown with the isolated START domain, which is part of the supplied full-length sequence.",
+      "adjudication_question": null
+    }
+    ,
+    {
+      "assertion_id": "c1874e4a2a96216109a3cabf02a9d5841209f7eb273f766971fc49bee6d42452:GO:0000166",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "O28126 is the Archaeoglobus fulgidus CCA-adding enzyme (class I tRNA nucleotidyltransferase), whose reaction consumes CTP and ATP. UniProt lists 42 PDB entries for this protein. I queried the RCSB API for each: 1R8B contains ATP, 1R89 and 1UEU and several 2ZH*/4X4* entries contain CTP, 1R8C contains UTP, 1UEV and 1TFW contain ATP, and 3OVA/4X4R/4X4U/4X4V contain AMPcPP (APC). These are direct structural demonstrations that this protein binds nucleotides, which satisfies the broad GO term.",
+      "sources": [
+        "UniProt O28126 (CCA-adding enzyme, Archaeoglobus fulgidus DSM 4304, taxon 224325), PDB cross-references.",
+        "RCSB PDB data API, ligand composition I retrieved per entry: 1R89 (CTP), 1R8B (ATP), 1R8C (UTP), 1TFW (ATP), 1TFY (CTP), 1UEU (CTP), 1UEV (ATP), 2DRA/2ZH6 (ATP), 2DR8/2DVI/2ZHA (CTP), 3OV7/3OVB (ATP), 3OVA/4X4R/4X4U/4X4V (APC, AMPcPP), 3OVS/4X4O/4X4Q/4X4S (CTP). Titles: 'Crystal Structures of an Archaeal Class I CCA-Adding Enzyme and Its Nucleotide Complexes' and the AFCCA tRNA-minihelix complex series."
+      ],
+      "limitations": "I verified ligand identity through the PDB API rather than by inspecting electron density. The nucleotide-complex structures are of the same A. fulgidus enzyme, so no cross-species inference is needed.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "3313530069f164536fd6b99bc8fe7812d1de792ac1167f930f191f4afed775ec:GO:0004722",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The annotation is an IBA/TreeGrafter transfer of the human PGAM5 function (serine/threonine-protein phosphatase) to Plasmodium falciparum PF3D7_0413500. The only experimental work on this protein is Hills et al. 2011, which calls it PfPGM2, solves its crystal structure (PDB 3EOZ, deposited as 'phosphoglycerate mutase, PFD0660w'), and concludes it is a phosphatase with residual mutase activity. The abstract and the sources I could reach name no substrate, and in particular no phospho-serine/threonine protein or peptide substrate; GFP-tagged PGM2 is cytoplasmic in P. berghei, not mitochondrial. The protein is only about 35% identical to human PGAM5 overall (my global alignment), and the key active-site region differs: human PGAM5 carries the atypical RHS motif (R104-H105-S106), whereas PF3D7_0413500 has the canonical histidine-phosphatase RHG motif (R109-H110-G111), as do ordinary phosphoglycerate mutases. Catalytic histidine conservation shows only that it is a histidine-phosphatase superfamily enzyme, not that it dephosphorylates protein Ser/Thr residues. Support for the exact GO term is not established.",
+      "sources": [
+        "PMID:21689687 (Hills et al. 2011 Mol Biochem Parasitol 179:69, abstract via Europe PMC): PfPGM2 structure and enzymology; 'a phosphatase with a residual level of mutase activity'; GFP-PGM2 cytoplasmic in P. berghei. Full text is behind Elsevier; my attempts to fetch it were redirected to an institutional login, so I read only the abstract and repository records (eprints.gla.ac.uk/56865, which has no full text).",
+        "UniProt Q8I1V2: 'Belongs to the phosphoglycerate mutase family. BPG-dependent PGAM subfamily' (ARBA); EMBL annotation Isomerase; CDD cd07067 HP_PGM_like; PDB 3EOZ.",
+        "RCSB/PDBj records for 3EOZ: 'Crystal Structure of Phosphoglycerate Mutase from Plasmodium falciparum, PFD0660w', EC 5.4.2.1.",
+        "My own Biopython alignments: Q8I1V2 vs human PGAM5 Q96HS1, 95/274 identical globally (34.7%), 84/200 in the best local alignment; active-site mapping as described."
+      ],
+      "limitations": "I could not read the Hills et al. full text, which may contain a substrate panel. If that paper tested phosphopeptides or phosphoproteins, the decision could change. My conclusion is that sufficient support is not established, not that the protein lacks the activity.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "a3bc566baab8685fe7d30aa1ed957a74debd409e26cbaa2da29ea3e3f2ab327e:GO:0071933",
+      "decision": "needs_adjudication",
+      "support_type": "experimental",
+      "supported_relation": null,
+      "rationale": "Two careful studies with purified Arp2/3 complex reach opposite conclusions about the function this assertion claims, and both are methodologically serious. Rocca et al. 2008 (Nat Cell Biol) report that immobilised GST-PICK1 binds 10 nM purified Arp2/3 complex (Fig. 1e), map the binding region to PICK1 residues 280-416 (Fig. 3a), show that the W413A point mutant abolishes Arp2/3 binding while leaving GluR2 binding intact (Fig. 3b), co-immunoprecipitate PICK1 with the Arp2/3 p34/ARPC2 subunit from cortical neurons (Fig. 1f), and show PICK1 displaces GST-VCA from Arp2/3 (Fig. 2d). Madasu et al. 2015 (Mol Biol Cell), using purified full-length human PICK1 (the same protein as the assertion target), found no measurable heat of binding to purified Arp2/3 by ITC with a validated positive control (Fig. 5A-C), and no inhibition of Arp2/3-mediated pyrene-actin polymerisation by PICK1, MBP-PICK1, GST-dimerised acidic C-terminal tail, or PICK1 plus GluA2/DAT peptides (Fig. 5D-I). They explicitly state the conclusion is contrary to previous reports. I found no later study, rebuttal or erratum that resolves this.",
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC2664613/ (Rocca et al. 2008, PMID:18297063). Full text read; figures as cited. Rat neurons; GST-PICK1 (rat) with purified Arp2/3.",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4454178/ (Madasu et al. 2015, PMID:25657323). Full text read; ITC and pyrene-actin as cited. Full-length human PICK1 (UniProt Q9NRD5, the assertion's protein); Arp2/3 purified from brain.",
+        "My own Biopython alignment: human PICK1 Q9NRD5 vs rat Pick1 Q9EP80, 404/415 identical (97.3%); the Rocca binding region 280-416 is 125/137 identical and W413/W412 is conserved. So the species difference does not explain the discrepancy.",
+        "Reviews after 2015 (e.g. Chanez-Paredes & Schnoor 2019 Cell Mol Life Sci, PMID:31073744) still list PICK1 as an endogenous Arp2/3 inhibitor, i.e. the field has not settled on either result."
+      ],
+      "limitations": "The ISS annotation transfers from rat Pick1 (Q9EP80) to human PICK1, and the two proteins are 97% identical, so species is not the issue. The disagreement is between assay types: affinity pull-down and cellular co-IP versus ITC and functional polymerisation assays. ITC can miss low-enthalpy binding, and PICK1 aggregation above ~1 mg/ml limited the concentrations Madasu et al. could use; conversely, GST pull-downs can report indirect or avidity-driven association.",
+      "adjudication_question": "Does the failure of Madasu et al. 2015 to detect PICK1-Arp2/3 binding by ITC and to reproduce Arp2/3 inhibition with purified components override the direct GST-PICK1 pull-down of purified Arp2/3, the W413A specificity control and the neuronal co-IP of Rocca et al. 2008? Equivalently, is a negative ITC result at the concentrations permitted by PICK1 aggregation sufficient to retract an affinity-based binding annotation?"
+    },
+    {
+      "assertion_id": "9df783062a35d2ac9b279ebdee01d886b0282cb47a352c01a4c41c770548d8c7:GO:0004520",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "Q09683 is Schizosaccharomyces pombe Rad32, the Mre11 orthologue. Zdravkovic et al. 2021 purified the S. pombe Mre11(Rad32)-Rad50 (MR) and Mre11-Rad50-Nbs1 (MRN) complexes and showed endonucleolytic cleavage of a fluorescently labelled 70-bp duplex whose ends were blocked by streptavidin-biotin, stimulated by phosphorylated Ctp1 and by the Ctp1 CT15 peptide (Fig. 2A-B, Fig. 4B-D). The nuclease-dead Mre11 H134S complex produced no cleavage product even with phosphorylated Ctp1 (Fig. 2B), showing that the incision is made at the Rad32/Mre11 active site. Because the ends are protein-blocked, cleavage must be internal, which matches 'creating internal breaks' in the GO definition.",
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7980430/ (Zdravkovic et al. 2021 PNAS 118:e2016287118). Full text read: purified S. pombe MR and MRN; streptavidin-blocked 70-bp dsDNA substrate (Fig. 2A); cleavage with phospho-Ctp1 (Fig. 2B); Mre11-H134S nuclease-dead control (Fig. 2B); CT15 peptide stimulation of MR (Fig. 4B-D).",
+        "UniProt Q09683 (rad32, S. pombe), 'Double-strand break repair protein rad32'."
+      ],
+      "limitations": "Activity was assayed only in the MR/MRN complex and required Ctp1 or the CT15 peptide; no Mre11-alone experiment is reported. Because the catalytic site is in Rad32 itself (H134S abolishes cleavage), I record 'enables' rather than 'contributes_to', but the activity is complex- and cofactor-dependent.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "d0a06a66686e8769d886c37d3efa56005a237ab07fb6dbffc8bc5592bf4e148d:GO:0004482",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "A2T3S5 is rotavirus A SA11-H96 VP3, the viral mRNA capping enzyme. Chen et al. 1999 showed that rotavirus open cores (containing VP1, VP2 and VP3) cap and methylate exogenous RNA in the presence of S-adenosyl-L-methionine, and that UV cross-linking labels VP3 specifically as the SAM-binding protein; UniProt attributes EC 2.1.1.56 to this entry with experimental evidence (ECO:0000269) from that paper. Kumar et al. 2020 confirmed methyltransferase activity with recombinant rotavirus A VP3 (accession ABC66299, which is 86.7% identical to the supplied sequence in my alignment): SAH production in a colorimetric MTase assay with GpppG plus SAM, methyl transfer onto a rotavirus segment-10 transcript resolved by TLC against GpppG and m7GpppG standards, and more efficient GMP transfer in the presence of SAM, which they interpret as N7-methylation of GMP preceding transfer. Their 2.7 A structure assigns an N7-MTase domain (residues 182-255 and 441-560) flanking the 2'-O-MTase domain.",
+      "sources": [
+        "PMID:10603323 (Chen, Luongo, Nibert, Patton 1999 Virology 265:120; abstract via Europe PMC): open cores cap and methylate RNA with SAM; UV cross-linking shows VP3 specifically binds SAM; authors conclude VP3 is the multifunctional capping enzyme.",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7159914/ (Kumar et al. 2020 Sci Adv 6:eaay6410). Full text read: recombinant VP3 MTase assays and TLC (fig. S1A-D), N7/2'-O-MTase domain assignment (Fig. 1B-D, Fig. 2C).",
+        "UniProt A2T3S5: 'Includes: mRNA (guanine-N(7))-methyltransferase; EC=2.1.1.56 {ECO:0000255|HAMAP-Rule:MF_04128, ECO:0000269|PubMed:10603323}'.",
+        "My own Biopython alignment: NCBI ABC66299 (the VP3 used by Kumar et al.) vs A2T3S5, 724/835 identical (86.7%)."
+      ],
+      "limitations": "Neither paper demonstrates N7 regiospecificity by an unambiguous assay (e.g. nuclease P1 digestion with m7GpppG versus GpppGm standards resolved separately). Kumar et al. infer N7 methylation indirectly, note that the SAM-binding residues of the bluetongue virus VP4 N7-MTase are not fully conserved in VP3, report no SAM/SAH bound in the structure, and provide no mutational test of the N7-MTase domain. The recombinant work used a related rotavirus A VP3 (86.7% identical), not SA11-H96 itself. Cap-0 formation by rotavirus is nevertheless long established, so I judge the exact term supported.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "369958a465f10dfe6cc02cdd26ceed8fc8917c0c5a8f4e4fc4a2d322479aecb9:GO:0043015",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The mouse annotation is an ISO transfer from human BRCA2 (P51587), whose GO:0043015 annotation rests on a single paper, Nakanishi et al. 2007 (PMID:17286961, IPI with UniProtKB:P23258 = gamma-tubulin TUBG1). That paper's abstract concerns a centrosomal localization signal in BRCA2 and the consequences of blocking centrosomal BRCA2; the gamma-tubulin evidence is a reciprocal co-immunoprecipitation from HeLa cells (Fig. 2C, which I could only read through a GO curation wiki quotation, not the paywalled article). That is a single, unreplicated co-IP that does not distinguish direct binding from co-residence in a centrosomal complex, and no interaction region or residues were mapped. Because no binding determinant is known, the orthology transfer cannot be checked: in my global alignment mouse Brca2 (P97929) and human BRCA2 share only 1970/3287 aligned residues (59.9% identity), and I found no mouse-specific evidence of a Brca2-gamma-tubulin interaction. Support for the exact term in the supplied mouse protein is not established.",
+      "sources": [
+        "PMID:17286961 (Nakanishi A, Han X, Saito H, Taguchi K, Ohta Y, Imajoh-Ohmi S, Miki Y, 2007 Biochem Biophys Res Commun 355:34). Abstract read via Europe PMC; it does not mention gamma-tubulin. Not in PMC; full text not accessible to me.",
+        "QuickGO annotation for UniProtKB:P51587 GO:0043015, IPI, PMID:17286961, with UniProtKB:P23258, assigned by UniProt, 2007-08-07 (the only non-IEA GO:0043015 annotation for human BRCA2).",
+        "Gene Ontology curation wiki page for PTHR11289, reached only through a search-engine summary (the page itself returned HTTP 403): it quotes the paper as co-precipitating BRCA2 with gamma-tubulin from HeLa cells, with a reciprocal pull-down, the authors concluding a direct or indirect interaction.",
+        "My own Biopython global alignment of P97929 vs P51587: 1970 identical over 3287 aligned columns."
+      ],
+      "limitations": "I could not read the primary figure; my description of it comes from a secondary curation quotation surfaced by a search engine, which I treat as unverified. If the original paper contains a direct-binding assay or a mapped interaction region, the assessment could change. This is a judgement that support is insufficient, not evidence against the interaction.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "a425fb2811dcee2c86b5b9a61b04d14e44daa96c2b12186ae8e497b6467dc5bd:GO:0005506",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "The supplied 352-residue sequence is identical to UniProt Q8CM25, the photosystem II D2 protein (PsbD) of Thermosynechococcus (elongatus/vestitus) BP-1, taxon 197221 (I downloaded the UniProt FASTA and compared it character by character). Crystal structures of photosystem II from this same organism contain the non-heme Fe(II): PDB 2AXT (Loll et al., 3.0 A) lists FE2 among its ligands in the RCSB API, and its chain D covers PsbD residues 1-352. The non-heme iron sits on the pseudo-twofold axis between D1 and D2 and is coordinated by two D2 histidines; UniProt annotates Q8CM25 BINDING 214 and 268 as 'Fe cation... ligand shared with heterodimeric partner', and I confirmed that positions 214 and 268 of the supplied sequence are both histidine.",
+      "sources": [
+        "UniProt Q8CM25 (psbD1/psbD2, Thermosynechococcus vestitus BP-1): BINDING 214 and 268, Fe cation (ChEBI:CHEBI:24875), shared with heterodimeric partner; PDB cross-references including 1S5L, 2AXT, 4PJ0, 11YO.",
+        "RCSB PDB API for 2AXT: non-polymer components include FE2 (Fe(II) ion), CLA, PHO, PQ9, OEC, BCT.",
+        "My own checks: supplied sequence equals the Q8CM25 FASTA exactly (352 aa); residues 214 and 268 are His."
+      ],
+      "limitations": "The iron site is shared between the D1 (PsbA) and D2 (PsbD) subunits, so D2 supplies only part of the coordination sphere; an argument could be made for 'contributes_to'. I record 'enables' because D2 itself directly ligates the metal through His214 and His268.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "7daf75aa27336830845f26d94819026d80b7c71a78d18ab20ae274bf10b1a7bf:GO:0030971",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "E7F5F0 is zebrafish Alkal2a. Fadeev et al. 2018 tested the three zebrafish Alkals in cell culture and found that Alkal2a activates both zebrafish Ltk and human ALK, two receptor tyrosine kinases: coexpression with DrLtk in PC12 cells induced neurite outgrowth, blocked by the ALK inhibitor lorlatinib, and raised DrLtk phosphorylation (pALK-Y1278) and pERK (Fig. 3C-F); conditioned medium containing Alkal2a, but not Alkal1 or Alkal2b, activated endogenous human ALK in IMR-32 and NB1 neuroblastoma cells (Fig. 3G-H); and DrAlkal2a specifically produced neurite outgrowth with HsALK (Fig. S2D). Genetically, alkal mutants phenocopy ltk nulls in iridophore development. Receptor-specific, kinase-dependent activation by the ligand, together with the structurally characterised ALKAL-ALK/LTK ectodomain complexes of the same family (De Munck et al. 2021 Nature), supports binding to a receptor tyrosine kinase.",
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC5789956/ (Fadeev et al. 2018 PNAS 115:E630, PMID:29317532). Full text read for the cell-culture experiments and figure numbers cited above. Zebrafish Alkal2a; DrLtk and human ALK.",
+        "PMID:34646012 (De Munck et al. 2021 Nature, 'Structural basis of cytokine-mediated activation of ALK family receptors'; abstract via Europe PMC): crystal structures of 2:1 ALK-ALKAL2 and LTK-ALKAL1 complexes (human proteins).",
+        "UniProt E7F5F0: 'ALK and LTK ligand 2a', cytokine acting as a physiological ligand for receptor tyrosine kinases, ALKAL family."
+      ],
+      "limitations": "Fadeev et al. report no direct binding assay (no SPR, co-IP or pull-down) for zebrafish Alkal2a with Ltk or ALK; the zebrafish evidence is receptor activation in cells plus genetics. The direct ligand-receptor structures are of the human orthologues. Ligand-dependent, inhibitor-sensitive activation of a specific RTK is nevertheless strong evidence of engagement of that receptor.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "356cddd146593ce5445e5a944cbd179758583451f4c69aff265d55bed936101e:GO:0015631",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "Q8CDP0 is mouse cytosolic carboxypeptidase 3 (CCP3/Agbl3). Tort et al. 2014 showed that mouse CCP3 acts on tubulin: expressing a truncated, active mouse CCP3 construct in HEK293T cells increased Delta2-tubulin, the product of removing the C-terminal glutamate from the alpha-tubulin tail, whereas the catalytically dead E540 mutant did not (Fig. 2B), and Delta2-tubulin labelling appeared along microtubules in CCP3-expressing cells (Fig. 2C). Detyrosinated tubulin was unchanged, so the effect is specific to C-terminal deglutamylation. Processing the alpha-tubulin tail requires CCP3 to engage tubulin as substrate, which satisfies the broad term 'binding to monomeric or multimeric forms of tubulin, including microtubules'. This is also the shared, experimentally supported function of the CCP family from which the IBA was drawn.",
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4230590/ (Tort et al. 2014 Mol Biol Cell 25:3017, PMID:25103237). Full text read: mouse CCP3 construct CCP3_Z1670, Delta2-tubulin immunoblots and the dead E540 mutant (Fig. 2B), microtubule staining (Fig. 2C), telokin substrate assays (Fig. 3), Ccp2/Ccp3 double-knockout mice (Fig. 4D-E).",
+        "UniProt Q8CDP0: 'Cytosolic carboxypeptidase 3', metallocarboxypeptidase mediating deglutamylation, peptidase M14 family."
+      ],
+      "limitations": "All CCP3 tubulin data are cell-based; no assay with purified CCP3 and purified tubulin is reported (the 2023 Nicot/Rogowski in vitro study tested TMCP1/TMCP2, not CCP3). So substrate engagement is inferred from catalysis-dependent modification of tubulin in cells rather than from a direct binding measurement.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "5571568bcd9d69d97def748aa3f69859223b4638c83761f7328fb76a3940917c:GO:0005515",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "O09012 is mouse Pex5, the PTS1 receptor, whose defining function is binding cargo proteins bearing a C-terminal PTS1 tripeptide and docking at the Pex13-Pex14 complex. Independently of the ISS annotation cited in the packet, IntAct holds experimentally curated binary interactions for the mouse protein itself, including Pex5-Pex5l by anti-bait co-immunoprecipitation (PMID:28671696), Pex5-Chuk by yeast two-hybrid (PMID:15102471), Pex5-Atp6v1a by anti-bait co-immunoprecipitation (PMID:22707207) and Pex5-Srcin1 by crosslinking (PMID:28713243). Any one of these establishes the very broad term 'binding to a protein'.",
+      "sources": [
+        "IntAct REST (https://www.ebi.ac.uk/intact/ws/interaction/findInteractions/O09012): curated interactions listed above, with detection methods and PubMed identifiers.",
+        "UniProt O09012 FUNCTION: receptor that binds cargo proteins containing a PTS1 signal in the cytosol and translocates them through the PEX13-PEX14 docking complex.",
+        "The packet's own provenance: ISS from human PEX5 isoform 1 (P50542-1), PMID:9668159."
+      ],
+      "limitations": "GO:0005515 is maximally broad, so the bar is low; I did not read the individual IntAct source papers, relying on the curated detection method and identifiers.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "147d7dc64f2bd9410a6d14de72d572e3c4860bfbd7b452ee0b18940283c3be46:GO:0140078",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "The sequence is Mycobacterium tuberculosis Nei1 (Rv2464c; identical across the listed MTBC accessions). Guo et al. 2010 overexpressed and purified all four M. tuberculosis Fpg/Nei proteins and assayed them on defined oligonucleotide substrates. They report that an AP site is among the best substrates for MtuNei1, that MtuNei1 cleaved the phosphodiester backbone via beta,delta-elimination, and that cleavage of a single-stranded AP-site oligonucleotide was essentially complete (Section 3.3; Figs. 3A and 4A). Cleaving an AP site by an elimination (lyase) rather than hydrolytic mechanism is exactly GO:0140078, whose exact synonyms include 'DNA-(apurinic or apyrimidinic site) lyase activity' and which is cross-referenced to EC 4.2.99.18; UniProt also assigns EC 4.2.99.18 to this entry.",
+      "sources": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC2836239/ (Guo Y, Bandaru V, Jaruga P, Zhao X, Burrows CJ, Iwai S, Dizdaroglu M, Bond JP, Wallace SS, 2010 DNA Repair 9:177, PMID:20031487). Full text read: purified MtuNei1; AP site among best substrates; beta,delta-elimination; Fig. 3A (duplex substrates, MtuNei1 titration) and Fig. 4A (single-stranded AP-site cleavage).",
+        "UniProt P9WNB9/P9WNB8/P64159 (nei1, Rv2464c): 'DNA glycosylase/AP lyase Nei 1', EC 4.2.99.18; FUNCTION states AP activity, nicking of dsDNA, and probable beta-delta elimination.",
+        "QuickGO ontology service for GO:0140078: exact synonyms 'DNA-(apurinic or apyrimidinic site) lyase activity' and 'class I DNA-(apurinic or apyrimidinic site) lyase activity'; sibling term GO:0052720 covers the hydrolytic class II activity."
+      ],
+      "limitations": "The GO textual definition describes beta-elimination leaving a 3'-(4-hydroxy-5-phospho-2-pentenal), whereas Fpg/Nei enzymes including MtuNei1 continue to delta-elimination and leave a 3'-phosphate. GO's exact synonyms and the class I/class II split make GO:0140078 the intended term for AP lyases of this mechanism, so I treat the difference as a definitional detail rather than a mismatch. No borohydride trapping on an AP site and no separate lyase-only (pre-formed AP site without glycosylase step) assay specific to MtuNei1 is reported, although the AP-site substrate was pre-generated with E. coli Udg.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "8a07dda38060381f735a7faba509a27f650d654190a1f97d6ea197364db5495e:GO:0030246",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "Q8A2L1 (BT_3294) is a glycoside hydrolase family 97 protein: InterPro/Pfam match all three GH97 modules with strong scores (GH97_N 26-282, E=8.3e-52; Glyco_hydro_97 catalytic 302-456, E=6.5e-56; GH97_C 551-649, E=9.5e-28). In my global alignment it is 40.0% identical to the characterised Bacteroides thetaiotaomicron retaining alpha-galactosidase BtGH97b (Q8A6L0), and the entire catalytic apparatus of that enzyme is conserved: the nucleophile Asp415 maps to Asp405 in a near-identical context (KGFKVDFMDRD vs KGVKIDFMDRS), the proton donor/acceptor and Ca2+ ligand Glu470 maps to Glu460, and the other Ca2+ ligands Glu174 and Glu464 map to Glu166 and Glu454. GH97 enzymes hydrolyse alpha-glycosidic bonds and their structures (e.g. SusB/BtGH97a, PDB 2D73, 2ZQ0) contain bound sugars in the -1 subsite. An intact GH97 active site therefore establishes that this protein binds carbohydrate.",
+      "sources": [
+        "InterPro API, Pfam matches for Q8A2L1 (boundaries and E-values quoted above) and for G8JZS4 (SusB).",
+        "UniProt Q8A6L0 (BtGH97b, retaining alpha-galactosidase, EC 3.2.1.22): ACT_SITE 415 nucleophile and 470 proton donor/acceptor, both ECO:0000269|PubMed:19646996; BINDING 174, 464, 470 Ca(2+).",
+        "UniProt G8JZS4 (SusB/BtGH97a, glucan 1,4-alpha-glucosidase): ACT_SITE 532; substrate-binding residues 215-217, 437-439, 507-508; PDB 2D73, 2JKA, 2JKE, 2JKP, 2ZQ0, 3WFA.",
+        "My own Biopython alignments: Q8A2L1 vs Q8A6L0, 260/641 identical (40.6% of aligned columns); catalytic residue mapping as described. Q8A2L1 vs G8JZS4 is only 30% identical, consistent with BT_3294 belonging to the alpha-galactosidase (GH97b) branch, as its PANTHER subfamily assignment PTHR35803:SF2 'retaining alpha-galactosidase' also indicates."
+      ],
+      "limitations": "BT_3294 itself has not been biochemically characterised in any source I found, and the packet's annotation route was a different one (InterPro IPR014718, a generic glycoside-hydrolase-type carbohydrate-binding beta-sandwich superfamily). My acceptance rests on conservation of the GH97 catalytic machinery, not on an assay of this protein; the exact sugar specificity is unknown.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "888bc916e4d799e8d414bb20aa5d55fe1b1b6d8869151f16e6efc7e2d5c4953f:GO:0070996",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The annotation transfers from mouse agouti (Q03288), for which Lu et al. 1994 showed that agouti protein binds the MSH receptor (MC1R) with high affinity and antagonises alpha-MSH-stimulated adenylyl cyclase (the basis of the MGI/UniProt IDA for GO:0070996 and GO:0048019), and Ollmann et al. 1998 showed that Mc1r expression in 293T cells confers a specific high-affinity binding site for epitope-tagged Agouti that is competed by alpha-MSH and AgRP. Human ASIP is 80% identical to mouse agouti overall in my alignment, and the functionally critical C-terminal cysteine-rich domain, including every cysteine of the inhibitor-cystine-knot fold and the final disulfide-closed loop that chimera studies show is required for high-affinity MC1R binding, is conserved. Human ASIP is itself established pharmacologically as a competitive antagonist and inverse agonist at MC1R. A cryo-EM structure of MC1R bound to ASIP was posted in September 2026, after the packet's GOA 2026-07-29 snapshot, and supports the direct interaction.",
+      "sources": [
+        "PMID:7935841 (Lu D et al. 1994 Nature 371:799, abstract via Europe PMC): agouti protein binds the MSH receptor with high affinity and antagonises alpha-MSH-stimulated adenylyl cyclase. This is the IDA source for Q03288 GO:0070996 in QuickGO.",
+        "PMID:9450927 / PMC316484 (Ollmann et al. 1998 Genes Dev): Mc1r expression in 293T cells confers a specific high-affinity binding site for HA-Agouti, competed by alpha-MSH and AgRP (abstract-level summary).",
+        "PMID:11693171 (Eberle et al. 2001): mouse agouti fragment 91-131 competes with [125I]NDP-alpha-MSH at MC1R on B16-F1 cells and is an inverse agonist (adenylate cyclase IC50 ~5 nM).",
+        "bioRxiv preprint DOI 10.64898/2026.09.03.748715 (Sun Q, Zhang S, Zhang X, Sun X, Liu X, posted 4 September 2026): cryo-EM structure of MC1R bound to ASIP; ASIP occludes the orthosteric pocket and selects MC1R through a clasp formed by its C-terminal loop. POST-SNAPSHOT evidence; not peer reviewed; species of the constructs not stated in the record I read.",
+        "My own Biopython alignment: human ASIP P42127 vs mouse agouti Q03288, 105/130 identical (80.8%); C-terminal domain CVATR(N/D)SCKPPAPACCDPCASCQCRFF(R/G)SAC(S/T)CRVL..NC."
+      ],
+      "limitations": "I did not find a published radioligand-competition measurement using full-length human ASIP at human MC1R; the quantitative binding data I located are for mouse agouti or a mouse agouti fragment. Two of the six residues of the C-terminal loop differ between human and mouse (RVLSLNC vs RVLNPNC). The cryo-EM structure is a preprint and postdates the annotation snapshot.",
+      "adjudication_question": null
+    }
+    ,
+    {
+      "assertion_id": "6d5da28fb2e605b14e209af020bdc5711b85c03bed7c9caeb05cfffec20cf5b2:GO:0038023",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The assertion rests solely on InterPro IPR012493 (the renin-receptor/ATP6AP2 family domain), whose GO mapping derives from the mammalian (pro)renin receptor, which binds renin/prorenin and triggers intracellular signalling. The experimental work on the Drosophila protein shows something different: it binds fz and fz2 (Buechling et al. 2010; FlyBase annotated exactly this, GO:0005109 frizzled binding, IDA, PMID:20579883), binds stan/Flamingo through its N-terminus and its cleaved N-terminal fragment is secreted (Hermle et al. 2013), and is required for V-ATPase assembly and endo-lysosomal acidification (Hermle et al. 2010; PMID:29995586). No study shows the Drosophila protein combining with a signal (ligand or messenger) and transmitting it, as GO:0038023 requires, and Drosophila has no renin. The child term coreceptor activity (GO:0015026) also requires combining with a messenger, which is not shown. FlyBase, the authoritative source, has not made this annotation.",
+      "sources": [
+        "QuickGO annotations for UniProtKB:Q9VHG4: the only molecular-function annotations are GO:0005109 (frizzled binding) IDA PMID:20579883 from FlyBase, and the GO:0038023 IEA from InterPro GO_REF:0000002.",
+        "UniProt Q9VHG4 FUNCTION and SUBUNIT, citing PubMed:20579879, 20579883, 23292348, 26376863, 29127204, 29995586: interacts with fz and fz2; interacts via N-terminus with stan; V-ATPase assembly; N-terminal fragment secreted.",
+        "PMID:20579883 (Buechling et al. 2010 Curr Biol, abstract via Europe PMC): dPRR binds Fz and Fz2 receptors and is required for Wnt/Fz signalling; no ligand binding reported.",
+        "PMID:20093472 (Cruciat et al. 2010 Science, abstract): the vertebrate PRR functions renin-independently as an adaptor between Wnt receptors and the V-ATPase, i.e. an adaptor rather than a signal-receiving receptor.",
+        "QuickGO ontology service: GO:0015026 coreceptor activity is_a GO:0038023, and requires 'combining with an extracellular or intracellular messenger'.",
+        "Human ATP6AP2 (O75787) has no experimental molecular-function annotation other than protein binding (QuickGO)."
+      ],
+      "limitations": "UniProt's own FUNCTION text calls the Drosophila protein a 'transmembrane receptor in the planar cell polarity' with ECO:0000269 evidence codes, so a curator could read the PCP core-protein role as receptor activity. I treat that as descriptive wording rather than a demonstration that the protein receives a signal. This is a finding of insufficient support, not of contradiction.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "c604b3a6fe9b42c9b2de2f55cf48c99bed5fd1244e0028f1687b02d1276283f6:GO:0003700",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "Sov is a large multi-C2H2-zinc-finger nuclear protein of Drosophila, but the published work characterises it as a heterochromatin factor recruited by protein-protein interaction, not as a sequence-specific DNA-binding transcription factor. Benner et al. 2019 show it is a nuclear zinc-finger protein that colocalises with HP1a, is required for heterochromatin stabilisation, suppresses position-effect variegation and silences transposons, all phenotypic or genetic readouts. Andreev et al. 2022 show Sov is recruited to piRNA-targeted loci through SUMOylated Panoramix and an LxxLL motif, which is protein-mediated recruitment. Wu et al. 2025 place Sov as an SFiNX-interacting partner that associates with the termination factors PNUTS and Senataxin; FlyBase annotated that paper as protein-macromolecule adaptor activity (GO:0030674, IDA). I found no ChIP-seq, EMSA, footprinting or motif evidence that Sov binds a specific cis-regulatory DNA sequence. The GO:0003700 and GO:0000976 annotations are IBA only, propagated from a PANTHER family whose reference members include human REST (Q13127) and ZNF143-type factors; family membership of a zinc-finger protein is not sufficient under the rubric.",
+      "sources": [
+        "QuickGO annotations for UniProtKB:Q9W3W6: GO:0003700 and GO:0000976 are IBA (GO_REF:0000033) from GO_Central; the only experimental molecular-function annotation is GO:0030674 IDA, PMID:41167190, FlyBase. Experimental biological-process annotations are GO:0031507 and GO:0141006 (IMP).",
+        "PMID:31558581 / PMC6827387 (Benner L et al. 2019 Genetics, 'Drosophila heterochromatin stabilization requires the zinc-finger protein small ovary'; abstract-level summary): nuclear zinc-finger protein colocalising with HP1a; heterochromatin stabilisation.",
+        "PMID:35173350 (Andreev VI et al. 2022 Nat Struct Mol Biol; abstract-level summary): Panoramix SUMOylation and an LxxLL motif recruit Sov to piRNA-targeted loci.",
+        "PMID:41167190 (Wu Y et al. 2025 Mol Cell 85:3999; abstract via Europe PMC): Sov associates with PNUTS and Senataxin as an SFiNX-interacting partner. POST-SNAPSHOT relative to the GOA 2026-07-29 release in part, and it supports an adaptor role, not DNA-binding TF activity."
+      ],
+      "limitations": "I read abstracts rather than full texts for Benner 2019 and Andreev 2022; one of them could contain unreported ChIP-seq. Sov's many C2H2 fingers make sequence-specific DNA binding plausible, but plausibility is not evidence, and the demonstrated recruitment route is protein-mediated.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "a97eafaf3a98fbcb89da68d5e4ff5ed954d04c39eb45be376a4733a6c2602f45:GO:0003700",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "The supplied 176-residue sequence is identical to UniProt P46505, C. elegans ZIP-8 (I downloaded and compared the FASTA). It carries a complete bZIP domain (UniProt DOMAIN 65-128; basic motif 67-92 'LEKRMKNNEAAKKSRASRKHREQKN'; leucine zipper 100-107), the canonical module for sequence-specific dsDNA binding at cis-regulatory sites. Beyond the domain, there is direct genome-wide evidence for this protein: the modERN project performed ChIP-seq on eGFP-tagged ZIP-8 in C. elegans (ENCODE experiment ENCSR502LXA, strain OP327 wgIs327, mixed-stage embryos, Snyder lab, status released), and JASPAR holds the resulting position frequency matrix MA1704.2, explicitly linked to UniProt P46505, type ChIP-seq, class 'Basic leucine zipper factors (bZIP)', family Jun-related, source 29284660 (the modERN paper). A derived sequence motif from in vivo binding, in a protein with an intact bZIP domain, establishes sequence-specific binding to cis-regulatory DNA.",
+      "sources": [
+        "JASPAR API record for MA1704.2: name zip-8, species Caenorhabditis elegans, uniprot P46505, type ChIP-seq, source 29284660, pubmed 25215497.",
+        "ENCODE API record for ENCSR502LXA: ChIP-seq, target zip-8, Caenorhabditis elegans strain OP327 (unc-119(ed3) III; wgIs327), whole organism mixed stage (embryo), GFP-tag insertion by bombardment, lab Michael Snyder (Stanford), status released.",
+        "UniProt P46505 (BZIP8_CAEEL): bZIP domain 65-128, basic motif 67-92, leucine zipper 100-107; sequence identical to the supplied one.",
+        "QuickGO: GO:0000978 and GO:0000981 IBA from GO_Central for P46505; GO:0003700 IEA from InterPro."
+      ],
+      "limitations": "The ChIP-seq and motif establish sequence-specific DNA binding in vivo; they do not themselves demonstrate that ZIP-8 modulates transcription of its bound targets, which the GO definition also states. No zip-8 mutant or reporter study describing target-gene regulation turned up in my searches. I treat the combination of an intact bZIP DNA-binding module, in vivo genome-wide binding and a derived motif as sufficient, which is also how modERN data are curated.",
+      "adjudication_question": null
+    }
+    ,
+    {
+      "assertion_id": "6dd347e086bacaaab71164878a19ce11a66fd90f561371990b6d8b1a00ba0b39:GO:0005249",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "Both supporting annotations trace to one source, the bioRxiv preprint DOI:10.1101/2022.11.08.515259 (MGI recorded it as IDA on human TMEM43 Q9BTV4 and ISO on mouse Tmem43). The species transfer is unproblematic (mouse and human TMEM43 are 372/400 identical, 93.0%, in my alignment), but the evidence does not match the exact term. The preprint's own abstract, which I retrieved from the bioRxiv API, states that purified TMEM43 confers ion channel activity in lipid bilayers and characterises it 'as a pH-sensing cation channel in the heterologous expression system'; indexed full-text passages I retrieved via search report conduction of Na+, K+ and Cs+, classification as a nonselective cation channel, block by GdCl3, and an I/V relationship merely resembling that of inward rectifiers. GO:0005249 requires a channel 'whose open state is dependent on the voltage across the membrane'. Gating by pH and a rectifying I/V shape do not establish voltage-dependent gating (GO treats inward rectification under GO:0005242, a separate term), and a nonselective cation conductance is not potassium channel activity. UniProt annotates four transmembrane segments for TMEM43 and no voltage-sensor domain, and does not describe it as a channel at all. MGI's simultaneous annotation of voltage-gated sodium (GO:0005248), voltage-gated potassium (GO:0005249) and voltage-gated cation (GO:0022843) activity from this single source is consistent with a nonselective reading, but the 'voltage-gated' qualifier is not supported.",
+      "sources": [
+        "bioRxiv API (https://api.biorxiv.org/details/biorxiv/10.1101/2022.11.08.515259): v1 'Characterization of TMEM43 as a novel ion channel' (2022-11-09) and v2 'Astrocytic Gapjinc (TMEM43) modulates gap junction networks by facilitating transjunctional potentials' (2023-09-25), both published=NA, i.e. still not peer reviewed as of 2026-10-30. Abstract: 'characterized TMEM43 as a pH-sensing cation channel'.",
+        "Indexed full-text passages of the same preprint returned by web search (I could not open biorxiv.org directly; it returned HTTP 429 on every attempt, including through a separate fetch agent): TMEM43 conducts Na+, K+ and Cs+; described as a nonselective cation channel; current blocked by GdCl3; I/V curve resembles inwardly rectifying potassium channels; current falls as external pH drops. I flag these as search-engine snippets of the preprint rather than text I read on the page.",
+        "QuickGO: Q9BTV4 GO:0005248, GO:0005249 and GO:0022843 all IDA from DOI:10.1101/2022.11.08.515259 (MGI); Q9DBS1 the corresponding ISO annotations.",
+        "UniProt Q9BTV4: four TRANSMEM segments (32-52, 314-334, 346-366, 369-389), no voltage-sensor domain; FUNCTION describes nuclear-envelope organisation, cGAS-STING and NF-kB signalling, and a contribution to gap-junction-mediated passive conductance in cochlear supporting cells, not channel activity.",
+        "My own Biopython alignment: Q9DBS1 vs Q9BTV4, 372/400 identical."
+      ],
+      "limitations": "I could not read the preprint's figures because bioRxiv rate-limited every request; my account of the selectivity and I/V data comes from the abstract plus indexed snippets, so a voltage-dependence experiment could exist that I did not see. Even so, the authors' own summary term is 'pH-sensing cation channel', not a voltage-gated potassium channel, and the source remains unpublished after four years. The decision is that support for this specific term is not established.",
+      "adjudication_question": null
+    }
+  ],
+  "unreviewed": [],
+  "summary": "All 25 assertions in batch 1 were reviewed; none left unreviewed. Decisions: 19 accept, 5 do not accept, 1 needs adjudication. Accepted on experimental evidence for the supplied protein itself: RAD23B proteasome binding, EHV-4 TK ATP binding, ACOT11 lipid binding, A. fulgidus CCA-adding enzyme nucleotide binding, S. pombe Rad32 DNA endonuclease activity, rotavirus VP3 cap N7-methyltransferase activity, Thermosynechococcus PsbD iron binding, zebrafish Alkal2a RTK binding, mouse CCP3/Agbl3 tubulin binding, mouse Pex5 protein binding, M. tuberculosis Nei1 class I AP endonuclease activity, and C. elegans ZIP-8 DNA-binding transcription factor activity. Accepted on well-supported inference: mouse Tollip SUMO binding (near-identical rat ortholog with a GST pull-down of SUMO-1), T. brucei XPD hydrolase activity and C. albicans Rad3 DNA binding (RAD3/XPD orthology with conserved Walker A, DEAH and Fe-S motifs), Edwardsiella Dam SAM binding (66% identity to E. coli Dam with every mapped cofactor residue conserved), mouse Iqgap1 S100 protein binding (96% identity to human IQGAP1, IQ region 117/120), B. thetaiotaomicron BT_3294 carbohydrate binding (40% identity to BtGH97b with the full GH97 catalytic apparatus conserved), and human ASIP type 1 melanocortin receptor binding (80% identity to mouse agouti with the MC1R-binding cysteine-rich domain conserved). Not accepted: mouse Tmem43 voltage-gated potassium channel activity (sole source is an unpublished preprint describing a pH-sensing nonselective cation channel, not voltage gating), P. falciparum PF3D7_0413500 protein serine/threonine phosphatase activity (the one experimental study calls it a cytoplasmic phosphatase with residual mutase activity and names no protein substrate; it carries the canonical PGM RHG motif, not the PGAM5 RHS motif), mouse Brca2 gamma-tubulin binding (a single unreplicated human co-IP with no mapped interface, transferred across 60% identity), Drosophila ATP6AP2 signaling receptor activity (demonstrated roles are frizzled/stan binding and V-ATPase assembly; no signal reception, and FlyBase annotated frizzled binding instead), and Drosophila Sov DNA-binding transcription factor activity (a heterochromatin protein recruited by protein-protein interaction, with no DNA-binding or motif data; the term is IBA only). One case needs adjudication: human PICK1 Arp2/3 complex binding, where Rocca et al. 2008 report a direct pull-down of purified Arp2/3 with a W413A specificity control and a neuronal co-IP, while Madasu et al. 2015 report no binding by ITC and no inhibition in pyrene-actin assays using the same human protein, with no later study resolving the conflict. Caveats on method: I could not obtain full text for Hills et al. 2011 (PfPGM2), Nakanishi et al. 2007 (BRCA2/gamma-tubulin), Gardberg et al. 2003 (EHV4-TK) or the TMEM43 preprint, and relied on abstracts, database records and, where noted, search-engine snippets. All sequence identities and residue mappings reported here are from pairwise Biopython (BLOSUM62) alignments I ran on sequences I downloaded from UniProt or NCBI; ligand compositions of PDB entries are from the RCSB data API. Evidence postdating the GOA 2026-07-29 snapshot is flagged in two entries (the ASIP-MC1R cryo-EM preprint of September 2026, and Wu et al. 2025 on Sov)."
+}

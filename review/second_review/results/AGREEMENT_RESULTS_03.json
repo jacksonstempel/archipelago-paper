@@ -1,0 +1,359 @@
+{
+  "assertions": [
+    {
+      "assertion_id": "9ba5d2bcc7d021a803b02d1629ed3dfa05d68d14f4fa6bbc80346a09df0acd78:GO:0005506",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "The supplied 82-residue sequence is Bacillus subtilis ferredoxin (Fer, P50727; the same sequence is shared by the other Bacillus accessions in the packet). The recombinant purified protein was characterised spectroscopically: the reduced form gives a rhombic EPR signal (g = 2.07, 1.93, 1.88) and an MCD spectrum typical of a [4Fe-4S]1+ cluster, with a midpoint potential of -385 +/- 10 mV for the [4Fe-4S]1+/2+ couple (Green et al. 2003). The holoprotein therefore ligates a tetranuclear iron cluster; I verified that the supplied sequence carries cysteines exactly at the four annotated cluster-ligand positions (C12, C15, C18, C62), i.e. the protein directly coordinates iron atoms through Cys thiolates. UniProt records GO:0051539 (4Fe-4S cluster binding) with IDA for this entry, and two independent curated rules (InterPro IPR001080, UniRule UR001348782) map this ferredoxin family to iron ion binding. Binding of the cluster entails binding of its Fe ions, so the exact term (binding to an iron ion) is satisfied, with the relation 'enables' (the single polypeptide holds the cluster).",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/P50727.txt - UniProt P50727 (Fer, B. subtilis 168): COFACTOR 'Binds 1 [4Fe-4S] cluster'; metal-binding positions 12, 15, 18, 62; GO:0051539 4Fe-4S cluster binding (IDA, UniProtKB); GO:0009055 electron transfer activity (IDA); GO:0005506 currently IEA:InterPro.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:12538057 - Green AJ et al. (2003) J Inorg Biochem 93:92-99 (PMID 12538057), abstract: expression, purification and characterisation of B. subtilis ferredoxin; EPR and MCD of the reduced protein typical of [4Fe-4S]1+; E(0) = -385 mV; Kd 0.87 uM for P450 BioI and electron transfer to it. Abstract-level access only.",
+        "https://www.ebi.ac.uk/interpro/api/entry/interpro/IPR001080/ - InterPro IPR001080 ('3Fe-4S ferredoxin' family) GO mapping: GO:0005506 iron ion binding, GO:0009055 electron transfer activity.",
+        "Own computation (Needleman-Wunsch/position check script in scratchpad opus_work_03): supplied sequence Cys positions = 12, 15, 18, 62, matching the annotated cluster ligands."
+      ],
+      "limitations": "GO keeps iron-sulfur cluster binding (GO:0051539/GO:0051536) ontologically separate from GO:0005506; under a strict reading in which 'iron ion binding' denotes mononuclear/ionic iron, the cluster term would be the more precise annotation and this one arguably redundant. The cited study assigned cluster type by EPR/MCD and sequence rather than by quantitative iron/sulfide analysis, and the assay was on E. coli-expressed protein.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "0aa976750875ca9436456d55fa6a2d4c5da71a9d509b56735e213f87118c1a69:GO:0008017",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The protein is Arabidopsis SINE1 (Q5XVI1), a KASH-domain nuclear-envelope protein. Its experimentally established binding activity is to F-actin (UniProt SUBUNIT 'Binds to F-actin', TAIR GO:0003779 actin binding, IDA; Zhou et al. 2014 J Cell Biol, PMID 24891605), together with a role in guard-cell nuclear positioning. The microtubule-binding assertion comes only from family propagation (InterPro IPR033337, the TORTIFOLIA1/SINE1-2 N-terminal domain shared with the microtubule-binding SPIRAL2/TORTIFOLIA1 proteins, and PANTHER TreeGrafter). A literature search returned no study reporting SINE1-microtubule binding; the closest result shows that SINE1 and SINE2 are required for microtubule patterning in guard cells during ABA-induced stomatal closure (PMID 33324432), which is a process-level requirement, not a binding activity. Because the homologous N-terminal (ARM-type) region of SINE1 is the region shown to bind actin, the family-level inference to microtubule binding is specifically weakened rather than supported.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q5XVI1.txt - UniProt Q5XVI1 (SINE1): FUNCTION 'Plays a role in nucleus positioning in guard cells'; SUBUNIT 'Interacts with SUN1 and SUN2. Binds to F-actin' (PMID 24891605); GO:0003779 actin binding IDA:TAIR; GO:0008017 microtubule binding IEA:InterPro only.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=(SINE1 AND Arabidopsis AND microtubule) - 26 hits; no direct SINE1-microtubule binding study. PMID 33324432 'Arabidopsis KASH Proteins SINE1 and SINE2 Are Involved in Microtubule Reorganization During ABA-Induced Stomatal Closure' (2020) reports a requirement for MT patterning, not binding; PMID 35599883 reports guard-cell actin roles."
+      ],
+      "limitations": "Failure to find evidence, not evidence of falsehood: a direct microtubule-binding assay on SINE1 may exist in full texts I did not read, and the family relationship to SPIRAL2/TORTIFOLIA1 makes some microtubule association plausible.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "b17cb8007c43ef1c1c5769d4542e0af31ef615feb9fee0af3940522f7f7246b4:GO:0003700",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The protein is mouse B-Myc (Mycb/Bmyc, Q6P8Z1/A0PJL6, 170 aa), which corresponds to the Myc N-terminal transactivation region only. The original functional characterisation states that B-Myc lacks the DNA-binding motif found in other Myc proteins; its activity was shown as a GAL4 fusion (i.e. with a heterologous DNA-binding domain) and as a squelcher of GAL4-c-Myc transactivation, and the authors explicitly left open whether it acts by squelching or through a separate DNA-binding partner (Resar et al. 1993, Mol Cell Biol 13:1130-1136, PMID 8423780). UniProt annotates only Myc N-terminal-domain signatures (IPR002418, IPR012682, Pfam Myc_N) with no basic region/HLH/leucine-zipper feature, and the only experimental molecular-function annotation is molecular adaptor activity (DisProt, EXP). The assertion rests on an InterPro mapping from Myc-family N-terminal signatures and does not establish selective binding to a specific genomic DNA sequence in a cis-regulatory region, which the GO definition requires.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q6P8Z1.txt - UniProt Q6P8Z1 (B-Myc, mouse): FUNCTION 'Seems to act as an inhibitor of cellular proliferation' (PMID 11039906); no DOMAIN features; Pfam PF01056 Myc_N, InterPro IPR002418/IPR012682; GO:0003700 IEA:InterPro; GO:0060090 molecular adaptor activity EXP:DisProt.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=TITLE:\"B-myc inhibits neoplastic transformation and transcriptional activation by c-myc\" - Resar LM, Dolde C, Barrett JF, Dang CV (1993) Mol Cell Biol 13:1130-1136 (PMID 8423780): 168-aa B-Myc resembles the c-Myc N-terminal activation domain and 'lacks the specific DNA-binding motif found in other Myc proteins'; GAL4-B-Myc activated a reporter; full-length B-Myc squelched GAL4-c-Myc activation and inhibited c-Myc co-transformation; mechanism (squelching vs. action through a DNA-binding protein) undetermined."
+      ],
+      "limitations": "Abstract-level access to the 1993 paper. Were B-Myc shown to be recruited to specific sites by a partner, a coregulator term rather than GO:0003700 would still be the appropriate annotation.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "53f2211b9356924319046629198547d1b69bc0164d3a9929e2ef7e322db4a1d7:GO:0019003",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The supplied protein is rat cytoplasmic dynein 1 light intermediate chain 1 (Dync1li1, Q9QXU8); the annotation is ISO from human DYNC1LI1 (Q9Y6G9). The human source annotation is an IDA from Schroeder et al. 2014 (eLife 3:e03351, PMID 25272277), which solved the LIC G-domain structure and showed that, while the thermophilic-fungal LIC has lost nucleotide binding, human LIC1 binds GDP in preference to GTP. The orthologous inference is well supported: by my own global alignment of the supplied sequence against Q9Y6G9, rat and human LIC1 are 94.6% identical over the full length and 94.9% identical across the Ras-like G domain (human residues 1-370), and the P-loop-like segment (human 74-81, GEDGAGKT) is identical in the rat protein. Nucleotide-binding capability within this family is known to vary (it is lost in the fungal protein), so sequence identity at the nucleotide-binding element is the relevant check, and it is satisfied.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q9Y6G9,UniProtKB:Q9QXU8&goId=GO:0019003 - two records: Q9Y6G9 GO:0019003 IDA, PMID 25272277 (assigned by FlyBase); Q9QXU8 GO:0019003 ISO, GO_REF:0000121, with/from Q9Y6G9 (RGD).",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:25272277 - Schroeder CM, Ostrem JML, Hertz NT, Vale RD (2014) eLife 3:e03351: LIC has a Ras-like fold; 'although the fungal LIC has lost the ability to bind nucleotide, human LIC1 prefers GDP over GTP'; G domain binds the dynein heavy chain. Abstract-level access only.",
+        "https://rest.uniprot.org/uniprotkb/Q9Y6G9.txt - UniProt Q9Y6G9: GO:0019003 GDP binding (IDA); predicted ATP-binding region 74-81 (ECO:0000255).",
+        "Own computation (Needleman-Wunsch, script in scratchpad opus_work_03): rat (packet) vs human Q9Y6G9 = 494/522 identities (94.6%); human 1-370 region 351/370 (94.9%); human 74-81 'GEDGAGKT' aligned to identical rat residues."
+      ],
+      "limitations": "No nucleotide-binding assay on the rat protein; the human result is from the abstract (binding affinities and method not verified in the full text), and the physiological relevance of GDP binding by LIC1 is not established.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "10aca9a2d5ea0395fb4ac7d3ff219b906d0e0ee00dcb829d1a596ff74e69a79e:GO:0003700",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "Human ZNF366 (DC-SCRIPT, Q8N895) has eleven C2H2 zinc fingers (UniProt residues 253-556). Beyond the packet's IBA route, there is direct human evidence: ChIP-seq of DC-SCRIPT in human dendritic cells localised the protein to a GA-rich motif at H3K27ac-marked genomic enhancers, including at MAPK dual-specificity phosphatase (DUSP) genes, and knockdown reduced DUSP4 expression with the predicted downstream increase in ERK/JNK/p38 signalling and IL-10 production, which DUSP4 restoration reversed (Soendergaard et al. 2018, Front Immunol 9:1420, PMID 29988341). That combination - occupancy of cis-regulatory regions with an enriched sequence motif plus loss-of-function regulation of the occupied target - matches GO:0003700 (modulating transcription of gene sets via selective binding to specific sequences in cis-regulatory regions). Mouse Zfp366 work similarly reports genome-wide binding and direct regulation of cDC1 signature genes.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q8N895.txt - UniProt Q8N895: 11 C2H2 zinc fingers (253-556); FUNCTION transcriptional repression, ESR1 corepressor via CTBP1/HDACs (PMID 17085477, IDA for GO:0003714 and GO:0030331); GO:0003700 and GO:0000978 currently IBA:GO_Central.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:29988341 - Soendergaard JN et al. (2018) Front Immunol 9:1420: ChIP-seq in human DCs shows DC-SCRIPT binding a GA-rich motif at H3K27ac-marked enhancers, linked to DUSP genes; DC-SCRIPT knockdown lowers DUSP4, raises ERK/JNK/p38 phosphorylation and IL-10; DUSP4 restoration reverses the IL-10 increase. Abstract-level access.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=(Zfp366 OR \"DC-SCRIPT\" OR ZNF366) AND (ChIP-seq OR \"DNA binding\") - survey of hits: PMID 29988341 is the only record with experimental sequence-associated genomic binding; PMID 32422143 (mouse) uses a predicted motif only; no EMSA reported in the retrieved set."
+      ],
+      "limitations": "Support is ChIP-seq occupancy plus motif enrichment and knockdown, not an in vitro sequence-specific DNA-binding assay with purified protein; some occupancy could be tethered, since ZNF366's best-characterised activity is corepression recruited by the estrogen receptor. Abstract-level access to the ChIP-seq study (peak numbers and motif statistics unverified).",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "cb757784654e84d6045e2383dd0f39aa308801f69d39569eca3ef4d86f3ad789:GO:0003723",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "Human GEMIN7 (Q9H840) is a core SMN-complex subunit. Its only RNA-binding annotation route is InterPro IPR047575, the generic Sm domain entry, whose GO mapping is RNA binding because Sm/Lsm/Hfq domains generally mediate oligomerisation and RNA binding. For Gemin7 specifically, the structural study showed that Gemin6 and Gemin7 adopt canonical Sm folds and that the heterodimer binds Sm proteins; no RNA binding was reported (Ma et al. 2005, Structure 13:883-892, PMID 15939020). UniProt's FUNCTION/SUBUNIT text for Q9H840 describes only protein-protein interactions (GEMIN6, GEMIN8, STRAP, Sm proteins), and snRNA recognition within the SMN complex is attributed to Gemin5. Adopting an Sm fold does not by itself establish RNA binding, and no experimental or high-throughput RNA-interactome evidence for GEMIN7 was found.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q9H840.txt - UniProt Q9H840: Sm domain 65-131; SUBUNIT lists direct interactions with GEMIN6, STRAP/UNRIP, GEMIN8 and Sm proteins; GO:0003723 RNA binding is the only MF term and is IEA:InterPro.",
+        "https://www.ebi.ac.uk/interpro/api/entry/interpro/IPR047575/ - IPR047575 is the generic 'Sm domain' entry (Sm/Lsm/Hfq), GO mapping GO:0003723.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:15939020 - Ma Y, Dostie J, Dreyfuss G, Van Duyne GD (2005) Structure 13:883-892: Gemin6/Gemin7 crystal structure, canonical Sm folds, Sm-like heterodimer interface; binding experiments show the heterodimer binds Sm proteins; the abstract reports no RNA binding and does not address conservation of Sm RNA-contacting residues."
+      ],
+      "limitations": "Only abstracts were accessible for the structural papers; a direct RNA-binding test of Gemin6/7 (positive or negative) may exist in full texts or in the 2021/2023 SMN-complex structures that I did not read.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "51268a552f903a9e5d04d911b075bf7508ddab4c20b16bc64236176f74085e6b:GO:0046872",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "The protein is the Rift Valley fever virus L protein (P27316, strain ZH-548 M12), the viral RNA-directed RNA polymerase with an N-terminal cap-snatching endonuclease. UniProt records experimentally supported cofactor requirements with ECO:0000269 evidence citing PMID 34787453: two Mn2+ ions bound in the endonuclease active site, and Mg2+/Mn2+ required for polymerase activity (initiation stronger with Mn2+). That reference is the full-length L protein cryo-EM structure combined with biochemical RNA-synthesis assays on purified recombinant L protein (Wang et al. 2022, J Virol 96:e0171321). The entry additionally annotates the catalytic Mg2+ site at residue 1134 and endonuclease Mn2+ ligands. GO:0046872 is the generic metal-ion-binding term, so divalent-metal binding at the polymerase and endonuclease active sites of this protein satisfies it directly, with 'enables' (metal sites are intrinsic to the single polypeptide).",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/P27316.json (cofactor/binding fields) - COFACTOR Mn2+ 'For endonuclease activity. Binds 2 Mn(2+) ions in the active site' (ECO:0000269, PMID 34787453; note also cites 31948728); COFACTOR Mg2+/Mn2+ 'For polymerase activity...' (ECO:0000269, PMID 34787453); BINDING Mg2+ at 1134 'catalytic; for RdRp activity' (ECO:0000250); BINDING Mn2+ at 79/111/125 (ECO:0000250/0000305).",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:34787453 - Wang X et al. (2022) J Virol 96:e0171321, 'Structure of Rift Valley Fever Virus RNA-Dependent RNA Polymerase': purified full-length L protein, 3.6 A cryo-EM structure plus biochemical RNA-synthesis experiments. Abstract-level access; the abstract does not itself enumerate bound metals, so the metal evidence is taken from UniProt's curated ECO:0000269 assertions citing this paper.",
+        "https://rest.uniprot.org/uniprotkb/P27316.txt - keywords include Magnesium, Manganese, Metal-binding; GO:0046872 is currently IEA:UniProtKB-KW."
+      ],
+      "limitations": "Residue-level metal assignments in the entry are largely by homology (ECO:0000250/0000305); I verified the experimental cofactor statements through UniProt's evidence tags and the source paper's abstract rather than the full text. The packet's own annotation route (keyword-based IEA) is not itself evidence.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "0f57b974e0c77533efdb6aba44687ebdd5964014cd4ba6be30332305fa60970a:GO:0035591",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The protein is Drosophila dSarm (Sarm/Ect4, Q6IDD9). Its established molecular function is enzymatic: TIR-domain-dependent NAD+ hydrolase/cyclase activity that drives injury-induced axon degeneration (UniProt IDA for GO:0061809; PMID 22678360, 28334607, 31439792), with active site Cys/Glu and NAD+ binding residues annotated. The assertion derives solely from InterPro IPR039184 (SARM1 family), reflecting the historical description of mammalian SARM1 as a TLR-pathway adaptor. GO:0035591 requires a binding activity that brings two or more signalling molecules together and explicitly excludes catalytic activity as the mechanism. I found no evidence that the Drosophila protein bridges defined signalling partners: its genetic requirement in Tollo-dependent tracheal immunity (PMID 22022271) is a pathway-level phenotype, and the UniProt entry has no SUBUNIT comment describing a complex. Family-level propagation alone is insufficient.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q6IDD9.txt - UniProt Q6IDD9: FUNCTION NAD+ hydrolase driving axon degeneration; CATALYTIC ACTIVITY EC 3.2.2.6; TIR domain 837-981 with active site 919 and NAD+ binding residues; GO:0061809 IDA:UniProtKB; GO:0097677 STAT family protein binding IDA:FlyBase; GO:0035591 IEA:InterPro only; no SUBUNIT comment.",
+        "Cited primary literature in that entry: PMID 22678360 (dSarm/Sarm1 required for injury-induced axon death), PMID 28334607 (SARM1 TIR domain intrinsic NAD+ cleavage), PMID 31439792 (NAD+ cleavage by animal and plant TIR domains), PMID 22022271 (Toll-8/Tollo and tracheal antimicrobial response)."
+      ],
+      "limitations": "Mammalian SARM1 has been described as a TLR-signalling adaptor, so an adaptor contribution for the fly protein cannot be excluded; this is a finding of insufficient evidence for the specific term, not a demonstration that the protein lacks adaptor function.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "7d666f4d666cdc7d0c6f09d357923d325b0a34e930d4f8798ffc7dd9b974ed50:GO:0005068",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "Human STAP1/BRDG1 (Q9ULZ2) is asserted to enable transmembrane receptor protein tyrosine kinase adaptor activity by ISS/orthology from mouse Stap1 (Q9JM90). Checking the mouse source: its GO:0005068 IDA cites Stoecker et al. 2009 (PMID 19100238), where STAP-1 was shown to interact with the M-CSF receptor CSF1R/c-Fms and to *reduce* its ligand-dependent phosphorylation in microglia - receptor binding plus negative regulation, not a demonstrated bridging function. The cloning paper (Masuhara et al. 2000, PMID 10679268) showed yeast two-hybrid binding to c-Kit and c-Fms, phosphorylation of STAP-1 by activated c-Kit in 293 cells, and in vitro SH2-domain binding to tyrosine-phosphorylated c-Kit and STAT5, but no complex in which STAP-1 simultaneously holds an RTK and a downstream molecule. Human-specific evidence supports a docking role downstream of the non-receptor kinase TEC (PMID 10518561) and generic signalling adaptor activity (GO:0035591, IPI), with KIT/CSF1R interactions annotated 'by similarity'. The better-supported terms are receptor tyrosine kinase binding (GO:0030971) and the generic adaptor term; the specific claim that this protein brings together an RTK and other molecules so they function in a coordinated way is not established.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q9JM90&goId=GO:0005068,GO:0030674,GO:0030971 - mouse Stap1: GO:0005068 IDA PMID 19100238 (BHF-UCL); GO:0030971 IPI PMID 19100238 with/from P09581 (Csf1r); GO:0030674 IDA PMID 10679268 (MGI); GO:0035591 IBA/ISO/IEA.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:19100238 - Stoecker K et al. (2009) Biochem Biophys Res Commun 379:121-126: STAP-1 induced in activated microglia/macrophages; interacts with M-CSF receptor (c-Fms) and reduces its ligand-dependent phosphorylation; ectopic STAP-1 alters morphology, reduces migration, increases cytotoxicity.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:10679268 - Masuhara M et al. (2000) BBRC 268:697-703: c-Kit-bait yeast two-hybrid cloning of mouse STAP-1 (PH + SH2); binds c-Kit and c-fms in two-hybrid, not JAK2/Pyk2; tyrosine-phosphorylated by activated c-Kit in 293 cells; SH2 domain binds phospho-c-Kit and phospho-STAT5 in vitro; authors conclude it 'functions as an adaptor molecule downstream of c-kit'.",
+        "https://rest.uniprot.org/uniprotkb/Q9ULZ2.txt - UniProt Q9ULZ2: 'appears to function as a docking protein acting downstream of TEC'; KIT and CSF1R interactions 'by similarity'; IntAct lists KIT and MET; GO:0005068 ISS:BHF-UCL, GO:0035591 IPI:BHF-UCL."
+      ],
+      "limitations": "The authors of the mouse study themselves describe STAP-1 as an adaptor downstream of c-Kit, and its PH/SH2 architecture is adaptor-like, so a curator could read the in vitro SH2 data as adaptor evidence; my decision turns on the absence of a demonstrated bridged RTK-containing complex. Abstract-level access to both mouse papers.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "d19e82125e9e71a4e6739fcda2ab13534c374566e2427299792919f589d35363:GO:0005524",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "P42963 is Bacillus subtilis PxpA, one of three subunits (PxpA, PxpB, PxpC) of the ATP-dependent 5-oxoprolinase. The complex's activity is ATP-dependent and all three subunits are required in vitro (Niehaus et al. 2017, J Biol Chem 292:16360-16367, PMID 28830929), but nothing in that work assigns ATP binding to PxpA. UniProt carries the ATP-binding keyword and GO:0005524 for PxpA from UniRule with no BINDING feature and no experimental evidence, while the partner subunit PxpB (P60495, KipI) does have an annotated ATP-binding site (residues 194-201) and is part of the KipI/KipA (PxpB/PxpC) module to which mechanistic analysis assigns the first, 5-oxoproline-phosphorylation step; PxpA (LamB/YcsF family, non-canonical TIM barrel) is proposed instead to act on the phosphorylated intermediate, and its exact role is described as undetermined (Oke et al. 2019, PMID 31520514). Membership in an ATP-hydrolysing complex does not establish that this subunit binds ATP itself, which is what the asserted term claims.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/P42963.txt - UniProt P42963 (PxpA): FUNCTION/CATALYTIC ACTIVITY 5-oxo-L-proline + ATP + 2 H2O = L-glutamate + ADP + phosphate; SUBUNIT 'Forms a complex composed of PxpA, PxpB and PxpC'; no BINDING features; keywords ATP-binding/Nucleotide-binding; GO:0017168 EXP:UniProtKB; GO:0005524 IEA:UniProtKB-UniRule.",
+        "https://rest.uniprot.org/uniprotkb/search?query=gene:pxpB+AND+organism_id:224308 - UniProt P60495 (PxpB/KipI): BINDING ATP 194-201 (ECO:0000255); complex with PxpA and PxpC.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:28830929 - Niehaus TD et al. (2017) JBC 292:16360-16367: pxpA (fungal lactamase homolog) plus pxpB/pxpC (allophanate hydrolase subunit homologs); loss of any one abolishes ATP-dependent 5-oxoprolinase activity; activity reconstituted only by mixing all three recombinant proteins. No subunit-level ATP assignment.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:31520514 - Oke M et al. (2019) Biochem Mol Biol Educ 47:620-631: PxpBC catalyses the first step (phosphorylation of 5-oxoproline); PxpA proposed to carry out the last two steps; PxpA's exact role undetermined; non-canonical TIM-barrel fold with a C-terminal groove."
+      ],
+      "limitations": "The 2019 analysis is a structural-bioinformatics/teaching paper, and no experimental nucleotide-binding test of PxpA (positive or negative) was found; this is insufficient evidence rather than demonstrated absence of ATP binding.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "3ef951a363ba111562f14003951f3b98d50125e0f0f3aa182f102baec2f86397:GO:0005102",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "Human NOL3/ARC (O60936, Q5TZN6) is asserted to enable signalling receptor binding by Ensembl orthology from mouse Nol3 (Q9D1X0). The mouse source annotations are physical-interaction based: ARC binds FAS and FADD directly via its CARD, blocking DISC assembly (PMID 15383280), and binds TNFRSF1A/TNFR1 via the CARD, preventing RIPK1 recruitment to complex I (PMID 24440909); these support mouse GO:0005102 and GO:0005123 (IPI, UniProtKB). FAS and TNFRSF1A are signalling receptors, so the broad asserted term is matched. The inference to human is well supported: by my own alignment the supplied human sequence is 85.1% identical to mouse Nol3 overall and 92.6% identical across the CARD (mouse residues 1-95), i.e. the interaction module is conserved, and the human UniProt entry describes the same FAS/FADD and TNFRSF1A interactions.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q9D1X0.txt - UniProt Q9D1X0 (mouse Nol3/ARC): SUBUNIT direct interaction via CARD with FAS and FADD (PMID 15383280) and with TNFRSF1A (PMID 24440909); GO:0005102 signalling receptor binding IPI:UniProtKB; GO:0005123 death receptor binding IPI; GO:0035877 death effector domain binding IPI.",
+        "https://rest.uniprot.org/uniprotkb/O60936.txt - UniProt O60936 (human NOL3): same FAS/FADD/TNFRSF1A interactions described; GO:0005123 death receptor binding IBA; GO:0035877 IEA:Ensembl.",
+        "Primary references cited there: Nam YJ et al. (2004) Mol Cell 'Inhibition of both the extrinsic and intrinsic death pathways through nonhomotypic death-fold interactions' (PMID 15383280); Kung G et al. (2014) Cell Death Differ (PMID 24440909).",
+        "Own computation (Needleman-Wunsch, script in scratchpad opus_work_03): packet human NOL3 vs mouse Q9D1X0 = 177/208 identities (85.1%); mouse 1-95 CARD region 88/95 (92.6%)."
+      ],
+      "limitations": "I did not read the primary papers' full texts and so could not confirm whether human or mouse protein constructs were used in the receptor co-immunoprecipitations; the decision is framed as orthology-based inference for that reason. GO:0005102 is a broad term; the more informative child (death receptor binding) is also supported.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "d96234a1cd868e78c03079248ce90371e67ca60f66b7bc7e751dacebe439f5d6:GO:0004328",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The protein is bacterial kynurenine formamidase KynB (Q81CK1, B. anthracis; A0A142GGI7, B. cereus). The established reaction is arylformamidase: recombinant B. cereus KynB was cloned, expressed and characterised as the enzyme catalysing N-formyl-L-kynurenine + H2O = L-kynurenine + formate (Kurnasov et al. 2003, FEMS Microbiol Lett 227:219-227, PMID 14592712), and UniProt records GO:0004061 arylformamidase activity with IDA for this entry (EC 3.5.1.9). The asserted term GO:0004328 is a different reaction - formamide + H2O = formate + NH4+ (RHEA:21948, EC 3.5.1.49). I checked the ontology records in QuickGO: GO:0004061 is not a descendant of GO:0004328 (their direct parents are GO:0016811 and GO:0004040 respectively), so the true-path rule does not carry the arylformamidase evidence to the formamidase term. The assertion arises from the InterPro IPR017484 ('Kynurenine formamidase, bacteria') to GO:0004328 mapping, an imprecise name-based mapping; no report of formamide hydrolysis by this enzyme was found.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q81CK1.txt - UniProt Q81CK1 (kynB): EC 3.5.1.9; CATALYTIC ACTIVITY N-formyl-L-kynurenine + H2O = L-kynurenine + formate (RHEA:13009); GO:0004061 arylformamidase IDA:UniProtKB; GO:0004328 formamidase IEA:InterPro; GO:0008270 zinc ion binding IEA:UniRule; no mention of formamide.",
+        "https://www.ebi.ac.uk/QuickGO/services/ontology/go/terms/GO:0004061,GO:0004328/complete - GO:0004061 'Catalysis of the reaction: N-formyl-L-kynurenine + H2O = formate + L-kynurenine', is_a GO:0016811; GO:0004328 'formamide + H2O = formate + NH4', current direct parent GO:0004040 (amidase activity). Neither is a parent of the other.",
+        "https://www.ebi.ac.uk/interpro/api/entry/interpro/IPR017484/ - InterPro IPR017484 'Kynurenine formamidase, bacteria'; GO mapping GO:0004328 formamidase activity and GO:0006569; abstract notes characterised members from B. cereus, P. aeruginosa and R. metallidurans and lists 'arylformamidase' as a synonym.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:14592712 - Kurnasov O et al. (2003) FEMS Microbiol Lett 227:219-227: recombinant KynB orthologs from B. cereus, P. aeruginosa and R. metallidurans characterised as kynurenine formamidase; abstract reports no substrate list and does not mention formamide."
+      ],
+      "limitations": "Abstract-level access to the 2003 characterisation, so I cannot exclude that formamide was tested in the full text; the appropriate term for the demonstrated activity (GO:0004061) is already annotated with IDA, which is why I treated this as a term mismatch rather than a genuine conflict requiring adjudication.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "0bddb1f8e86058d899eb4380098767c19f42245625f41985478ab33f65d74eaa:GO:0005198",
+      "decision": "accept",
+      "support_type": "experimental",
+      "supported_relation": "enables",
+      "rationale": "The protein is influenza A matrix protein M1 (P03485 and strain variants with the identical sequence). M1 is the structural scaffold of the virion: it forms a continuous shell on the inner face of the viral lipid bilayer, binds membrane and ribonucleocapsids, homodimerises/homomultimerises, and determines spherical versus filamentous virion morphology (UniProt FUNCTION/SUBUNIT, with crystallographic and biochemical primary studies: Sha & Luo 1997 M1 crystal structure, PMID 9164466; Arzt et al. 2001, PMID 11162800; Baudin et al. 2001 in vitro dissection of membrane- and RNP-binding activities, PMID 11222100; Zhao et al. 1998 homo-oligomer formation in cells, PMID 9780049). This is exactly the action of a molecule contributing to the structural integrity of a complex (the virion particle), and UniProt annotates the more specific descendant GO:0039660 structural constituent of virion.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/P03485.txt - UniProt P03485 (M1, A/Puerto Rico/8/1934 H1N1): FUNCTION 'forms a continuous shell on the inner side of the lipid bilayer', binds RNP, plays a role in virion morphology (spherical vs filamentous); SUBUNIT homodimers and homomultimers, binds RNP via genomic RNA and NP; GO:0039660 structural constituent of virion IEA:UniRule; GO:0003723 RNA binding.",
+        "Primary studies cited in that entry: PMID 9164466 (Sha B, Luo M, 'Structure of a bifunctional membrane-RNA binding protein, influenza virus matrix protein M1'); PMID 11162800 (Arzt et al., M1 solution/crystal analysis); PMID 11222100 (Baudin et al., in vitro dissection of M1 membrane and RNP binding); PMID 9780049 (Zhao et al., M1 homo-oligomeric complexes in cells); PMID 15567494 (Nayak et al., assembly and budding review)."
+      ],
+      "limitations": "GO:0005198 is a broad parent term; 'contributes_to' would be an equally defensible relation given that the structural integrity in question is that of a multi-protein particle. The packet's annotation route is InterPro-based rather than experimental, and I relied on UniProt's curated summaries plus titles/abstracts rather than reading the structural papers.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "e7e37baf98495be5c2c35cb67d85635c640dd97f48a142a7d6b4ad94a4dd9f1a:GO:0008140",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The protein is rat ATF4 (Q9ES19/B0BMW3), annotated by ISS/ISO/orthology from mouse Atf4 (Q06507), whose own annotation for this term is an IDA citing Han et al. 2013 (Nat Cell Biol 15:481-490, PMID 23624402) - the paper UniProt cites for mouse ATF4 forming DNA-binding homodimers and heterodimers (with DDIT3/CHOP). ATF4 is itself a cAMP-response-element-binding protein (its established synonym is CREB-2; UniProt FUNCTION: binds asymmetric CREs as a heterodimer and palindromic CREs as a homodimer), so ATF4 dimerisation is binding to a CREB protein as the term defines it; mouse ATF4 is additionally recorded in an ATF4-CREB1 complex (Complex Portal CPX-6 / GO:1990589, IDA). The transfer to rat is strongly supported: by my own alignment the supplied rat sequence is 95.4% identical to mouse ATF4 overall and 100% identical over the bZIP dimerisation/DNA-binding region (mouse residues 270-347), so the dimerisation determinants are the same protein sequence.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q06507,UniProtKB:Q9ES19&goId=GO:0008140 - four records: mouse Q06507 IDA PMID 23624402 (UniProt); rat Q9ES19 ISS GO_REF:0000024 with/from Q06507; rat ISO GO_REF:0000121 with/from MGI:88096; rat IEA GO_REF:0000107 (Ensembl).",
+        "https://rest.uniprot.org/uniprotkb/Q06507.txt - UniProt Q06507 (mouse ATF4, synonym CREB-2): FUNCTION binds CRE (consensus 5'-GTGACGT[AC][AG]-3'), 'Binds asymmetric CREs as a heterodimer and palindromic CREs as a homodimer'; SUBUNIT 'DNA-binding homodimer and heterodimer' (PubMed:23624402) and DDIT3 heterodimer (PubMed:23624402); GO:0008140 IDA:UniProtKB; GO:1990589 ATF4-CREB1 complex (IDA, ParkinsonsUK-UCL).",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:23624402 - Han J et al. (2013) Nat Cell Biol 15:481-490: ChIP-seq/mRNA-seq showing ATF4 and CHOP act together on protein-synthesis and UPR genes; abstract-level access.",
+        "Own computation (Needleman-Wunsch, script in scratchpad opus_work_03): packet rat Atf4 vs mouse Q06507 = 331/347 identities (95.4%); mouse 270-347 bZIP region 78/78 (100%)."
+      ],
+      "limitations": "The underlying experimental evidence is ATF4 homo/heterodimerisation rather than a direct assay of rat ATF4 binding CREB1; if GO:0008140 were read strictly as binding CREB1/CREM/ATF1 (rather than any CRE-binding protein, including ATF4 itself), the support would be indirect and would rest on the curated ATF4-CREB1 complex record. I read only the abstract of PMID 23624402, so the specific dimerisation experiment was not inspected.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "e5831534819e898b0151ede29f36914462d5c8864f4d56f45c5a964011a88c39:GO:0042802",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The assertion for mouse dystroglycan (Dag1, Q62165/Q544G5) rests on a single ISO annotation from human DAG1 (Q14118). That source annotation no longer exists: a QuickGO query for GO:0042802 on Q14118 returns zero records, so the inference has no live basis (older aggregators still display an 'identical protein binding, IPI' term for human DAG1, indicating a withdrawn annotation). Independently, the only DAG1 self-row in IntAct pairs the two processed chains PRO_0000021065 (alpha-dystroglycan) and PRO_0000021066 (beta-dystroglycan), i.e. the non-covalent alpha/beta association of the cleaved precursor, which is not binding between identical proteins; UniProt describes dystroglycan as a monomer forming an alpha/beta heterodimer and has no homodimerisation statement. A targeted search found no study showing dystroglycan homodimerisation or self-association of identical chains.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q62165&goId=GO:0042802 - one record: mouse Dag1 ISO, GO_REF:0000119, with/from UniProtKB:Q14118 (GO_Central, 2025-11-20).",
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q14118&goId=GO:0042802 - zero annotation records for human DAG1 with this term.",
+        "https://rest.uniprot.org/uniprotkb/Q14118.txt - UniProt Q14118: SUBUNIT 'Heterodimer of alpha- and beta-dystroglycan subunits', monomeric; IntAct self-entry is PRO_0000021065/PRO_0000021066 (alpha-beta chains, 4 experiments); no identical-protein-binding GO term and no homodimerisation comment.",
+        "Web search for dystroglycan homodimerisation/self-association: no primary study of beta-dystroglycan homodimerisation found; only the alpha/beta heterodimer description and a legacy database GO term."
+      ],
+      "limitations": "Conclusion of insufficient evidence rather than contradiction: an interaction dataset showing DAG1 self-association could exist. If a curator intends the alpha/beta association of the single DAG1 precursor as 'identical protein binding', the term would be matched only on a reading of the definition I consider incorrect, since the two chains are distinct cleavage products.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "d7ba339757ca6cd2c873e6fbaebf884d910b060fb7dc3726313524a6a2e4d25b:GO:0070644",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The protein is rat Tcf3/E2A (P21677), annotated by ISO from human TCF3 (P15923), whose annotation for this term is an IDA citing Turunen et al. 2007 (Nucleic Acids Res 35:2734-2747, PMID 17426122). I read that paper's full text: in gel-shift assays with in vitro-translated protein, VDIR (vitamin D receptor interacting repressor - the bHLH factor that is the same gene product as TCF3/E2A, listed as a TCF3 synonym in NCBI Gene/UniProt) bound the CYP27B1 negative VDRE efficiently, whereas VDR and RXR did not bind that element alone or as a heterodimer. Binding of a (negative) vitamin D response element is exactly the asserted term. The orthologous transfer is well supported: by my own alignment the supplied rat sequence is 83.0% identical to human TCF3 overall and 95.1% across the bHLH region, and the DNA-contacting basic region plus first helix is identical in the two species (EREKERRVANNARERLRVRDINEAFKELGRMCQLHL), so element-binding specificity is conserved.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:P15923,UniProtKB:P21677&goId=GO:0070644 - two records: human TCF3 IDA PMID 17426122 (BHF-UCL); rat Tcf3 ISO GO_REF:0000121 with/from P15923 (RGD).",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC1885674/ - Turunen MM, Dunlop TW, Carlberg C, Vaisanen S (2007) NAR 35:2734-2747, full text read: gel shift with TNT-translated protein; 'VDIR bound efficiently to the nVDRE'; VDR/RXR did not; the nVDRE probe is a 32P-labelled double-stranded oligonucleotide containing E-boxes (Fig. 3D). No ChIP for VDIR.",
+        "Web search confirming VDIR is a TCF3 synonym (NCBI Gene 6929 alias list includes VDIR; TCF3 alternative names include 'negative vitamin D response element-binding protein'); the 2004 EMBO J paper (Murayama et al.) that named VDIR describes it as a bHLH factor binding the 1-alpha-hydroxylase nVDRE.",
+        "Own computation (Needleman-Wunsch, script in scratchpad opus_work_03): packet rat Tcf3 vs human P15923 = 537/647 identities (83.0%); human 540-620 bHLH region 77/81 (95.1%); basic region/helix 1 identical."
+      ],
+      "limitations": "The paper identifies the protein as VDIR; the equivalence VDIR = TCF3 rests on database synonymy rather than a statement in the text I read. The assay used in vitro-translated (not purified) protein and a human promoter element, and the rat protein itself was not assayed. The GO term's definition text is itself anomalous (it describes a serum-response-element-like sequence), but the term name and its usage denote VDRE binding.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "7134500addbfd6c216b05b1d51df8652a21da0b6ee3626a63c557359b91e1a44:GO:0008017",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The protein is human CCDC88C/Daple (Q9P219). The packet's Ensembl route projects from mouse Ccdc88c (Q6VGS5), which carries an experimental (IDA) annotation for microtubule binding from Nakayama et al. 2021 (J Cell Biol 220:e202010034, PMID 33929515). That study showed, with in vitro binding and single-molecule imaging, that Daple directly binds, bundles and stabilises microtubules in a manner dependent on its dimerisation, alongside Daple-knockout mouse tracheal multiciliated cells in which apical microtubule planar polarisation is lost. The inference to the human ortholog is well supported: by my own alignment human CCDC88C is 83.2% identical to mouse Ccdc88c overall and 93.2% identical across the N-terminal HOOK/CH region (mouse 1-250); InterPro shows the human protein carries the same HOOK N-terminal domain (IPR043936, residues 17-161) and calponin-homology domain, and UniProt records that it forms homooligomers, the property the mouse work found necessary for microtubule bundling.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q6VGS5&goId=GO:0008017 - mouse Ccdc88c: IDA, PMID 33929515 (MGI), with extension occurs_in GO:0043296; plus IBA and ARBA IEA records.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:33929515 - Nakayama S et al. (2021) J Cell Biol 220:e202010034 'Planar cell polarity induces local microtubule bundling for coordinated ciliary beating': Daple loss disrupts apical microtubule planar polarisation in tracheal multiciliated cells; in vitro experiments including single-molecule imaging show Daple directly bound, bundled and stabilised microtubules, dependent on dimerisation (mouse protein/knockout mice).",
+        "https://www.ebi.ac.uk/interpro/api/entry/all/protein/uniprot/Q9P219/ - human Q9P219 matches IPR043936 (HOOK, N-terminal; 17-161), IPR001715 (calponin homology domain), IPR036872.",
+        "https://rest.uniprot.org/uniprotkb/Q9P219.txt - UniProt Q9P219: 'Forms homooligomers'; GEF activity for Gi-alpha (IDA); GO:0008017 currently IBA:GO_Central.",
+        "Own computation (Needleman-Wunsch, script in scratchpad opus_work_03): packet human CCDC88C vs mouse Q6VGS5 = 1670/2008 identities (83.2%); mouse 1-250 region 233/250 (93.2%)."
+      ],
+      "limitations": "Abstract-level access to the mouse paper, so the microtubule-binding region was not mapped within Daple in material I read; domain-level attribution therefore relies on the shared HOOK/CH architecture and the conserved dimerisation-dependent mechanism. No assay of the human protein was located, and the packet's IBA route (shared with HOOK family members) would not by itself have been sufficient.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "4c31c455bf680b23d8a9d3bc621ff7596f1727d9c4aea5b1f1d0b5b4eb7f2b34:GO:0140777",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The mouse Telo2 (Q9DC40) assertion comes from ISO/Ensembl transfer from human TELO2 (Q9Y4R8), whose only annotation for this term is an IMP citing Rao et al. 2014 (Mol Cell 54:119-132, PMID 24657168). That study shows that IP7 (made by IP6K2) binds CK2 and enhances CK2 phosphorylation of the TTT co-chaperone (Tel2/Tti1/Tti2), which stabilises the PIKKs DNA-PKcs and ATM and thereby increases p53 Ser15 phosphorylation and apoptosis. This is a perturbation-based requirement for PIKK stability/maturation, not a demonstration of the mechanism GO:0140777 defines - direct binding to a subunit of a protein-containing complex that prevents an interaction promoting the complex's dissociation. A mutant-phenotype (IMP) annotation cannot establish that binding-based anti-dissociation activity, and the ISO transfer inherits the same gap rather than adding evidence.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q9Y4R8,UniProtKB:Q9DC40&goId=GO:0140777 - three records: human TELO2 IMP PMID 24657168 (MGI); mouse Telo2 ISO PMID 24657168 with/from Q9Y4R8 (MGI); mouse Telo2 IEA GO_REF:0000107 (Ensembl).",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:24657168 - Rao F et al. (2014) Mol Cell 54:119-132 'Inositol pyrophosphates mediate the DNA-PK/ATM-p53 cell death pathway by regulating CK2 phosphorylation of Tti1/Tel2': TTT family stabilises PIKKs, CK2 phosphorylation mediates this, IP7 enhances it; work in human cancer cells and murine B cells. Abstract does not describe direct binding preventing complex dissociation, and does not address mTORC1/2."
+      ],
+      "limitations": "TELO2 is known from other work to bind mTOR/ATR and to be required for the integrity of mTORC1/mTORC2 and PIKK complexes; if a study demonstrates direct binding plus prevention of dissociation, the term could become supportable. I read only abstracts for this protein, so this is insufficient evidence rather than contradiction.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "4fe5a2a78853c457b011250812a422409cdbd80140b051ca12d05e39c7c61a08:GO:0003950",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "Drosophila Parp16 (A1ZAG4) is asserted to enable NAD+ poly-ADP-ribosyltransferase activity by ISS from human PARP16 (Q8N5Y8). The human source protein is a mono-ADP-ribosyltransferase: UniProt names it 'Protein mono-ADP-ribosyltransferase PARP16' and lists only single-ADP-ribose transfer reactions onto Asp, Glu and Lys residues, with IDA annotations for mono-ADP-ribosyltransferase activity (GO:1990404, GO:0140804, GO:0140806, GO:0140807) supported by the family-wide biochemical analysis of PARP activity (Vyas et al. 2014, PMID 25043379) and by Di Paola et al. 2012 (PMID 22701565). The residual GO:0003950 annotation on the human protein is an IMP and is inconsistent with that biochemistry; the fly entry is likewise named a mono-ADP-ribosyltransferase. The asserted term specifically requires elongation of (ADP-ribose)n chains, which the available evidence for this family member does not support and in fact argues against.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q8N5Y8.txt - UniProt Q8N5Y8 (human PARP16/ARTD15): recommended name 'Protein mono-ADP-ribosyltransferase PARP16'; three catalytic-activity entries, all single ADP-ribose transfers (Asp/Glu/Lys) releasing nicotinamide; GO:1990404 and GO:0140804/0140806/0140807 IDA; GO:0003950 retained only as IMP; key references PMID 25043379 (Vyas et al. 2014, family-wide analysis of PARP activity), 22701565, 23103912, 34314702, 22661712 (ARTD15 crystal structure).",
+        "Packet annotation record: FlyBase ISS (GO_REF:0000024) with/from UniProtKB:Q8N5Y8 for A1ZAG4, whose own UniProt object name is 'Protein mono-ADP-ribosyltransferase Parp16'."
+      ],
+      "limitations": "I did not find a biochemical assay of the Drosophila protein itself; the decision rests on the mono- versus poly- distinction established for the human ortholog and reflected in current UniProt naming and reaction annotations. Some ADP-ribosyltransferase activity for the fly protein is plausible; it is the 'poly' claim that fails.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "6f04b325eaafec58879bf2a89c083ed547a72940138491b6ad151527b390ab4f:GO:0004180",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The supplied sequence is ACE2 of Rhinolophus macrotis (E2DHI3, taxon 196889, protein-existence level 1). ACE2 is a zinc metallo-carboxypeptidase that removes a single C-terminal residue from angiotensin I and II and other peptides, and the inference from the human enzyme to this ortholog is strong and residue-specific: by my own global alignment the bat protein is 80.9% identical to human ACE2 (Q9BYF1) over all 805 aligned residues, with the HEMGH zinc-binding motif at the identical positions (374-378), Glu402 (the third zinc ligand), and the residues that make ACE2 a carboxypeptidase rather than a dipeptidyl-peptidase - Arg273 (C-terminal carboxylate binding), His345/Pro346 and His505, plus Arg514 - all conserved. The asserted term (hydrolysis of a single C-terminal residue from a polypeptide) therefore matches the conserved catalytic machinery of a bona fide ACE2 ortholog whose expression as a functional protein has been demonstrated.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/E2DHI3.txt - UniProt E2DHI3 (ACE2, Rhinolophus macrotis, taxon 196889, PE1): FUNCTION 'Essential counter-regulatory carboxypeptidase of the renin-angiotensin hormone system'; catalytic activities angiotensin I -> angiotensin-(1-9) + Leu and angiotensin II -> angiotensin-(1-7) + Phe (EC 3.4.17.23); keywords Carboxypeptidase/Metalloprotease/Zinc; GO:0004180 IEA:UniProtKB-ARBA; references PMID 20567988 and PMID 33335073 (bat ACE2 proteins expressed and tested as SARS-CoV/SARS-CoV-2 receptors).",
+        "Own computation (Needleman-Wunsch, script in scratchpad opus_work_03): packet bat ACE2 vs human Q9BYF1 = 651/805 identities (80.9%); human R273, H345, P346, H374, E375, M376, G377, H378, E402, H505, R514 each aligned to the identical residue in the bat sequence; 'HEMGH' present at bat position 374."
+      ],
+      "limitations": "No peptidase assay on the R. macrotis enzyme was located; the two cited studies concern receptor function rather than catalysis. The decision is an orthology inference backed by complete conservation of the catalytic and specificity residues that I checked myself.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "2be1462ce9456241aaaa2421ee07e9d854f76c3abe07648af8558bfef543c8a4:GO:0051537",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The protein is the Leishmania frataxin-like protein (A4I1E7 / I7HD01), and the only annotation route is PANTHER TreeGrafter propagation (PTN000423756). Tracing the family's experimental basis, the single IDA annotation for 2Fe-2S cluster binding in this family is on human FXN and cites Yoon & Cowan 2003 (J Am Chem Soc 125:6078-6084, PMID 12785837). That study shows frataxin binding ~6-7 iron ions (Fe3+ Kd ~10-12 uM; Fe2+ ~55 uM) and acting as the iron donor for [2Fe-2S] assembly on ISU: the cluster forms on ISU after iron transfer and sulfur delivery, not on frataxin. The current literature likewise treats frataxin as an iron donor/allosteric activator within the NFS1-ISCU machinery rather than a cluster-binding protein. So the propagated term rests on a mis-specified source annotation, and no evidence of 2Fe-2S cluster binding by any frataxin - let alone the Leishmania protein - was found.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?goId=GO:0051537&geneProductId=UniProtKB:Q16595,UniProtKB:A4I1E7,UniProtKB:I7HD01 - A4I1E7 and I7HD01 IEA GO_REF:0000118 with/from PANTHER:PTN000423756 (TreeGrafter); human FXN IBA GO_REF:0000033 and IDA PMID 12785837 (BHF-UCL).",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:12785837 - Yoon T, Cowan JA (2003) JACS 125:6078-6084 'Characterization of frataxin as an iron donor for assembly of [2Fe-2S] clusters in ISU-type proteins': human frataxin binds ~6-7 iron ions; holo-frataxin binds ISU with sub-micromolar affinity and transfers iron; holo-ISU forms with sulfide or NifS. Frataxin is not reported to hold an intact [2Fe-2S] cluster.",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=frataxin AND \"2Fe-2S\" - recent literature (e.g. PMID 41372413, 41372402) describes frataxin as competing with FDX2 for the NFS1-ISCU2 site and acting as an allosteric activator, with no report of cluster binding by frataxin itself."
+      ],
+      "limitations": "Abstract-level access throughout; iron (ferrous/ferric) binding by frataxins is well supported, so a different term (iron ion binding) would likely be defensible. No study of the Leishmania protein's metal binding was found at all, so this is insufficient evidence rather than a demonstrated negative.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "f47b889573e76ad26980f54cd6c6980dabd22cc9f2017babfe76f63851ef4e73:GO:0003714",
+      "decision": "do_not_accept",
+      "support_type": "none_established",
+      "supported_relation": null,
+      "rationale": "The protein is Candida albicans SWC4 (Q5AAJ7), the fungal ortholog of DMAP1 and a shared subunit of the NuA4 acetyltransferase and SWR1 remodelling complexes. The sole annotation route is IBA from mouse Dmap1 (MGI:1913483) via PANTHER PTN000304415; the mouse source evidence is an IDA from Rountree et al. 2000 (PMID 10888872), where DMAP1 was identified as a DNMT1-associated corepressor and shown to repress transcription in a tethered (fusion) reporter assay together with DNMT1/HDAC2 at replication foci. GO:0003714 requires repression exerted through binding a DNA-binding transcription factor at a genomic locus; the mouse assay did not demonstrate that mechanism, and the DNMT1-dependent context has not been shown for fungal Swc4, whose characterised complexes are generally coactivator-associated. No experimental study of C. albicans Swc4 as a corepressor was found, so this is family-level propagation of a repeated annotation rather than a substantiated inference.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?goId=GO:0003714&geneProductId=UniProtKB:Q5AAJ7,UniProtKB:Q9NPF5 - C. albicans SWC4 IBA GO_REF:0000033 with/from MGI:1913483 and PANTHER:PTN000304415; human DMAP1 the same IBA plus an Ensembl IEA.",
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q9JI44&goId=GO:0003714 - mouse Dmap1: IBA (same PANTHER route) and IDA PMID 10888872 (MGI).",
+        "PMID 10888872 (Rountree MR, Bachman KE, Baylin SB, Nat Genet 2000) - DNMT1 binds HDAC2 and the new corepressor DMAP1 at replication foci; DMAP1 shows transcriptional repression as a tethered fusion. (Identified through the GO annotation record; abstract not separately retrieved.)"
+      ],
+      "limitations": "I did not retrieve the 2000 paper's abstract directly, and did not search Candida-specific literature exhaustively; a repression function for fungal Swc4 could exist. My statement that the fungal complexes are coactivator-associated is background knowledge rather than a verified citation in this review.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "ef7ea7231d382877816d0dfb3804c51321936a6c0eb61eeb2a660c9c9da95c90:GO:0034062",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The supplied sequence is the turnip yellow mosaic virus (TYMV) 206K non-structural replication polyprotein (P10358), which is proteolytically processed to release the 66K protein carrying the RNA-directed RNA polymerase domain (UniProt POL chain 1260-1844 with the RdRp catalytic domain at 1572-1678; processing demonstrated in PMID 17686855 and the 66K product detected in infected cells, PMID 11222099). TYMV RdRp activity has been demonstrated experimentally: replicase preparations from infected plants carry out template-specific de novo minus-strand synthesis on TYMV RNA and on 3' tRNA-like-structure fragments, and this activity was used quantitatively in Matsuda, Yoshinari & Dreher 2004 (Virology, PMID 15033564), where eEF1A-GTP bound to valylated viral RNA repressed minus-strand synthesis by the TYMV RdRp while non-aminoacylated templates were unaffected. The asserted term is the parent of RNA-directed RNA polymerase activity and corresponds to the reaction (RHEA:21248) UniProt annotates for this protein's POL chain, so the mature-product rule applies and the function is established for the supplied sequence.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/P10358.txt - UniProt P10358 (TYMV 206K polyprotein): mature chains MET/PRO 1-879, HEL 880-1259, POL 1260-1844; RdRp catalytic domain 1572-1678 (PS50507); CATALYTIC ACTIVITY RNA(n) + NTP = RNA(n+1) + diphosphate (EC 2.7.7.48, RHEA:21248); references PMID 17686855 (proteolytic processing of TYMV replication proteins), 11222099 (66K detection/localisation), 22117220 (viral DUB targets the RdRp).",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=AUTH:\"Dreher TW\" AND \"turnip yellow mosaic\" - Matsuda D, Yoshinari S, Dreher TW (2004) Virology (PMID 15033564): 'eEF1A binding to aminoacylated viral RNA represses minus strand synthesis by TYMV RNA-dependent RNA polymerase'; repression required template aminoacylation; demonstrates assayable TYMV RdRp minus-strand synthesis.",
+        "Web search summary of earlier TYMV replicase work (Singh & Dreher 1997, Virology; Deiman et al. 1997/1998): RdRp activity solubilised from chloroplast membranes of infected Chinese cabbage performs template-dependent full-length minus-strand synthesis, copying TYMV RNA and 3' fragments as short as 28 nt, with template specificity (poly(A) not copied). Seen via search summaries only."
+      ],
+      "limitations": "The in vitro polymerase assays used replicase preparations from infected plants rather than recombinant 66K, so attribution to the viral POL domain rests on domain identification, the processing map and the activity's template specificity; the packet's own route is a RHEA-to-GO mapping of a catalytic-activity statement that is not itself experimentally evidenced in UniProt. I read abstracts and search summaries, not full texts.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "2936953b9659b27b2b76e0c08793623202770017858bc6c194a2e9bf016b4b71:GO:0000166",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The protein is Drosophila mitochondrial tyrosyl-tRNA synthetase (TyrRS-m, Q9W107), a class I aminoacyl-tRNA synthetase. Aminoacylation obligatorily proceeds through ATP-dependent formation of a Tyr-AMP intermediate (UniProt catalytic activity: tRNA(Tyr) + L-tyrosine + ATP = L-tyrosyl-tRNA(Tyr) + AMP + diphosphate), so nucleotide binding is intrinsic to the family's chemistry, and the supplied sequence carries the class I nucleotide-binding signatures: I located the TyrRS KMSKS-type motif KFGKS at residues 270-274 and the HIGH-motif region at ~66-75 (…SLHVGNL…) in the supplied sequence, matching UniProt's motif annotations, and UniProt assigns ATP-binding residues 65 and 273 by similarity to human YARS2 and E. coli TyrRS. The protein is 50.1% identical to human mitochondrial YARS2 over the aligned region in my own alignment, and matches IPR002307 (Tyr-tRNA ligase) plus the class I conserved-domain signatures. GO:0000166 is the broad nucleotide-binding term and is satisfied by ATP binding.",
+      "sources": [
+        "https://rest.uniprot.org/uniprotkb/Q9W107.txt - UniProt Q9W107: EC 6.1.1.1; CATALYTIC ACTIVITY RHEA:10220; BINDING ATP at 65 (by similarity to Q9Y2Z4) and 273 (by similarity to E. coli P00959); 'HIGH' region 66-75 and 'KMSKS' region 270-274; keywords ATP-binding/Nucleotide-binding; GO:0005524 IEA:InterPro.",
+        "Own computation (script in scratchpad opus_work_03): supplied sequence residues 61-80 = YAGFDPTADSLHVGNLLVIM; residues 265-280 = TEEGDKFGKSAGNAVW (KFGKS at 270-274); global alignment vs human YARS2 (Q9Y2Z4) = 229/457 identities (50.1%)."
+      ],
+      "limitations": "No assay of the Drosophila enzyme; the decision is a family/orthology inference resting on universally conserved catalytic motifs and on by-similarity residue annotations, not on a structure of this protein with nucleotide.",
+      "adjudication_question": null
+    },
+    {
+      "assertion_id": "69706cd52d6f574832f2271bd3f5f0f142bbfa0b0078f9e7134f9efd8aea867b:GO:0003682",
+      "decision": "accept",
+      "support_type": "inference",
+      "supported_relation": "enables",
+      "rationale": "The supplied sequence is human FMRP (identical to UniProt Q06787, verified by direct comparison), annotated by ISS from mouse Fmr1 (P35922), whose source annotation is an IDA citing Alpatov et al. 2014 (Cell 157:869-881, PMID 24813610). Reading that paper's full text, chromatin binding is established on several independent axes: GST pulldown of core histones from native HeLa nucleosomes by wild-type FMRP but not Agenet-domain mutants; binding of full-length FMRP to methylated but not unmethylated H3; microscale thermophoresis of the tandem Agenet domain with methyl-lysine-analog H3 peptides (Kd ~100-135 nM vs ~1 uM unmethylated) and with H3K79me2 MLA nucleosomes (Kd 59 nM); and in vivo chromatin fractionation in MEFs with a ~4-fold increase in chromatin-associated FMRP after aphidicolin, plus FMRP occupancy of mouse meiotic chromosomes. The inference to human is essentially trivial: my alignment gives 97.1% identity between the supplied human sequence and mouse FMRP overall and 98.2% across residues 1-220, which contain the tandem Agenet/Tudor chromatin-binding module.",
+      "sources": [
+        "https://www.ebi.ac.uk/QuickGO/services/annotation/search?geneProductId=UniProtKB:Q06787,UniProtKB:P35922&goId=GO:0003682 - two records: mouse Fmr1 IDA PMID 24813610 (UniProt); human FMR1 ISS GO_REF:0000024 with/from P35922.",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4038154/ - Alpatov R et al. (2014) Cell 157:869-881, full text (first ~100k characters read): GST pulldowns with HeLa native nucleosomes; methyl-lysine-analog histone binding; MST Kd values (~59 nM for H3K79me2 MLA nucleosomes); chromatin fractionation in MEFs; Dot1L-dependent FMRP signal on meiotic chromosomes.",
+        "Own computation (Needleman-Wunsch, script in scratchpad opus_work_03): packet sequence identical to UniProt Q06787 (632 aa); vs mouse P35922 = 596/614 identities (97.1%); residues 1-220 (tandem Agenet region) 216/220 (98.2%)."
+      ],
+      "limitations": "The full text does not state whether the FMRP constructs used in the in vitro assays were human or mouse (nucleosomes were human; cells were mouse), so I classify the human claim as inference rather than experimental; evidence for direct chromatin binding would be equally strong either way. I read the PMC text only up to ~100k characters.",
+      "adjudication_question": null
+    }
+  ],
+  "unreviewed": [],
+  "summary": "All 25 supplied assertions (25 proteins) were reviewed; none left unreviewed. Decisions: 13 accept, 12 do not accept, 0 needs adjudication. Accepted on experimental evidence for the supplied protein: B. subtilis ferredoxin iron (4Fe-4S) binding; human ZNF366 DNA-binding transcription factor activity (human DC-SCRIPT ChIP-seq motif plus knockdown of the occupied DUSP4 target); RVFV L protein metal ion binding (curated ECO:0000269 cofactor evidence from the full-length L structure/biochemistry); influenza A M1 structural molecule activity. Accepted on well-substantiated orthology/mature-product inference: rat LIC1 GDP binding (human LIC1 IDA; 94.9% identity across the Ras-like G domain, identical P-loop segment); human NOL3 signalling receptor binding (mouse ARC CARD binds FAS/TNFR1; CARD 92.6% identical); rat ATF4 CREB-protein binding (mouse IDA; bZIP region 100% identical); rat TCF3 VDRE binding (human TCF3/VDIR gel-shift on the CYP27B1 nVDRE; identical basic region); human CCDC88C microtubule binding (mouse Daple directly binds/bundles MTs in vitro; HOOK/CH region 93.2% identical); bat (R. macrotis) ACE2 carboxypeptidase activity (80.9% identity to human ACE2 with every catalytic/specificity residue conserved); TYMV 206K polyprotein 5'-3' RNA polymerase activity (released 66K RdRp; assayable template-specific minus-strand synthesis); Drosophila mitochondrial TyrRS nucleotide binding (class I motifs HIGH and KFGKS present); human FMRP chromatin binding (mouse IDA via tandem Agenet domain; 98.2% identity over that module). Rejected for insufficient support or term mismatch: SINE1 microtubule binding (actin binding is what is shown; MT role is process-level); mouse B-Myc DNA-binding transcription factor activity (protein lacks the Myc DNA-binding motif); GEMIN7 RNA binding (generic Sm-domain mapping only; structure shows Sm-protein, not RNA, binding); Drosophila dSarm signalling adaptor activity (established function is TIR NADase); human STAP1 transmembrane-RTK adaptor activity (RTK binding shown, bridging not demonstrated; mouse source paper shows reduced receptor phosphorylation); B. subtilis PxpA ATP binding (ATP site/first phosphorylation step maps to the PxpBC module; complex membership does not establish subunit ATP binding); Bacillus KynB formamidase activity (demonstrated activity is arylformamidase, GO:0004061, which is not a descendant of GO:0004328); mouse dystroglycan identical protein binding (human source annotation withdrawn; IntAct self-row is the alpha/beta cleavage-product heterodimer); mouse TELO2 complex-stabilizing activity (IMP evidence concerns PIKK stability, not binding-mediated prevention of complex dissociation); Drosophila Parp16 poly-ADP-ribosyltransferase activity (the family member is a mono-ADP-ribosyltransferase); Leishmania frataxin 2Fe-2S cluster binding (source human IDA actually shows iron donation for cluster assembly on ISU); C. albicans SWC4 transcription corepressor activity (distant PANTHER propagation from a DNMT1-context tethered-repression assay). Verified by my own computation (Needleman-Wunsch alignments and motif/residue checks, scripts in the scratchpad opus_work_03 directory): all percentage identities and residue conservation statements above. Evidence from UniProt/QuickGO reflects records retrieved on 2026-10-30, i.e. after the packet's GOA 2026-07-29 snapshot; where that mattered it is noted in the entry (notably the absent human DAG1 GO:0042802 annotation). Most primary literature was read at abstract level; full texts were read for Turunen et al. 2007 (PMC1885674) and Alpatov et al. 2014 (PMC4038154)."
+}
