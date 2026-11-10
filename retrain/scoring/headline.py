@@ -5,8 +5,7 @@
 The main test labels leave out of every metric the GOA assertions that the label review considered, accepted or not, and the
 pairs they add through the ontology: neither positive nor negative (retrain.scoring.test_labels masked). Every result that
 depends on the test labels is scored again from the same predictions with the scorer's --labels masked and written under
-<root>/results_masked/, in the same folders with the same files as under <root>/results/ (figures/ reads them with
-HEADLINE=masked):
+<root>/results_masked/, in the same folders with the same files as under <root>/results/ (figures/ reads them there):
 
   main, selection, ladder, explabels_training/    retrain.scoring.score RUN --labels masked
   no_hit/                                         retrain.scoring.no_hit --labels masked (the same subsets)

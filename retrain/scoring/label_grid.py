@@ -14,11 +14,13 @@ proteins unless stated:
   direct_masked     direct evidence only: the same positives; those pairs count as neither positive nor negative. Every
                     other pair is labelled as in the official (reviewed) labels
   masked            positives: the test annotations other than the review's; the pairs that every assertion the review
-                    considered adds, accepted or not, count as neither positive nor negative
+                    considered adds, accepted or not, count as neither positive nor negative (the main test labels)
+  masked_negatives  computational annotations negative: the positives of masked; those pairs count as negatives (all 5,000
+                    proteins; main-text Table 2, not a column of the grid)
   reviewed          the official labels
   all_goa           the test annotations other than the review's plus every assertion the review considered
-  no_hit_0.001, no_hit_10   the official labels on the test proteins without a training hit at E <= 1e-3 and E <= 10
-                    (the paper's subsets, release/benchmark_no_hit)
+  no_hit_0.001, no_hit_10   the official labels (in results_masked/label_grid: the masked ones) on the test proteins
+                    without a training hit at E <= 1e-3 and E <= 10 (the paper's subsets, release/benchmark_no_hit)
 
 A score is the exact micro-AUPRC over the pairs a version keeps (retrain.scoring.term_strata.replicate_auprc: a resample
 that draws every cluster once gives the point estimate; the scorer's 10,000 resamples of the test clusters give paired
@@ -26,19 +28,24 @@ intervals), of the test scores propagated over the ontology; a model's value is 
 ensemble). Models: scoring/main.json and scoring/explabels_training.json (retrain.scoring.score; a model in both must have
 the same test files). Writes:
 
-1. results/direct_masked_test_labels/ and results/direct_negatives_test_labels/: models.tsv (the published methods on
-   original, goa, hq and archipelago and Finch on goa, hq, hq_random and archipelago; micro-AUPRC per run and mean) and
-   contrasts.tsv (every pair of them within a method or a training set: the difference of the means and its paired 95%
-   interval; main-text Table 2 reads the direct_masked one).
+1. results/direct_masked_test_labels/, results/direct_negatives_test_labels/ and results/masked_negatives_test_labels/:
+   models.tsv (the published methods on original, goa, hq and archipelago and Finch on goa, hq, hq_random and archipelago;
+   micro-AUPRC per run and mean) and contrasts.tsv (every pair of them within a method or a training set: the difference of
+   the means and its paired 95% interval; main-text Table 2 reads the direct_masked and masked_negatives ones).
 2. results/label_grid/grid.tsv (the published methods on original, hq_explabels, goa, hq and archipelago and Finch on the
    three original sets, hq_explabels, goa, hq, hq_random and archipelago; one column per version), versions.tsv (proteins,
    clusters, positive and left-out pairs, terms with a positive) and check.tsv: every grid value that a scored results
    folder has for the same version and model (main, explabels_training, experimental_test_labels, masked_test_labels,
-   all_goa_test_labels, no_hit/E0.001, no_hit/E10, and the two folders of 1.) must agree to 1e-6, or the run stops.
+   all_goa_test_labels, no_hit/E0.001, no_hit/E10, and the direct-evidence folders of 1.) must agree to 1e-6, or the run
+   stops.
+3. results_masked/label_grid/: the same with the two no-hit columns (and their rows of versions.tsv) on the main test
+   labels instead of the reviewed ones, as in Supplementary Table 6 and Supplementary Figure 1; those columns are checked
+   against results_masked/no_hit/E0.001 and E10.
 
 Checks first: with the official labels, the first Finch run reproduces its micro-AUPRC in results/main, and Finch
 ArchipelaGO - HQ + random its paired interval. Needs the results of retrain.scoring.score main and explabels_training,
-retrain.scoring.test_labels experimental, masked and all_goa, and retrain.scoring.no_hit. A few minutes on one GPU.
+retrain.scoring.test_labels experimental, masked and all_goa, retrain.scoring.no_hit, and retrain.scoring.headline
+(results_masked/no_hit). A few minutes on one GPU.
 """
 import argparse
 import collections
@@ -55,12 +62,12 @@ from archipelago.evaluate import cluster_draws
 from archipelago.go import Propagation, read_parents
 from retrain.common import add_argument, data_root, log
 from retrain.scoring.no_hit import released_subsets
-from retrain.scoring.score import ORIGINAL
+from retrain.scoring.score import ORIGINAL, results_dir
 from retrain.scoring.term_strata import replicate_auprc
 from retrain.scoring.test_labels import annotation_sets
 
 PUBLISHED = ('deepgose', 'transfew', 'dpfunc')
-TABLES = ('direct_masked', 'direct_negatives')
+TABLES = ('direct_masked', 'direct_negatives', 'masked_negatives')
 BOOTSTRAP = [(m, s) for m in ('transfew', 'deepgose', 'dpfunc') for s in ('original', 'goa', 'hq', 'archipelago')] + \
             [('finch', s) for s in ('goa', 'hq', 'hq_random', 'archipelago')]
 GRID_ROWS = [(m, s) for m in PUBLISHED for s in ('original', 'hq_explabels', 'goa', 'hq', 'archipelago')] + \
@@ -80,9 +87,9 @@ def main():
     add_argument(parser)
     a = parser.parse_args()
     root = data_root(a.data)
-    results = root / 'results'
+    results, results_masked = results_dir(root, 'reviewed'), results_dir(root, 'masked')
     outs = {name: results / f'{name}_test_labels' for name in TABLES}
-    outs['grid'] = results / 'label_grid'
+    outs['grid'], outs['main_grid'] = results / 'label_grid', results_masked / 'label_grid'
     for folder in outs.values():
         if folder.exists():
             raise FileExistsError(f'{folder} exists')
@@ -173,9 +180,10 @@ def main():
                 'all_goa': (tensor(closure(pairs['all_goa'])), keep_all),
                 'no_hit_0.001': (y_official, rows_of(subsets[1e-3])), 'no_hit_10': (y_official, rows_of(subsets[10.0]))}
 
-    # ---- 1. the direct-evidence versions: seed means and paired intervals
+    # ---- 1. the direct-evidence versions and the computational annotations as negatives: seed means and paired intervals
+    tables = {**versions, 'masked_negatives': (tensor(base), keep_all)}  # (not a column of the grid)
     for name in TABLES:
-        y, keep = versions[name]
+        y, keep = tables[name]
         point, replicates, start = {}, {}, time.time()
         outs[name].mkdir(parents=True)
         with open(outs[name] / 'models.tsv', 'w', newline='\n') as handle:
@@ -198,51 +206,63 @@ def main():
                         low, high = np.percentile(replicates[x] - replicates[z], [2.5, 97.5])
                         handle.write(f'auprc\t{x[0]}\t{x[1]}\t{z[0]}\t{z[1]}\t{point[x] - point[z]}\t{low}\t{high}\n')
 
-    # ---- 2. the grid
-    out = outs['grid']
-    out.mkdir(parents=True)
-    with open(out / 'versions.tsv', 'w', newline='\n') as handle:
-        handle.write('version\tproteins\tclusters\tpositive_pairs\tleft_out_pairs\tterms_with_positive\n')
-        for name, (y, keep) in versions.items():
-            rows = keep.any(1)
-            handle.write(f'{name}\t{int(rows.sum())}\t{len(torch.unique(cluster_of[rows]))}\t{int((y & keep).sum())}\t'
-                         f'{int((~keep & rows[:, None]).sum())}\t{int((y & keep).any(0).sum())}\n')
-    log((out / 'versions.tsv').read_text())
-    point, start = {}, time.time()
+    # ---- 2. the grid, twice: results/label_grid with the two no-hit columns on the reviewed labels, and the paper's grid,
+    # results_masked/label_grid, with them on the main test labels (every other column is the same in both)
+    main_versions = {**versions, 'no_hit_0.001': (tensor(base), tensor(~masked) & rows_of(subsets[1e-3])),
+                     'no_hit_10': (tensor(base), tensor(~masked) & rows_of(subsets[10.0]))}
+    grids = {outs['grid']: (versions, [(v, results / f) for v, f in REFERENCES]),
+             outs['main_grid']: (main_versions, [(v, results / f) for v, f in REFERENCES if not v.startswith('no_hit')]
+                                 + [(v, results_masked / 'no_hit' / f'E{c}') for v, c in (('no_hit_0.001', '0.001'),
+                                                                                          ('no_hit_10', '10'))])}
+    point, start = {out: {} for out in grids}, time.time()
     for key in GRID_ROWS:
         per_seed = collections.defaultdict(list)
         for path in files[key].values():
             s = scores_of(path)
-            for name, (y, keep) in versions.items():
-                per_seed[name].append(auprc(s, y, keep))
+            for name in GRID_VERSIONS:
+                per_seed[name].append(auprc(s, *versions[name]))
+                if main_versions[name] is not versions[name]:
+                    per_seed['main', name].append(auprc(s, *main_versions[name]))
         for name in GRID_VERSIONS:
-            point[(*key, name)] = float(np.mean(per_seed[name]))
-        log(f'{time.time() - start:6.0f} s', *key, len(files[key]), 'runs', {n: round(point[(*key, n)], 4) for n in GRID_VERSIONS})
-    with open(out / 'grid.tsv', 'w', newline='\n') as handle:
-        handle.write('method\ttraining_set\truns\t' + '\t'.join(GRID_VERSIONS) + '\n')
-        for key in GRID_ROWS:
-            handle.write(f'{key[0]}\t{key[1]}\t{len(files[key])}\t' + '\t'.join(repr(point[(*key, n)]) for n in GRID_VERSIONS)
-                         + '\n')
+            point[outs['grid']][(*key, name)] = float(np.mean(per_seed[name]))
+            point[outs['main_grid']][(*key, name)] = float(np.mean(per_seed[('main', name) if ('main', name) in per_seed
+                                                                            else name]))
+        log(f'{time.time() - start:6.0f} s', *key, len(files[key]), 'runs',
+            {n: round(point[outs['main_grid']][(*key, n)], 4) for n in GRID_VERSIONS}, '(main labels in the no-hit columns)')
 
-    checked, worst = [], 0.0
-    for version, folder in REFERENCES:
-        path = results / folder / ('models.tsv' if version in TABLES else 'metrics.tsv')
-        if not path.exists():
-            raise FileNotFoundError(f'{path} is missing: the grid is checked against it (run that scoring stage first)')
-        for r in csv.DictReader(open(path, newline=''), delimiter='\t'):
-            key = (r['method'], r['training_set'], version)
-            if r['seed'] == 'mean' and r['metric'] == 'auprc' and r.get('split', 'test') == 'test' and key in point:
-                checked.append((*key, point[key], float(r['value']), folder))
-                worst = max(worst, abs(point[key] - float(r['value'])))
-    with open(out / 'check.tsv', 'w', newline='\n') as handle:
-        handle.write('method\ttraining_set\tversion\tgrid\treference\tdifference\treference_folder\n')
-        handle.writelines(f'{m}\t{t}\t{v}\t{x!r}\t{z!r}\t{x - z!r}\t{f}\n' for m, t, v, x, z, f in checked)
-    log(f'checked {len(checked)} grid values against the scored results '
-        f'{dict(collections.Counter(v for _, _, v, *_ in checked))}; largest difference {worst:.2e}')
-    if worst > 1e-6:
-        raise ValueError('a grid value differs from its reference (check.tsv)')
+    for out, (labels, references) in grids.items():
+        out.mkdir(parents=True)
+        with open(out / 'versions.tsv', 'w', newline='\n') as handle:
+            handle.write('version\tproteins\tclusters\tpositive_pairs\tleft_out_pairs\tterms_with_positive\n')
+            for name, (y, keep) in labels.items():
+                rows = keep.any(1)
+                handle.write(f'{name}\t{int(rows.sum())}\t{len(torch.unique(cluster_of[rows]))}\t{int((y & keep).sum())}\t'
+                             f'{int((~keep & rows[:, None]).sum())}\t{int((y & keep).any(0).sum())}\n')
+        log((out / 'versions.tsv').read_text())
+        with open(out / 'grid.tsv', 'w', newline='\n') as handle:
+            handle.write('method\ttraining_set\truns\t' + '\t'.join(GRID_VERSIONS) + '\n')
+            for key in GRID_ROWS:
+                handle.write(f'{key[0]}\t{key[1]}\t{len(files[key])}\t'
+                             + '\t'.join(repr(point[out][(*key, n)]) for n in GRID_VERSIONS) + '\n')
+
+        checked, worst = [], 0.0
+        for version, folder in references:
+            path = folder / ('models.tsv' if version in TABLES else 'metrics.tsv')
+            if not path.exists():
+                raise FileNotFoundError(f'{path} is missing: the grid is checked against it (run that scoring stage first)')
+            for r in csv.DictReader(open(path, newline=''), delimiter='\t'):
+                key = (r['method'], r['training_set'], version)
+                if r['seed'] == 'mean' and r['metric'] == 'auprc' and r.get('split', 'test') == 'test' and key in point[out]:
+                    checked.append((*key, point[out][key], float(r['value']), folder.relative_to(root).as_posix()))
+                    worst = max(worst, abs(point[out][key] - float(r['value'])))
+        with open(out / 'check.tsv', 'w', newline='\n') as handle:
+            handle.write('method\ttraining_set\tversion\tgrid\treference\tdifference\treference_folder\n')
+            handle.writelines(f'{m}\t{t}\t{v}\t{x!r}\t{z!r}\t{x - z!r}\t{f}\n' for m, t, v, x, z, f in checked)
+        log(f'{out}: checked {len(checked)} grid values against the scored results '
+            f'{dict(collections.Counter(v for _, _, v, *_ in checked))}; largest difference {worst:.2e}')
+        if worst > 1e-6:
+            raise ValueError(f'a grid value differs from its reference ({out / "check.tsv"})')
     log('wrote', *outs.values())
-
 
 if __name__ == '__main__':
     main()

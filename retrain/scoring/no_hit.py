@@ -128,7 +128,7 @@ def main(argv=None):
         log(f'E <= {name}: {len(keep):,} test proteins without a hit, {clusters:,} clusters')
         listed = root / 'scoring' / f'no_hit_E{name}.txt'
         listed.write_text(''.join(f'{h}\n' for h in sorted(keep)), encoding='utf-8')
-        run_scorer(root, config, out / f'E{name}', a.device, labels=None if a.labels == 'reviewed' else a.labels, proteins=listed)
+        run_scorer(root, config, out / f'E{name}', a.device, labels=a.labels, proteins=listed)
         contrasts(out / f'E{name}')
         subsets.append((name, len(keep), clusters, out / f'E{name}'))
     with open(out / 'subsets.tsv', 'w', newline='\n') as handle:

@@ -215,7 +215,7 @@ def main(argv=None):
     else:
         config = write_config(root / 'scoring' / f'{a.run}.json', bundle(root), fits(root, a.run))
     out = results_dir(root, a.labels) / a.run
-    run_scorer(root, config, out, a.device, labels=None if a.labels == 'reviewed' else a.labels)
+    run_scorer(root, config, out, a.device, labels=a.labels)
     contrasts(out)
 
 
