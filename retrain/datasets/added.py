@@ -103,7 +103,16 @@ def ranking(root, name):
     release/selection/<name>, is used when present (its length checked); otherwise selection/<name> from
     scripts/rank_coverage.py, with a warning: a ranking recomputed from other vectors than the paper's (the released HQ
     embeddings are a later extraction) can order near-tied candidates differently, and only ArchipelaGO's first 150,000
-    picks are checked against the release."""
+    picks are checked against the release. From dataset v1.2 on, the release deposits the filtered ranking as the table
+    coverage_ranking (release/coverage_ranking/ranking.parquet: rank, protein_id, ...), which is then read instead."""
+    deposited = root / 'release' / 'coverage_ranking' / 'ranking.parquet'
+    if name == 'coverage_ranking.tsv' and deposited.is_file():
+        import pyarrow.parquet as pq
+        table = pq.read_table(deposited, columns=['rank', 'protein_id']).to_pydict()
+        if table['rank'] != list(range(1, len(table['rank']) + 1)) or len(table['rank']) != RANKINGS[name]:
+            raise ValueError(f"{deposited}: not ranks 1 to {RANKINGS[name]:,}")
+        log(f"the paper's coverage ranking from {deposited}")
+        return table['protein_id']
     released = root / 'release' / 'selection' / name
     path = released if released.is_file() else root / 'selection' / name
     with open(path, newline='', encoding='utf-8') as handle:
@@ -121,6 +130,14 @@ def ranking(root, name):
 def write_added(root, name, ontology, ids, ranks, accessions, seqs, rows, labels, part, rank_column):
     """Write <name> = datasets/hq followed by the added proteins. Columns: part = hq | <part>, and <rank_column> = an added
     protein's 1-based position in its selection order (proteins skipped by a filter keep their positions), empty for HQ."""
+    deposited = root / 'release' / 'control_sets' / f'{name}.parquet'  # dataset v1.2 and later: the paper's control sets
+    if deposited.is_file():
+        import pyarrow.parquet as pq
+        paper = pq.read_table(deposited, columns=['protein_id', 'position', 'order_rank']).to_pydict()
+        ranks = [int(k) for k in ranks]  # the order's ranks, or (hq_random from its released list) the positions
+        if paper['protein_id'] != list(ids) or ranks not in (paper['order_rank'], paper['position']):
+            raise ValueError(f"{name}: the added proteins or their ranks differ from the paper's ({deposited})")
+        log(f"{name}: the {len(ids):,} added proteins and their ranks equal the paper's ({deposited})")
     hq = load(root, 'hq')
     held = set(load(root, 'development', labels=False).seq_ids) | set(load(root, 'test', labels=False).seq_ids)
     overlap = set(ids) & (set(hq.seq_ids) | held)

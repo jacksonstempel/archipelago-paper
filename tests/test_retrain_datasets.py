@@ -156,6 +156,30 @@ def test_hq_random_from_the_released_draw(tmp_path, monkeypatch):
     assert (S2[0], A2, 'IEA', 'GOA') in common.read_annotations(ds.folder)
 
 
+def test_a_built_set_must_equal_the_deposited_control_set(tmp_path, monkeypatch):
+    """Dataset v1.2 deposits the paper's control sets (release/control_sets): the set built must hold the same proteins in
+    the same order."""
+    from retrain.datasets import random_draw
+    fake_release(tmp_path)
+    run(release, monkeypatch, '--data', tmp_path)
+    write(tmp_path / 'release' / 'hq_random' / 'proteins.parquet', [
+        dict(protein_id=S3[0], accessions=['R3'], sequence=S3[1], go_terms=[B]),
+        dict(protein_id=S2[0], accessions=[], sequence=S2[1], go_terms=[A, A2])])
+    write(tmp_path / 'release' / 'hq_random' / 'annotations.parquet', [
+        dict(protein_id=S3[0], go_id=B, evidence='IEA', assigned_by='InterPro'),
+        dict(protein_id=S2[0], go_id=A2, evidence='IEA', assigned_by='')])
+    monkeypatch.setattr(random_draw, 'KEEP', 2)
+    deposited = tmp_path / 'release' / 'control_sets' / 'hq_random.parquet'
+    write(deposited, [dict(position=1, protein_id=S2[0], accessions=[], order_rank=1, license='cc-by-4.0'),
+                      dict(position=2, protein_id=S3[0], accessions=['R3'], order_rank=5, license='cc-by-4.0')])
+    with pytest.raises(ValueError, match="differ from the paper's"):  # the other order
+        run(random_draw, monkeypatch, '--data', tmp_path)
+    write(deposited, [dict(position=1, protein_id=S3[0], accessions=['R3'], order_rank=1, license='cc-by-4.0'),
+                      dict(position=2, protein_id=S2[0], accessions=[], order_rank=5, license='cc-by-4.0')])
+    run(random_draw, monkeypatch, '--data', tmp_path)
+    assert common.load(tmp_path, 'hq_random').seq_ids[2:] == [S3[0], S2[0]]
+
+
 def test_release_refuses_labels_its_annotations_do_not_give(tmp_path, monkeypatch):
     fake_release(tmp_path)
     table = pq.read_table(tmp_path / 'release' / 'training' / 'train.parquet').to_pylist()
