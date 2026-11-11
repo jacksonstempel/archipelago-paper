@@ -3,7 +3,7 @@
     python -m retrain.scoring.label_grid [--data DIR] [--device cuda|cpu]
 
 The versions, built from the test annotations and the label review (retrain.scoring.test_labels.annotation_sets; the
-review's release/benchmark_reviews/test.parquet says for each accepted assertion whether the review found experimental
+review rows of release/annotations/test.parquet say for each accepted assertion whether the review found experimental
 support for it, support_type `experimental`, or accepted it as a supported inference, `inference`), all on the 5,000 test
 proteins unless stated:
 
@@ -20,7 +20,7 @@ proteins unless stated:
   reviewed          the official labels
   all_goa           the test annotations other than the review's plus every assertion the review considered
   no_hit_0.001, no_hit_10   the official labels (in results_masked/label_grid: the masked ones) on the test proteins
-                    without a training hit at E <= 1e-3 and E <= 10 (the paper's subsets, release/benchmark_no_hit)
+                    without a training hit at E <= 1e-3 and E <= 10 (the paper's subsets, the released no_hit_up_to)
 
 A score is the exact micro-AUPRC over the pairs a version keeps (retrain.scoring.term_strata.replicate_auprc: a resample
 that draws every cluster once gives the point estimate; the scorer's 10,000 resamples of the test clusters give paired

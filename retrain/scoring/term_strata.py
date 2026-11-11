@@ -22,7 +22,7 @@ import torch
 from archipelago.evaluate import cluster_draws
 from archipelago.go import Propagation, read_parents
 from retrain.common import add_argument, data_root, load, log
-from retrain.scoring.score import PUBLISHED, RESULTS, bundle, fits, results_dir
+from retrain.scoring.score import PUBLISHED, RESULTS, fits, results_dir
 from retrain.scoring.test_labels import annotation_sets, version_labels
 
 COMMON = 1000
@@ -85,7 +85,7 @@ def main(argv=None):
     common = tensor(np.asarray(load(root, 'hq').labels.sum(axis=0)).ravel() >= COMMON)
     strata = {'all': torch.ones_like(common), 'common': common, 'rare': ~common}
 
-    propagate = Propagation(read_parents(bundle(root) / 'go-basic.obo', vocabulary))
+    propagate = Propagation(read_parents(root / 'datasets' / 'ontology' / 'go-basic.obo', vocabulary))
     cluster, draws = cluster_draws(test.columns['cluster'])
     cluster = tensor(cluster)
     draws = torch.as_tensor(draws.T, dtype=torch.float64, device=device)

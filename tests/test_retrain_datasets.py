@@ -54,28 +54,36 @@ def write(path, rows):
     pq.write_table(pa.Table.from_pylist(rows), path)
 
 
-def annotation(p, go, evidence, source, by=''):
-    return dict(protein_id=p[0], go_id=go, evidence_class='', evidence=evidence, source=source, assigned_by=by)
+def annotation(p, go, evidence, source, by='', level='experimental', decision=None):
+    return dict(protein_id=p[0], go_id=go, level=level, source=source, evidence=evidence, assigned_by=by, decision=decision)
 
 
 def fake_release(root):
+    """Dataset v2.0's layout. The test protein also has a reviewed GOA assertion that was not accepted (B), which is not
+    one of its labels."""
     r = root / 'release'
     (r / 'ontology').mkdir(parents=True)
     with gzip.open(r / 'ontology' / 'go-basic.obo.gz', 'wt') as f:
         f.write(OBO)
     write(r / 'go_terms' / 'go_terms.parquet', [dict(go_id=t, column=j) for j, t in enumerate((A, A2, B))])
-    write(r / 'training' / 'train.parquet', [
-        dict(protein_id=P1[0], accessions=['Q1'], sequence=P1[1], part='hq', selection_rank=None, go_terms=[A, A2]),
-        dict(protein_id=P2[0], accessions=[], sequence=P2[1], part='hq', selection_rank=None, go_terms=[A, B]),
-        dict(protein_id=S1[0], accessions=['X1'], sequence=S1[1], part='selected', selection_rank=1, go_terms=[B])])
-    write(r / 'training_annotations' / 'train.parquet', [
-        annotation(P1, A2, 'IDA', 'GOA', 'UniProt'), annotation(P2, B, 'IEA', 'GOA', 'InterPro'),
-        annotation(P2, A, 'EXP', 'BRENDA'), annotation(S1, B, 'IEA', 'GOA', 'InterPro')])
+    write(r / 'proteins' / 'train.parquet', [
+        dict(protein_id=P1[0], accessions=['Q1'], sequence=P1[1], part='hq', selection_rank=None, go_terms=[A, A2],
+             evidence=['experimental', 'experimental']),
+        dict(protein_id=P2[0], accessions=[], sequence=P2[1], part='hq', selection_rank=None, go_terms=[A, B],
+             evidence=['curated', 'computational']),
+        dict(protein_id=S1[0], accessions=['X1'], sequence=S1[1], part='selected', selection_rank=1, go_terms=[B],
+             evidence=['computational'])])
+    write(r / 'annotations' / 'train.parquet', [
+        annotation(P1, A2, 'IDA', 'GOA', 'UniProt'), annotation(P2, B, 'IEA', 'GOA', 'InterPro', 'computational'),
+        annotation(P2, A, 'EXP', 'BRENDA', level='curated'), annotation(S1, B, 'IEA', 'GOA', 'InterPro', 'computational')])
     for split, p in (('development', D1), ('test', T1)):
-        write(r / 'benchmark' / f'{split}.parquet',
-              [dict(protein_id=p[0], accessions=[], sequence=p[1], cluster='0', go_terms=[A])])
-        write(r / 'benchmark_annotations' / f'{split}.parquet', [annotation(p, A, 'IDA', 'GOA', 'UniProt')])
-
+        rejected = split == 'test'
+        write(r / 'proteins' / f'{split}.parquet',
+              [dict(protein_id=p[0], accessions=[], sequence=p[1], cluster='0', go_terms=[A] + [B] * rejected,
+                    evidence=['experimental'] + ['review_rejected'] * rejected)])
+        write(r / 'annotations' / f'{split}.parquet', [annotation(p, A, 'IDA', 'GOA', 'UniProt')] + [
+            annotation(p, B, 'none_established', 'literature review (this work)', level='review_rejected',
+                       decision='do_not_accept')] * rejected)
 
 def run(module, monkeypatch, *args):
     monkeypatch.setattr(sys, 'argv', ['x', *map(str, args)])
@@ -89,7 +97,8 @@ def test_release_and_hq_subsets(tmp_path, monkeypatch):
     assert hq.seq_ids == [P1[0], P2[0]] and hq.labels.toarray().tolist() == [[1, 1, 0], [1, 0, 1]]
     arch = common.load(tmp_path, 'archipelago')
     assert arch.columns == dict(part=['hq', 'hq', 'selected'], selection_rank=['', '', '1'])
-    assert common.load(tmp_path, 'test', labels=False).columns['cluster'] == ['0']
+    test = common.load(tmp_path, 'test', scoring=True)
+    assert test.columns['cluster'] == ['0'] and test.labels.toarray().tolist() == [[1, 0, 0]]  # the rejected review: no label
 
     run(hq_subsets, monkeypatch, 'goa', '--data', tmp_path)
     goa = common.load(tmp_path, 'goa')  # P2 has only a computational GOA annotation: not a GOA member
@@ -182,9 +191,9 @@ def test_a_built_set_must_equal_the_deposited_control_set(tmp_path, monkeypatch)
 
 def test_release_refuses_labels_its_annotations_do_not_give(tmp_path, monkeypatch):
     fake_release(tmp_path)
-    table = pq.read_table(tmp_path / 'release' / 'training' / 'train.parquet').to_pylist()
-    table[1]['go_terms'] = [A, A2, B]  # A2 is not implied by P2's annotations
-    write(tmp_path / 'release' / 'training' / 'train.parquet', table)
+    table = pq.read_table(tmp_path / 'release' / 'proteins' / 'train.parquet').to_pylist()
+    table[1]['go_terms'], table[1]['evidence'] = [A, A2, B], ['curated', 'curated', 'computational']  # A2: not P2's
+    write(tmp_path / 'release' / 'proteins' / 'train.parquet', table)
     with pytest.raises(ValueError, match='differ from the released'):
         run(release, monkeypatch, '--data', tmp_path)
 

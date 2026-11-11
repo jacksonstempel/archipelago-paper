@@ -1,5 +1,4 @@
-"""What retrain.scoring adds to the scorer (whose end-to-end test is in the archipelago package): the scoring bundle exported
-from the dataset folders, read back as archipelago.scorer reads it; contrasts.tsv = the difference of the scorer's
+"""What retrain.scoring adds to the scorer (whose end-to-end test is in the archipelago package): contrasts.tsv = the difference of the scorer's
 seed means with the paired interval of its replicates; the versions of the test labels, rebuilt from the annotations,
 checked against the release and scored; and the bootstrap of term_strata, which weighs proteins by their cluster draws
 (CPU, tiny synthetic data)."""
@@ -21,7 +20,8 @@ import torch  # noqa: E402
 
 from archipelago import evaluate  # noqa: E402
 from archipelago.evaluate import paired_difference  # noqa: E402
-from archipelago.io import read_labels, read_table, read_vocabulary  # noqa: E402
+from archipelago.go import information_accretion, read_parents  # noqa: E402
+from archipelago.io import read_table  # noqa: E402
 from retrain.common import Ontology, load, seq_id, write_dataset  # noqa: E402
 from retrain.scoring import score, test_labels  # noqa: E402
 from retrain.scoring.term_strata import replicate_auprc  # noqa: E402
@@ -64,24 +64,6 @@ def tiny_root(root):
         columns = {'cluster': [str(i // 2) for i in range(n)]} if name != 'hq' else None
         write_dataset(root, name, ids, [[] for _ in ids], sequences, [(h, t, 'EXP', 'GOA:X') for h, t in zip(ids, terms)],
                       labels, ontology, columns=columns)
-
-
-def test_bundle_reads_back_as_the_datasets(tmp_path):
-    tiny_root(tmp_path)
-    data = score.bundle(tmp_path)
-    vocabulary = read_vocabulary(data / 'vocabulary.txt')
-    assert vocabulary == VOCABULARY
-    for split, table, labels in (('development', 'benchmark/development.tsv', 'benchmark/development_labels.tsv'),
-                                 ('test', 'benchmark/test.tsv', 'benchmark/test_labels.tsv'),
-                                 ('hq', 'archipelago/proteins.tsv', 'archipelago/labels.tsv')):
-        ds = load(tmp_path, split, scoring=True)
-        rows = read_table(data / table)
-        assert [r['protein_id'] for r in rows] == ds.seq_ids
-        if split == 'hq':
-            assert {r['part'] for r in rows} == {'hq'}  # the scorer estimates information accretion from these
-        else:
-            assert [r['cluster'] for r in rows] == ds.columns['cluster']
-        assert (read_labels(data / labels, ds.seq_ids, vocabulary) == ds.labels.toarray()).all()
 
 
 def test_contrasts_are_paired_differences_of_seed_means(tmp_path):
@@ -128,10 +110,14 @@ def test_contrasts_set_finch_beside_each_method_on_its_original_data(tmp_path):
     assert r['difference'] == pytest.approx(0.05)
 
 
+LEVELS = ('experimental', 'curated', 'computational', 'review_direct', 'review_inferred', 'review_rejected')
+LEVEL_OF_EVIDENCE = {'EXP': 'experimental', 'TAS': 'curated'}
+
+
 def release_of(root):
-    """release/ for a tiny data root, as Hugging Face holds it, and one fit. Test proteins: the first has only the review's
-    accepted assertion besides a curator statement, so it has no experimental label; the second has an assertion that the
-    review did not accept."""
+    """release/ for a tiny data root, as Hugging Face holds it (dataset v2.0), and one fit. Test proteins: the first has only
+    the review's accepted assertion besides a curator statement, so it has no experimental label; the second has an
+    assertion that the review did not accept."""
     (root / 'release' / 'ontology').mkdir(parents=True)
     with gzip.open(root / 'release' / 'ontology' / 'go-basic.obo.gz', 'wt') as handle:
         handle.write(OBO)
@@ -141,53 +127,55 @@ def release_of(root):
         path.parent.mkdir(parents=True, exist_ok=True)
         pq.write_table(pa.Table.from_pylist(rows), path)
 
-    write('go_terms/go_terms', [dict(go_id=t, column=j) for j, t in enumerate(VOCABULARY)])
-    hq = load(root, 'hq', scoring=True)
-    y = hq.labels.toarray()
-    write('training/train', [dict(protein_id=h, accessions=[], part='hq', go_terms=[t for j, t in enumerate(VOCABULARY) if y[i, j]])
-                             for i, h in enumerate(hq.seq_ids)])
     ontology = Ontology(root)
+    parents = read_parents(root / 'datasets' / 'ontology' / 'go-basic.obo', VOCABULARY)
+    hq = load(root, 'hq', scoring=True)
+    write('go_terms/go_terms', [dict(go_id=t, column=j, parents=[VOCABULARY[p] for p in parents[j]],
+                                     information_accretion=float(v))
+                                for j, (t, v) in enumerate(zip(VOCABULARY, information_accretion(hq.labels.toarray() > 0, parents)))])
+
+    def levelled(ds, rows):
+        """go_terms and evidence of each protein: each propagated term with the first level whose rows give it."""
+        row_of = {h: i for i, h in enumerate(ds.seq_ids)}
+        level = np.zeros((len(ds.seq_ids), len(VOCABULARY)), dtype=int)
+        for k, name in enumerate(LEVELS, 1):
+            m = ontology.label_matrix([(h, g) for h, g, lv in rows if lv == name], row_of)[0].toarray() > 0
+            level[m & (level == 0)] = k
+        return [dict(go_terms=[t for j, t in enumerate(VOCABULARY) if level[i, j]],
+                     evidence=[LEVELS[level[i, j] - 1] for j in range(len(VOCABULARY)) if level[i, j]])
+                for i in range(len(ds.seq_ids))]
+
+    y = hq.labels.toarray()
+    write('proteins/train', [dict(protein_id=h, accessions=[], part='hq', go_terms=[t for j, t in enumerate(VOCABULARY) if y[i, j]],
+                                  evidence=['experimental'] * int(y[i].sum())) for i, h in enumerate(hq.seq_ids)])
     fits = {}
     for split in ('development', 'test'):
         ds = load(root, split, scoring=True)
         row_of = {h: i for i, h in enumerate(ds.seq_ids)}
-        rows = [(r.split('\t')[0], r.split('\t')[1]) for r in (ds.folder / 'annotations.tsv').read_text().splitlines()[1:]]
-        first, second = ds.seq_ids[:2]
+        rows = [(r.split('\t')[0], r.split('\t')[1], 'experimental')
+                for r in (ds.folder / 'annotations.tsv').read_text().splitlines()[1:]]
+        reviews = []
         if split == 'test':  # the first protein: curator statement and accepted review; the second: review not accepted
+            first, second = ds.seq_ids[:2]
             kept = [r.split('\t') for r in (ds.folder / 'annotations.tsv').read_text().splitlines()]
             text = ['\t'.join(kept[0])] + ['\t'.join(r) for r in kept[1:] if r[0] != first]
-            text += [f'{first}\tGO:0000002\tTAS\tGOA:X', f'{first}\tGO:0000003\treview:inference\tliterature review (this work)']
+            text += [f'{first}\tGO:0000002\tTAS\tGOA:X', f'{first}\tGO:0000003\tinference\tliterature review (this work)']
             (ds.folder / 'annotations.tsv').write_text('\n'.join(text) + '\n')
-            rows = [(first, 'GO:0000002'), (first, 'GO:0000003')] + [p for p in rows if p[0] != first]
-            labels, _ = ontology.label_matrix(rows, row_of)
-            write('benchmark_reviews/test', [dict(protein_id=first, go_id='GO:0000003', decision='accept', support_type='inference'),
-                                             dict(protein_id=second, go_id='GO:0000002', decision='do_not_accept',
-                                                  support_type='none_established')])
+            rows = [(first, 'GO:0000002', 'curated'), (first, 'GO:0000003', 'review_inferred')] + \
+                   [p for p in rows if p[0] != first] + [(second, 'GO:0000002', 'review_rejected')]
+            labels, _ = ontology.label_matrix([(h, g) for h, g, lv in rows if lv != 'review_rejected'], row_of)
             sp.save_npz(ds.folder / 'labels.npz', labels)
-            positive = ontology.label_matrix([p for p in rows if p != (first, 'GO:0000003')], row_of)[0].toarray() > 0
-            experimental = ontology.label_matrix([p for p in rows if p[0] != first], row_of)[0].toarray() > 0
-        else:
-            labels = ds.labels
-            positive = experimental = labels.toarray() > 0
-        everything = ontology.label_matrix(rows + ([(second, 'GO:0000002')] if split == 'test' else []), row_of)[0].toarray() > 0
-
-        def table(y, mask=None):
-            out = []
-            for i, h in enumerate(ds.seq_ids):
-                if y[i].any():
-                    out.append(dict(protein_id=h, accessions=[], sequence=ds.sequences[i], cluster=ds.columns['cluster'][i],
-                                    go_terms=[t for j, t in enumerate(VOCABULARY) if y[i, j]]))
-                    if mask is not None:
-                        out[-1]['masked_terms'] = [t for j, t in enumerate(VOCABULARY) if mask[i, j]]
-            return out
-
-        write(f'benchmark/{split}', table(labels.toarray() > 0))
-        write(f'benchmark_experimental/{split}', table(experimental))
-        write(f'benchmark_masked/{split}', table(positive, everything & ~positive))
-        write(f'benchmark_all_goa/{split}', table(everything))
+            reviews = [dict(protein_id=first, go_id='GO:0000003', level='review_inferred', decision='accept',
+                            support_type='inference'),
+                       dict(protein_id=second, go_id='GO:0000002', level='review_rejected', decision='do_not_accept',
+                            support_type='none_established')]
+        write(f'annotations/{split}', [dict(protein_id=h, go_id=g, level=lv, decision=None, support_type=None)
+                                       for h, g, lv in rows if not lv.startswith('review')] + reviews)
+        write(f'proteins/{split}', [dict(protein_id=h, accessions=[], sequence=ds.sequences[i], cluster=ds.columns['cluster'][i],
+                                         no_hit_up_to=10.0 if split == 'test' else None, **terms)
+                                    for i, (h, terms) in enumerate(zip(ds.seq_ids, levelled(ds, rows)))])
         fits[split] = root / f'{split}_scores.npy'
         np.save(fits[split], np.random.default_rng(4).random((len(ds.seq_ids), len(VOCABULARY))).astype(np.float32))
-    write('benchmark_no_hit/test', [dict(protein_id=h, no_hit_up_to=10.0) for h in load(root, 'test', labels=False).seq_ids])
     return [('finch', 'archipelago', {'1': fits}), ('finch', 'hq', {'1': fits})]
 
 
@@ -201,7 +189,7 @@ def test_a_test_label_version_is_checked_against_the_release_and_scored(tmp_path
     out = tmp_path / 'results' / f'{labels}_test_labels'
     version = {r['variant']: r for r in read_table(out / 'counts.tsv')}[test_labels.VARIANT[labels]]
     assert (int(version['proteins']), int(version['propagated_pairs'])) == (proteins, pairs)
-    assert {r['labels'] for r in read_table(out / 'metrics.tsv')} == {labels}
+    assert {r['labels'] for r in read_table(out / 'metrics.tsv') if r['split'] == 'test'} == {score.scorer_labels(labels)}
 
 def test_the_main_test_labels_masked_are_scored_from_the_reviewed_config(tmp_path, monkeypatch):
     tiny_root(tmp_path)
@@ -212,7 +200,7 @@ def test_the_main_test_labels_masked_are_scored_from_the_reviewed_config(tmp_pat
         score.main()
     for labels, folder, pairs, left_out in (('reviewed', 'results', 16, 0), ('masked', 'results_masked', 15, 3)):
         benchmark = json.loads((tmp_path / folder / 'main' / 'inputs.json').read_text())['benchmark']
-        assert (benchmark['labels'], benchmark['test_positive_pairs'], benchmark['test_masked_pairs']) == (labels, pairs, left_out)
+        assert (benchmark['labels'], benchmark['test_positive_pairs'], benchmark['test_masked_pairs']) == (score.scorer_labels(labels), pairs, left_out)
 
     def development(folder):  # the main test labels change the test set only
         return {(r['method'], r['training_set'], r['seed'], r['metric']): r['value']
@@ -225,9 +213,9 @@ def test_the_main_test_labels_masked_are_scored_from_the_reviewed_config(tmp_pat
 def test_a_released_label_table_that_differs_from_its_definition_stops_the_scoring(tmp_path, monkeypatch):
     tiny_root(tmp_path)
     models = release_of(tmp_path)
-    path = tmp_path / 'release' / 'benchmark_all_goa' / 'test.parquet'
+    path = tmp_path / 'release' / 'proteins' / 'test.parquet'
     rows = pq.read_table(path).to_pylist()
-    rows[0]['go_terms'] = rows[0]['go_terms'][:1]
+    rows[0]['go_terms'], rows[0]['evidence'] = rows[0]['go_terms'][:1], rows[0]['evidence'][:1]
     pq.write_table(pa.Table.from_pylist(rows), path)
     monkeypatch.setattr(test_labels, 'fits', lambda root, run: models)
     monkeypatch.setattr(sys, 'argv', ['test_labels', 'all_goa', '--data', str(tmp_path), '--device', 'cpu'])

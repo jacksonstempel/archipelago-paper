@@ -11,19 +11,15 @@ RUN is one of
                       its original data, HQ and ArchipelaGO (Supplementary Information)
 
 Steps:
-1. The scorer's data bundle, <root>/scoring/data/ (the format archipelago.scorer reads): vocabulary.txt, go-basic.obo,
-   benchmark/{development,test}.tsv and their _labels.tsv, and archipelago/{proteins,labels}.tsv holding the HQ proteins
-   (the scorer estimates the information accretion of Smin from them). Written from datasets/ (ontology, development,
-   test, hq).
-2. The scorer's config, <root>/scoring/RUN.json: every fit runs/<method>/<training set>/seed<k>/ of the run (every seed
-   folder found; a fit with record.json and both score files). TransFew's further checkpoints (side files bcebest,
-   auprcbest) are scored as the methods transfew_bcebest and transfew_auprcbest. A missing fit stops the export.
-3. archipelago-score CONFIG --out <root>/results/RUN (which must not exist yet).
-   With --labels masked, steps 1 and 2 are the earlier
-   scoring's: its config for RUN (scoring/RUN.json) is read again with the release bundle's masked version (development rows unchanged) as its data,
-   scoring/RUN_masked.json, and the scorer's --labels masked writes <root>/results_masked/RUN (the main test labels of the paper:
-   the reviewed GOA assertions neither positive nor negative).
-4. <root>/results/RUN/contrasts.tsv: for every metric (auprc, fmax, f1, smin), every pair of training sets of one model,
+1. The scorer's config, <root>/scoring/RUN.json: every fit runs/<method>/<training set>/seed<k>/ of the run (every seed
+   folder found; a fit with record.json and both score files), and the dataset, <root>/release (ArchipelaGO v2.0 as
+   downloaded), which the scorer reads directly. TransFew's further checkpoints (side files bcebest, auprcbest) are scored
+   as the methods transfew_bcebest and transfew_auprcbest. A missing fit stops the export.
+2. archipelago-score CONFIG --out <root>/results/RUN (which must not exist yet), on the reviewed test labels.
+   With --labels masked, the config of the earlier reviewed scoring of RUN (scoring/RUN.json, the same predictions) is
+   scored again with the scorer's --labels main into <root>/results_masked/RUN: the main test labels of the paper (the
+   reviewed GOA assertions neither positive nor negative; the development set on the reviewed labels, as always).
+3. <root>/results/RUN/contrasts.tsv: for every metric (auprc, fmax, f1, smin), every pair of training sets of one model,
    every pair of models on one training set, Finch on each published method's original data minus that method on it
    (whose set is called `original`), and Finch on ArchipelaGO minus DeepGO-SE on its original data: the difference of the seed means and its paired 95% cluster-bootstrap interval (2.5th
    and 97.5th percentiles of the replicate differences in replicates.npz).
@@ -33,15 +29,13 @@ import csv
 import itertools
 import json
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import numpy as np
 
-from archipelago.benchmark import from_release, write_bundle
-from retrain.common import add_argument, data_root, load, log, score_file
+from retrain.common import add_argument, data_root, log, score_file
 from retrain.finch import config as finch_config
 
 PUBLISHED = ('deepgose', 'dpfunc', 'transfew')
@@ -68,57 +62,15 @@ def results_dir(root, labels='reviewed'):
     return Path(root) / RESULTS[labels]
 
 
-def release_bundle(root):
-    """<root>/scoring/release_data: the scorer's bundle written from the release, with every version of the labels (once)."""
-    data = Path(root) / 'scoring' / 'release_data'
-    if not data.exists():
-        from_release(Path(root) / 'release', data)
-    return data
+def dataset(root):
+    """<root>/release: the ArchipelaGO dataset as downloaded (v2.0), which the scorer reads directly."""
+    return Path(root) / 'release'
 
 
-def headline_bundle(root):
-    """<root>/scoring/headline_data: the release bundle with the development rows of the masked version replaced by the official
-    development labels and nothing left out. The main test labels change the test set only: the development set, its scores and
-    the F1 threshold selected on it stay as they were. Written once."""
-    data = Path(root) / 'scoring' / 'headline_data'
-    if not data.exists():
-        source = release_bundle(root)
-        (data / 'benchmark' / 'masked').mkdir(parents=True)
-        shutil.copytree(source / 'archipelago', data / 'archipelago')
-        for name in ('vocabulary.txt', 'go-basic.obo'):
-            shutil.copyfile(source / name, data / name)
-        for name in ('development.tsv', 'development_labels.tsv', 'test.tsv', 'test_labels.tsv'):
-            shutil.copyfile(source / 'benchmark' / name, data / 'benchmark' / name)
-        for name in ('test_labels.tsv', 'test_mask.tsv'):
-            shutil.copyfile(source / 'benchmark' / 'masked' / name, data / 'benchmark' / 'masked' / name)
-        shutil.copyfile(source / 'benchmark' / 'development_labels.tsv', data / 'benchmark' / 'masked' / 'development_labels.tsv')
-        (data / 'benchmark' / 'masked' / 'development_mask.tsv').write_text('protein_id\tgo_id\n', newline='\n')
-    return data
-
-
-def masked_config(root, run, name=None):
-    """<root>/scoring/<name or run>_masked.json: the config of run (the same predictions) with headline_bundle as its data."""
-    path = Path(root) / 'scoring' / f'{name or run}_masked.json'
-    config = json.loads((Path(root) / 'scoring' / f'{run}.json').read_text())
-    config['data'] = os.path.relpath(headline_bundle(root), path.parent).replace(os.sep, '/')
-    path.write_text(json.dumps(config, indent=1) + '\n')
-    return path
-
-
-def bundle(root):
-    """Write <root>/scoring/data/ from the dataset folders (archipelago.benchmark.write_bundle); returns its path."""
-    data = Path(root) / 'scoring' / 'data'
-    shutil.rmtree(data, ignore_errors=True)
-    ontology = Path(root) / 'datasets' / 'ontology'
-    vocabulary = json.loads((ontology / 'vocabulary.json').read_text(encoding='utf-8'))
-    sets = {}
-    for name in ('development', 'test', 'hq'):
-        ds = load(root, name, scoring=True, sequences=False)
-        rows = [dict(protein_id=h, accessions=a, **({'cluster': ds.columns['cluster'][i]} if name != 'hq' else {}))
-                for i, (h, a) in enumerate(zip(ds.seq_ids, ds.accessions))]
-        y = ds.labels.tocoo()
-        sets[name] = (rows, [(ds.seq_ids[r], vocabulary[c]) for r, c in zip(y.row.tolist(), y.col.tolist())])
-    return write_bundle(data, vocabulary, ontology / 'go-basic.obo', sets)
+def scorer_labels(labels):
+    """The scorer's --labels for a version named here: `masked` is the paper's main test labels (the scorer's `main`, whose
+    development labels are the reviewed ones, as in the paper); the other names are the scorer's."""
+    return {'masked': 'main'}.get(labels, labels)
 
 
 def fits(root, run):
@@ -149,7 +101,7 @@ def write_config(path, data, models):
     listed = [dict(method=m, training_set=t, seeds={
         seed: {'development': rel(files['development']), 'test': rel(files['test'])} for seed, files in seeds.items()})
         for m, t, seeds in models]
-    path.write_text(json.dumps(dict(data=rel(data), models=listed), indent=1) + '\n')
+    path.write_text(json.dumps(dict(dataset=rel(data), models=listed), indent=1) + '\n')
     return path
 
 
@@ -158,7 +110,7 @@ def run_scorer(root, config, out, device=None, labels=None, proteins=None):
     proteins: a file listing the test proteins to score."""
     command = [sys.executable, '-m', 'archipelago.scorer', str(config), '--out', str(out),
                '--cache', str(Path(root) / 'cache' / 'scoring')]
-    for option, value in (('--device', device), ('--labels', labels), ('--proteins', proteins)):
+    for option, value in (('--device', device), ('--labels', labels and scorer_labels(labels)), ('--proteins', proteins)):
         if value:
             command += [option, str(value)]
     log('RUN', ' '.join(command))
@@ -210,10 +162,10 @@ def main(argv=None):
     add_argument(parser)
     a = parser.parse_args(argv)
     root = data_root(a.data)
-    if a.labels == 'masked':
-        config = masked_config(root, a.run)
+    if a.labels == 'masked':  # the predictions of the earlier reviewed scoring of the run, scored again
+        config = root / 'scoring' / f'{a.run}.json'
     else:
-        config = write_config(root / 'scoring' / f'{a.run}.json', bundle(root), fits(root, a.run))
+        config = write_config(root / 'scoring' / f'{a.run}.json', dataset(root), fits(root, a.run))
     out = results_dir(root, a.labels) / a.run
     run_scorer(root, config, out, a.device, labels=a.labels)
     contrasts(out)

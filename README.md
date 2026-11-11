@@ -40,8 +40,8 @@ with Groovy) are called from the command line and are found on `PATH`.
 
 `python -m pytest` (CPU, about a minute; GPU-only tests are skipped) runs the pipeline's stages on tiny synthetic data:
 building datasets from a release, Finch's training engine and its reload check, the published methods' data handling,
-the scorer's bundle and contrasts, the test-label versions, TransFew's re-tuning choice, and the training-cost arithmetic.
-Expected: `40 passed, 6 skipped` on a CPU.
+the scoring configs and contrasts, the test-label versions, TransFew's re-tuning choice, and the training-cost arithmetic.
+Expected: `39 passed, 6 skipped` on a CPU.
 
 Three steps reproduce paper numbers in seconds, from files in this repository:
 
@@ -90,7 +90,7 @@ released labels. CPU, minutes.
 
 ### 2. The coverage ranking and the sets built from computational proteins
 
-The dataset (from version 1.2) deposits the paper's coverage ranking (`coverage_ranking`) and the proteins of the control
+The dataset deposits the paper's coverage ranking (`coverage_ranking`) and the proteins of the control
 sets (`control_sets`). Building the sets needs the candidate pool (8,952,628 proteins; `python -m
 retrain.datasets.candidates` converts its files into `datasets/candidates`), which is available on request
 (data/README.md); recomputing the ranking also needs the candidates' ESM2-15B embeddings. The candidates are one random
@@ -252,8 +252,8 @@ python -m retrain.cost.table                        # the table, from the measur
 ### 5. Scoring, analyses and figures
 
 The paper's main test labels leave the test proteins' computational and author-statement GOA annotations (the 4,429 that
-the label review considered, and the pairs they add) out of scoring. The scorer bundle and configs are written for the
-reviewed labels first (`results/`), and `retrain.scoring.headline` scores every result that depends on the main test labels
+the label review considered, and the pairs they add) out of scoring. The scorer reads the dataset in `release/`; its configs
+are written for the reviewed labels first (`results/`), and `retrain.scoring.headline` scores every result that depends on the main test labels
 again from the same predictions (`results_masked/`, the same folders and files), which the figures read.
 
 ```bash
@@ -285,7 +285,7 @@ scripts need only the result files; `--tikz` draws Fig. 1's PDF with true colour
 ### 6. The label review
 
 The test labels' computational annotations were reviewed against the literature by a language model before any model was
-scored; every decision is released with its reasoning and sources (`benchmark_reviews`). Two checks of that review are
+scored; every decision is released with its reasoning and sources (the review rows of `annotations`). Two checks of that review are
 reported in Supplementary Note 3 (`review/`):
 
 ```bash
@@ -421,7 +421,7 @@ lists the files each reads); everything that depends on the test labels is on th
 
 | Input | Source | Place under the data root | Checksum (SHA-256) |
 |---|---|---|---|
-| ArchipelaGO dataset release | Hugging Face, `ut-ornl-cmb/ArchipelaGO`, tag `v1.2` (private until publication; v1.0 and v1.1 have the same benchmark and training tables but not the deposited ranking and control sets): `hf download ut-ornl-cmb/ArchipelaGO --repo-type dataset --revision v1.2 --local-dir <root>/release` | `release/` | `SHA256SUMS` in the release |
+| ArchipelaGO dataset release | Hugging Face, `ut-ornl-cmb/ArchipelaGO`, tag `v2.0` (private until publication; the same labels as v1.x in a different layout, which this code does not read): `hf download ut-ornl-cmb/ArchipelaGO --repo-type dataset --revision v2.0 --local-dir <root>/release` | `release/` | `SHA256SUMS` in the release |
 | DeepGO-SE training data | https://bio2vec.net/data/deepgo/deepgo2/training-data.tar.gz | `external/deepgose/` | `80cc5446ef2d32cfccd19ff6a634cb6c2946370caf0ec7b9fd1bfb3c2dc07a44` |
 | GO-Plus (GO release 2026-07-26) | https://release.geneontology.org/2026-08-05/ontology/extensions/go-plus.owl | `external/deepgose/go-plus.owl` | `52f51e70a94667f887f89205daeb442abe5f6f8b6cd8dda51ff5ad7fe7524bf5` |
 | TransFew release `TFewData.tar.gz` | https://doi.org/10.5281/zenodo.22139108 (21.0 GB) | `external/transfew/` (extracted) | `2f9007f96b1fdd28cb12c35e452f4415eaa69e8e6b2ae4e5026d100de672bf40` |
@@ -435,9 +435,11 @@ lists the files each reads); everything that depends on the test labels is on th
 | Language models | ESM2-15B, ESM2-3B, ESM-1b (fair-esm / Hugging Face), ProtT5-XL-U50 | downloaded on first use | |
 | Programs | DIAMOND 2.2.4, InterProScan 5.78-109.0, ColabFold 1.6.3 with MMseqs2 release 18 and the ColabFold databases (UniRef30 2302, colabfold_envdb_202108), Java 11 with Groovy 2.4 | `PATH` | |
 
-The scoring bundle written from the released benchmark should have the SHA-256 checksums that the paper's results record
-(`inputs.json` of each results folder): `go-basic.obo` `b08d45b268b8c24ccb2513dbbbc7d4df9f6521c099b413f79eb31e06e0fa3bcc`,
-`vocabulary.txt` `1fc60a7e2b8e7dd816baa9c804b4d48f61fc8efb73c86c077cd5652973018df4`.
+The files the scorer reads have these SHA-256 checksums in dataset v2.0, which each results folder records (`inputs.json`):
+`go_terms/go_terms.parquet` `c838e5bb91b4c1ed1e4bb0a7fb729ccce5a566cf400e5d8b5ff109c7540a9cc9`, `proteins/development.parquet`
+`68eb60aa28f5b39eb585011bff67cac13ff9be916d5adca0b3628f562002a2a1`, `proteins/test.parquet`
+`f13f69119cd6553f4b420ef4bc03775bffc1695218e14257c74578b28e6d20f2`. (The paper's results were scored from the v1.x tables;
+scored from v2.0, every test score is the same.)
 
 ## Layout
 

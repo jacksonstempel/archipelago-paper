@@ -21,11 +21,10 @@ import json
 
 import numpy as np
 
-from archipelago.go import Propagation, read_parents
-from archipelago.io import read_labels, read_table, read_vocabulary
+from archipelago import dataset
+from archipelago.go import Propagation
 from retrain.common import add_argument, data_root, log
-from archipelago.benchmark import version_files
-from retrain.scoring.score import ORIGINAL, PUBLISHED, RESULTS, headline_bundle, results_dir
+from retrain.scoring.score import ORIGINAL, PUBLISHED, RESULTS, results_dir, scorer_labels
 
 METHODS = ('finch', *PUBLISHED)
 RUNS = {'main': ('original', *ORIGINAL.values(), 'goa', 'hq', 'archipelago'), 'explabels_training': ('hq_explabels',)}
@@ -43,17 +42,15 @@ def main(argv=None):
     out = results_dir(root, a.labels) / 'pr_curves'
     out.mkdir(parents=True, exist_ok=False)
     device = torch.device(a.device or ('cuda' if torch.cuda.is_available() else 'cpu'))
-    scoring = root / 'scoring'  # every run's config is here, and shares the bundle
-    data = scoring / json.loads((scoring / 'main.json').read_text())['data'] if a.labels == 'reviewed' else headline_bundle(root)
-    vocabulary = read_vocabulary(data / 'vocabulary.txt')
-    ids = [r['protein_id'] for r in read_table(data / 'benchmark' / 'test.tsv')]
-    propagate = Propagation(read_parents(data / 'go-basic.obo', vocabulary))
-    labels_file, mask_file = version_files(a.labels, 'test')
-    y = propagate(read_labels(data / labels_file, ids, vocabulary).astype(np.float32)) > 0
+    scoring = root / 'scoring'  # every run's config is here, and names the dataset
+    data = scoring / json.loads((scoring / 'main.json').read_text())['dataset']
+    vocabulary, parents, _ = dataset.terms(data)
+    table = dataset.proteins(data, 'test')
+    ids = [r['protein_id'] for r in table]
+    propagate = Propagation(parents)
+    y, unscored = dataset.labels(table, vocabulary, scorer_labels(a.labels))
     y = torch.as_tensor(y, device=device).reshape(-1)
-    keep = torch.ones_like(y)  # the pairs that count
-    if mask_file:
-        keep = torch.as_tensor(read_labels(data / mask_file, ids, vocabulary) == 0, device=device).reshape(-1)
+    keep = torch.as_tensor(~unscored, device=device).reshape(-1)  # the pairs that count
     y = y[keep]
     positives = int(y.sum())
 

@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this code, please cite the paper below."
 title: "archipelago-paper: reproduction of the ArchipelaGO paper"
 type: software
-version: 0.2.0
-date-released: 2026-11-10
+version: 0.3.0
+date-released: 2026-11-11
 license: MIT
 repository-code: "https://github.com/jacksonstempel/archipelago-paper"
 authors:

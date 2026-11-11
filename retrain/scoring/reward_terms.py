@@ -40,7 +40,7 @@ import torch
 from archipelago.evaluate import cluster_draws
 from archipelago.go import Propagation, read_parents
 from retrain.common import add_argument, data_root, load, log
-from retrain.scoring.score import bundle, results_dir
+from retrain.scoring.score import results_dir
 from retrain.scoring.term_strata import replicate_auprc
 from retrain.scoring.test_labels import annotation_sets, version_labels
 
@@ -106,7 +106,7 @@ def main(argv=None):
         f'rewarded terms with a test positive {int(((y & keep)[:, rewarded]).any(0).sum())}')
 
     # ---- every model on every stratum
-    propagate = Propagation(read_parents(bundle(root) / 'go-basic.obo', vocabulary))
+    propagate = Propagation(read_parents(root / 'datasets' / 'ontology' / 'go-basic.obo', vocabulary))
     cluster, draws = cluster_draws(test.columns['cluster'])
     cluster = tensor(cluster)
     draws = torch.as_tensor(draws.T, dtype=torch.float64, device=device)

@@ -4,7 +4,7 @@ hit in any training set at progressively looser E-value cutoffs (Supplementary I
     python -m retrain.scoring.no_hit [--data DIR] [--labels reviewed|masked] [--search] [--threads 32] [--device cuda|cpu]
 
 1. The subsets: for each cutoff c in 1e-10, 1e-6, 1e-3, 0.01, 0.1, 1, 10, the test proteins without a hit at E <= c. By
-   default they are the paper's, from the released table release/benchmark_no_hit (no_hit_up_to >= c): 4,938, 4,781,
+   default they are the paper's, from the released test proteins (release/proteins/test.parquet, no_hit_up_to >= c): 4,938, 4,781,
    4,307, 3,346, 2,463, 1,489 and 723 proteins. The paper's search ran on every distinct training protein of the main
    comparisons and of one further method whose original training data (374,070 proteins, 316,033 in no other set) is
    not part of this release, so --search, which repeats it on the sets here (goa, hq, hq_random, archipelago and the
@@ -24,14 +24,12 @@ $DIAMOND.
 """
 import argparse
 import csv
-import json
 import subprocess
-from pathlib import Path
 
 import numpy as np
 
 from retrain.common import DIAMOND_DBSIZE, add_argument, data_root, diamond, load, log, write_fasta
-from retrain.scoring.score import RESULTS, bundle, contrasts, fits, masked_config, results_dir, run_scorer, write_config
+from retrain.scoring.score import RESULTS, contrasts, dataset, fits, results_dir, run_scorer, write_config
 
 TRAINING_SETS = ('goa', 'hq', 'hq_random', 'archipelago', 'original_deepgose', 'original_dpfunc', 'original_transfew')
 CUTOFFS = (1e-10, 1e-6, 1e-3, 1e-2, 1e-1, 1.0, 10.0)
@@ -66,11 +64,11 @@ def search(root, out, threads):
 def released_subsets(root):
     """{cutoff: the test proteins without a hit at E <= cutoff} from the released table (the paper's subsets)."""
     import pyarrow.parquet as pq
-    table = pq.read_table(Path(root) / 'release' / 'benchmark_no_hit' / 'test.parquet',
+    table = pq.read_table(dataset(root) / 'proteins' / 'test.parquet',
                           columns=['protein_id', 'no_hit_up_to']).to_pydict()
     listed = {v for v in table['no_hit_up_to'] if v is not None}
     if not listed <= set(CUTOFFS):
-        raise ValueError(f'benchmark_no_hit lists cutoffs {sorted(listed)}, expected {CUTOFFS}')
+        raise ValueError(f'no_hit_up_to holds cutoffs {sorted(listed)}, expected {CUTOFFS}')
     return {c: {h for h, v in zip(table['protein_id'], table['no_hit_up_to']) if v is not None and v >= c}
             for c in CUTOFFS}
 
@@ -98,7 +96,7 @@ def main(argv=None):
     root = data_root(a.data)
     out = results_dir(root, a.labels) / 'no_hit'
     out.mkdir(parents=True, exist_ok=False)
-    released = released_subsets(root) if (root / 'release' / 'benchmark_no_hit').exists() else None
+    released = released_subsets(root) if (dataset(root) / 'proteins' / 'test.parquet').exists() else None
     if a.search:
         best = search(root, out, a.threads)
         subsets_of = {c: {h for h in load(root, 'test', labels=False, sequences=False).seq_ids
@@ -108,18 +106,16 @@ def main(argv=None):
                 + ('' if released is None else f", {len(released[c]):,} in the paper's subset, "
                    f"{len(subsets_of[c] - released[c]):,} not in it, {len(released[c] - subsets_of[c]):,} of it missing"))
     elif released is None:
-        raise SystemExit("release/benchmark_no_hit is missing: download the dataset (data/README.md) or pass --search")
+        raise SystemExit("release/proteins/test.parquet is missing: download the dataset (data/README.md) or pass --search")
     else:
         subsets_of = released
-        log("the paper's subsets, from release/benchmark_no_hit")
-    if a.labels == 'masked':
-        config = masked_config(root, 'main', 'no_hit')
-        data = (config.parent / json.loads(config.read_text())['data']).resolve()
+        log("the paper's subsets, from the released no_hit_up_to")
+    if a.labels == 'masked':  # the predictions of the reviewed scoring of the main run
+        config = root / 'scoring' / 'main.json'
     else:
-        data = bundle(root)
-        config = write_config(root / 'scoring' / 'no_hit.json', data, fits(root, 'main'))
-    with open(data / 'benchmark' / 'test.tsv', newline='') as handle:
-        table = list(csv.DictReader(handle, delimiter='\t'))
+        config = write_config(root / 'scoring' / 'no_hit.json', dataset(root), fits(root, 'main'))
+    import pyarrow.parquet as pq
+    table = pq.read_table(dataset(root) / 'proteins' / 'test.parquet', columns=['protein_id', 'cluster']).to_pylist()
     subsets = [('none', len(table), len({r['cluster'] for r in table}), results_dir(root, a.labels) / 'main')]
     for cutoff in CUTOFFS:
         keep = {r['protein_id'] for r in table if r['protein_id'] in subsets_of[cutoff]}

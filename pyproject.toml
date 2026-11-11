@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "archipelago-paper"
-version = "0.2.0"
+version = "0.3.0"
 description = "Reproduction of the ArchipelaGO paper: training sets, retraining of every model, scoring and figures"
 readme = "README.md"
 license = { file = "LICENSE" }

@@ -25,9 +25,9 @@ Fits: <root>/retune_transfew/runs/lr<lr>_d<dropout>/seed<k>/, written by
 minutes each on an H100; the paper's 22 fits took 13.9 H100-hours). `log` writes retune_transfew/search_log.tsv.
 `score` writes the scorer config scoring/retune.json (the methods transfew_retuned, the chosen fits' best-development-AUPRC
 checkpoint, and transfew_retuned_last, the same fits' last epoch, beside finch, transfew, transfew_bcebest and
-transfew_auprcbest from runs/), then results_masked/retune (the main test labels: the headline bundle with
---labels masked, as retrain.scoring.score) and results/retune (the reviewed labels), each with contrasts.tsv. Needs the
-main run's fits (retrain.scoring.score main and its masked scoring, for the headline bundle).
+transfew_auprcbest from runs/), then results_masked/retune (the main test labels: the scorer's --labels main, as
+retrain.scoring.score --labels masked) and results/retune (the reviewed labels), each with contrasts.tsv, both from the
+released dataset (release/). Needs the main run's fits.
 """
 import argparse
 import csv
@@ -35,7 +35,7 @@ import json
 from datetime import datetime, timezone
 
 from retrain.common import add_argument, data_root, log, score_file
-from retrain.scoring.score import contrasts, headline_bundle, results_dir, run_scorer, bundle, write_config
+from retrain.scoring.score import contrasts, dataset, results_dir, run_scorer, write_config
 
 LRS = ('1e-5', '3e-5', '1e-4', '3e-4', '1e-3')
 DROPOUTS = ('0.2', '0.4', '0.6', '0.8')
@@ -144,8 +144,8 @@ def main(argv=None):
                 seeds[str(seed)] = {split: score_file(fit / f'seed{seed}', prefix, side) for split, prefix in
                                     (('development', 'dev'), ('test', 'test'))}
             models.append((method, 'archipelago', seeds))
-        for labels, data in (('masked', headline_bundle(root)), ('reviewed', bundle(root))):
-            config = write_config(root / 'scoring' / f'retune_{labels}.json', data, models)
+        for labels in ('masked', 'reviewed'):
+            config = write_config(root / 'scoring' / f'retune_{labels}.json', dataset(root), models)
             out = results_dir(root, labels) / 'retune'
             run_scorer(root, config, out, a.device, labels=labels)
             contrasts(out)

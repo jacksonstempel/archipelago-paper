@@ -40,11 +40,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from archipelago import evaluate as ev, scorer
+from archipelago import dataset, evaluate as ev, scorer
 from archipelago.go import Propagation
-from archipelago.io import read_table, read_vocabulary
 from retrain.paths import add_argument, data_root
-from retrain.scoring.score import RESULTS, masked_config, results_dir
+from retrain.scoring.score import RESULTS, results_dir, scorer_labels
 
 
 def main(argv=None):
@@ -55,7 +54,7 @@ def main(argv=None):
     a = parser.parse_args(argv)
     root, device, labels = data_root(a.data), a.device, a.labels
     out = results_dir(root, labels) / 'macro'
-    pairs = [(masked_config(root, run) if labels == 'masked' else root / 'scoring' / f'{run}.json', results_dir(root, labels) / run)
+    pairs = [(root / 'scoring' / f'{run}.json', results_dir(root, labels) / run)
              for run in ('main', 'explabels_training')]
     CACHE = root / 'cache' / 'scoring'
     dev = torch.device(device)
@@ -75,7 +74,7 @@ def main(argv=None):
     for config, databank in pairs:
         c = json.load(open(config))
         base = Path(config).parent
-        data.add(os.path.realpath(base / c['data']))
+        data.add(os.path.realpath(base / c['dataset']))
         for m in c['models']:
             key = (m['method'], m['training_set'])
             files = {seed: os.path.realpath(base / f['test']) for seed, f in m['seeds'].items()}
@@ -85,23 +84,21 @@ def main(argv=None):
                 continue
             models[key] = dict(files=files, databank=Path(databank))
     if len(data) != 1:
-        raise ValueError(f'the configs use different data folders: {data}')
+        raise ValueError(f'the configs use different dataset folders: {data}')
     data = Path(data.pop())
     say(f'{len(models)} models, {sum(len(m["files"]) for m in models.values())} runs; data {data}')
 
-    # ---- the scorer's inputs (its cache): propagated test labels, information accretion, clusters and draws
+    # ---- the scorer's inputs (its cache): test labels, clusters and draws; information accretion and parents from go_terms
     scorer.ev = ev  # prepared_inputs uses the module the scorer's main() imports
-    vocabulary = read_vocabulary(data / 'vocabulary.txt')
+    vocabulary, parents, ia = dataset.terms(data)
     T = len(vocabulary)
-    test_table = read_table(data / 'benchmark/test.tsv')
-    ids = [r['protein_id'] for r in test_table]
-    dev_ids = [r['protein_id'] for r in read_table(data / 'benchmark/development.tsv')]
-    inputs = scorer.prepared_inputs(data, scorer.data_checksums(data, labels), vocabulary, test_table, dev_ids, 'test', labels,
-                                    None, 10_000, CACHE)
+    tables = {split: dataset.proteins(data, split) for split in ('development', 'test')}
+    ids = [r['protein_id'] for r in tables['test']]
+    inputs = scorer.prepared_inputs(scorer.data_checksums(data), vocabulary, tables, 'test', scorer_labels(labels), None,
+                                    10_000, CACHE)
     if len(inputs['test_rows']) != len(ids):
         raise ValueError('every test protein must be scored (the label version drops proteins)')
-    ptr = inputs['parent_ptr']
-    propagate = Propagation([inputs['parent'][a:b].tolist() for a, b in zip(ptr[:-1], ptr[1:])])
+    propagate = Propagation(parents)
     n = len(ids)
     y = torch.zeros(n * T, dtype=torch.bool, device=dev)
     y[torch.as_tensor(inputs['test'], device=dev)] = True
@@ -111,7 +108,7 @@ def main(argv=None):
     left_out = left_out.view(n, T)
     keep = ~left_out  # the pairs that count
     clusters, draws = inputs['clusters'], inputs['draws']
-    bench = ev.Benchmark(y, inputs['ia'], clusters, draws, device=dev, mask=left_out if left_out.any() else None)  # micro-AUPRC: the scorer's own code
+    bench = ev.Benchmark(y, ia, clusters, draws, device=dev, mask=left_out if left_out.any() else None)  # micro-AUPRC: the scorer's own code
     R, K = draws.shape
 
     # ---- macro set-up: positives sorted by term; per-cluster indicator; draws

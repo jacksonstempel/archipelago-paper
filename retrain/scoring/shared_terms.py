@@ -34,7 +34,7 @@ from pathlib import Path
 import numpy as np
 
 from retrain.common import add_argument, data_root, load, log
-from retrain.scoring.score import RESULTS, bundle, contrasts, fits, masked_config, results_dir, write_config
+from retrain.scoring.score import RESULTS, contrasts, dataset, fits, results_dir, scorer_labels, write_config
 
 SETS = {'deepgose': 'original_deepgose', 'transfew': 'original_transfew', 'dpfunc': 'original_dpfunc'}
 NAMES = {'deepgose': 'DeepGO-SE', 'transfew': 'TransFew', 'dpfunc': 'DPFunc', 'finch': 'Finch'}
@@ -85,11 +85,10 @@ def restricted(benchmark, columns, stats):
 
 def score_set(root, name, config, device, labels='reviewed'):
     """In this process: the scorer on `config`, restricted to the terms of `name` (or every term), then terms.json."""
-    from archipelago import evaluate as ev, scorer
-    from archipelago.io import read_vocabulary
+    from archipelago import dataset as released, evaluate as ev, scorer
     vocabulary = json.loads((root / 'datasets' / 'ontology' / 'vocabulary.json').read_text(encoding='utf-8'))
-    data = config.parent / json.loads(config.read_text(encoding='utf-8'))['data']
-    if read_vocabulary(data / 'vocabulary.txt') != vocabulary:
+    data = config.parent / json.loads(config.read_text(encoding='utf-8'))['dataset']
+    if released.terms(data)[0] != vocabulary:
         raise ValueError('the scorer vocabulary differs from the ontology dataset')
     if name == 'all':
         covered, source = np.ones(len(vocabulary), dtype=bool), None
@@ -102,7 +101,7 @@ def score_set(root, name, config, device, labels='reviewed'):
     stats = {}
     ev.Benchmark = restricted(ev.Benchmark, columns, stats)  # the scorer's main() takes Benchmark from archipelago.evaluate
     out = results_dir(root, labels) / 'shared_terms' / name
-    scorer.main([str(config), '--out', str(out), '--cache', str(root / 'cache' / 'scoring'), '--labels', labels]
+    scorer.main([str(config), '--out', str(out), '--cache', str(root / 'cache' / 'scoring'), '--labels', scorer_labels(labels)]
                 + (['--device', device] if device else []))
     record = dict(source=source, terms=len(columns), vocabulary=len(vocabulary), splits=stats,
                   covered_terms=[vocabulary[i] for i in columns], uncovered_terms=[t for t, c in zip(vocabulary, covered) if not c])
@@ -246,7 +245,8 @@ def main(argv=None):
     add_argument(parser)
     a = parser.parse_args(argv)
     root = data_root(a.data)
-    config = root / 'scoring' / ('shared_terms.json' if a.labels == 'reviewed' else 'shared_terms_masked.json')
+    # masked: the predictions of the reviewed scoring of the main run
+    config = root / 'scoring' / ('shared_terms.json' if a.labels == 'reviewed' else 'main.json')
     if a.set:  # as the scorer's own entry point: exit at once, without waiting for its reader threads
         try:
             score_set(root, a.set, config, a.device, a.labels)
@@ -260,10 +260,8 @@ def main(argv=None):
     if not (results / 'main' / 'replicates.npz').is_file():
         raise FileNotFoundError(f'{results / "main"}: run retrain.scoring.score main (with --labels {a.labels}) first')
     (results / 'shared_terms').mkdir(parents=True, exist_ok=False)
-    if a.labels == 'masked':
-        masked_config(root, 'main', 'shared_terms')
-    else:
-        write_config(config, bundle(root), fits(root, 'main'))
+    if a.labels == 'reviewed':
+        write_config(config, dataset(root), fits(root, 'main'))
     for name in ('all', *SETS.values()):
         command = [sys.executable, '-m', 'retrain.scoring.shared_terms', '--set', name, '--labels', a.labels, '--data', str(root)]
         log('RUN', ' '.join(command + (['--device', a.device] if a.device else [])))

@@ -13,7 +13,7 @@ libraries download into their own caches).
   inputs/             derived inputs: embeddings/<encoder>/<set>, and one folder per method (deepgose, transfew, dpfunc,
                       structures)
   runs/<method>/<training set>/seed<k>/   every fit's predictions
-  scoring/            the scorer's bundle (data/) and one configuration per scoring run
+  scoring/            one scorer configuration per scoring run
   results/<name>/     the scorer's results and the analyses
   figures/            the figures and tables
   cache/              the scorer's prepared inputs
@@ -31,33 +31,26 @@ libraries download into their own caches).
 
 ## The dataset release (`release/`)
 
-The Hugging Face dataset, as downloaded (Parquet, one folder per table). From version 1.2 every table ends with a `license`
-column (`cc-by-4.0`, or `cc-by-nc-4.0` for rows drawn from OrganiZymeDB, KEGG or P450Rdb; `licenses/nc_proteins.tsv` lists
-the proteins whose FASTA and embedding entries are CC BY-NC 4.0); the pipeline reads columns by name and ignores it.
+The Hugging Face dataset (v2.0), as downloaded (Parquet, one folder per table). Every table ends with a `license` column
+(`cc-by-4.0`, or `cc-by-nc-4.0` for rows drawn from OrganiZymeDB, KEGG or P450Rdb); the pipeline reads columns by name and
+ignores it.
 
 | Table | Rows | Columns |
 |---|---|---|
-| `training/` | the 237,797 ArchipelaGO proteins | `protein_id`, `accessions`, `sequence`, `part` (`hq` or `selected`), `selection_rank` (1 to 150,000 for selected proteins), `go_terms` (propagated labels) |
-| `training_annotations/` | their asserted (direct) annotations | `protein_id`, `go_id`, `evidence_class`, `evidence`, `source`, `assigned_by` |
-| `benchmark/development`, `benchmark/test` | 2,500 and 5,000 proteins | `protein_id`, `accessions`, `sequence`, `cluster` (homology cluster), `go_terms` |
-| `benchmark_experimental/`, `benchmark_masked/`, `benchmark_all_goa/` | the other label versions | as `benchmark`; `benchmark_masked` adds `masked_terms` |
-| `benchmark_annotations/` | their asserted annotations, including the accepted review labels | as `training_annotations` |
-| `benchmark_reviews/` | every reviewed non-experimental annotation of the benchmark, accepted or not, with its reasoning | `protein_id`, `go_id`, `decision` (`accept` or `do_not_accept`), the reasoning and sources |
-| `benchmark_no_hit/` | the 5,000 test proteins | `protein_id`, `no_hit_up_to` (the largest E-value cutoff at which the protein has no training hit) |
+| `proteins/{train,development,test,screened_out}` | the 237,797 ArchipelaGO proteins, 2,500 development and 5,000 test proteins, and the 4,063 HQ proteins the homology screen removed (do not train on them if you evaluate on this benchmark) | `protein_id`, `accessions`, `sequence`, `part` (`hq` or `selected`) and `selection_rank` (train, screened_out), `cluster` (homology cluster) and `no_hit_up_to` (test: the largest E-value cutoff at which the protein has no training hit), `related_*` (screened_out), `go_terms` (propagated labels) with `evidence` (each term's strongest support: `experimental`, `curated`, `computational`, `review_direct`, `review_inferred`, `review_rejected`) |
+| `annotations/{train,development,test,screened_out}` | the asserted annotations, and every reviewed GOA assertion of a benchmark protein with the review's decision | `protein_id`, `go_id`, `level`, `source`, `evidence`, `assigned_by`, `decision` (`accept` or `do_not_accept`), the reasoning and sources |
 | `go_terms/` | the 8,739 vocabulary terms | `go_id`, `name`, `column` (output column), `parents`, `information_accretion`, protein counts |
-| `reference_scores/` | the paper's models on every benchmark version | one row per version, model and training set |
-| `hq_benchmark_relatives/` | the 4,063 HQ proteins removed from training as relatives of benchmark proteins (for other splits; do not train on them if you evaluate on this benchmark) | as `training/`, plus `related_proteins`, `related_splits`, `relations`, `evalues`, `evalue_directions` |
-| `hq_benchmark_relatives_annotations/` | their asserted annotations | as `training_annotations` |
+| `reference_scores/` | the paper's models on every version of the test labels | one row per version, model and training set |
 | `ontology/go-basic.obo.gz` | the GO release of every label | |
-| `fasta/` | the sequences of the training, development and test proteins | |
-| `embeddings/<encoder>/{training,development,test}.npy` | the embeddings the paper's Finch was trained on, `esm2_15b_l48` and `prott5_l21` | float16, rows in the order of `training` and `benchmark` |
-| `coverage_ranking/` (v1.2) | the first 600,000 ranks of the paper's coverage ranking (of the 5,287,663 candidates that pass the rare-function filter) | `rank`, `protein_id`, `accessions`, `coverage_score` |
-| `control_sets/{hq_random,pool_random,filter_random,coverage_unfiltered}` (v1.2) | the 150,000 proteins each control set of Fig. 3a adds to HQ, in order | `position`, `protein_id`, `accessions`, `order_rank` |
+| `embeddings/<encoder>/{train,development,test,screened_out}.npy` | the embeddings the paper's Finch was trained on, `esm2_15b_l48` and `prott5_l21` | float16, rows in the order of `proteins` |
+| `coverage_ranking/` | the first 600,000 ranks of the paper's coverage ranking (of the 5,287,663 candidates that pass the rare-function filter) | `rank`, `protein_id`, `accessions`, `coverage_score` |
+| `control_sets/{hq_random,pool_random,filter_random,coverage_unfiltered}` | the 150,000 proteins each control set of Fig. 3a adds to HQ, in order | `position`, `protein_id`, `accessions`, `order_rank` |
 
-`python -m retrain.datasets.release` turns these into `datasets/{ontology,hq,archipelago,development,test}`. The scoring with
-other test labels (`retrain.scoring.test_labels`) rebuilds each version from the test annotations and reviews, checks it
-against the released table, and scores it from a bundle of the release; in the test annotations, the accepted reviews
-have the source `literature review (this work)`.
+`python -m retrain.datasets.release` turns these into `datasets/{ontology,hq,archipelago,development,test}`; the labels of
+the development and test datasets are the reviewed ones (every level but `review_rejected`). The scorer reads `release/`
+directly. The scoring with other test labels (`retrain.scoring.test_labels`) rebuilds each version from the test
+annotations and the review's decisions, checks it against the released labels of the same version, and scores it; in the
+test annotations, the accepted reviews have the source `literature review (this work)`.
 
 The released embeddings can stand in for `scripts/embed.py` on `archipelago`, `development` and `test`, so that Finch and
 Embedding-kNN can be trained on ArchipelaGO without running the language models. This writes them in the
@@ -72,17 +65,16 @@ import pyarrow.parquet as pq
 root = Path("<root>")
 for encoder in ("esm2_15b_l48", "prott5_l21"):
     (root / "inputs/embeddings" / encoder).mkdir(parents=True, exist_ok=True)
-    for name, table, file in (("archipelago", "training/train", "training"), ("development", "benchmark/development",
-                              "development"), ("test", "benchmark/test", "test")):
+    for name, split in (("archipelago", "train"), ("development", "development"), ("test", "test")):
         stem = root / "inputs/embeddings" / encoder / name
-        shutil.copyfile(root / "release/embeddings" / encoder / f"{file}.npy", f"{stem}.npy")
-        ids = pq.read_table(root / "release" / f"{table}.parquet", columns=["protein_id"])["protein_id"].to_pylist()
+        shutil.copyfile(root / "release/embeddings" / encoder / f"{split}.npy", f"{stem}.npy")
+        ids = pq.read_table(root / "release/proteins" / f"{split}.parquet", columns=["protein_id"])["protein_id"].to_pylist()
         Path(f"{stem}.ids.txt").write_text("\n".join(ids) + "\n", encoding="utf-8")
 ```
 
 ### Deposited ranking and control sets, and files available on request
 
-From version 1.2 the release deposits the paper's coverage ranking (its first 600,000 ranks: `coverage_ranking/`) and the
+The release deposits the paper's coverage ranking (its first 600,000 ranks: `coverage_ranking/`) and the
 protein identifiers of the four control sets of Fig. 3a (`control_sets/`). `retrain.datasets.selected` reads the deposited
 ranking in place of `release/selection/coverage_ranking.tsv`, and every control set and HQ + random that the pipeline
 builds is checked against its deposited table (the same proteins in the same order, with the same ranks).
@@ -130,11 +122,8 @@ Finch's readouts are in `runs/finch/<training set>/seed<k>/<readout>/`, with `re
 
 ### `scoring/`
 
-`scoring/data/` is the scorer's bundle: `vocabulary.txt`, `go-basic.obo`, `benchmark/{development,test}.tsv`
-(`protein_id`, `accessions`, `cluster`) with `benchmark/{development,test}_labels.tsv` (`protein_id`, `go_id`,
-propagated), and `archipelago/{proteins,labels}.tsv` holding the HQ proteins (`part` = `hq`), from which information
-accretion is estimated. `scoring/<run>.json` lists the prediction files of one scoring run (format in the docstring of
-`archipelago.scorer`).
+`scoring/<run>.json` lists the prediction files of one scoring run and the dataset (`release/`) the scorer reads (format in
+the docstring of `archipelago.scorer`).
 
 ### `results/<name>/`
 

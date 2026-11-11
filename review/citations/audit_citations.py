@@ -9,8 +9,8 @@ Stages (each cached; rerun is cheap):
 
 Usage: python -I audit_citations.py (--release DIR | --data DIR) --cache DIR --out DIR [--limit N] stage [stage ...]
 
---release DIR: the downloaded ArchipelaGO dataset; the decisions are benchmark_reviews/{development,test}.parquet and each
-decision's protein accessions those of the benchmark tables. --data DIR: the review records as the review wrote them
+--release DIR: the downloaded ArchipelaGO dataset (v2.0); the decisions are the review rows of annotations/{development,test}.parquet
+and each decision's protein accessions those of proteins/{development,test}.parquet. --data DIR: the review records as the review wrote them
 (DIR/test_resolved_reviews.json and DIR/dev_resolved_reviews.json, checked by their SHA-256), which the paper's audit read;
 they are not part of the release. The released tables keep, for each decision, the URLs of the sources of the record that
 settled it; the review records also hold the identifiers written in each source's reference text, the supplementary and
@@ -232,20 +232,33 @@ def category(r):
 
 def release_records(split):
     """The released decisions of a split as review records: the fields stage_extract reads (decision, support type,
-    accessions, the deciding record's sources as URLs)."""
+    accessions, the deciding record's sources as URLs). Dataset v2.0: the review rows of annotations/<split> (the
+    literature review of the GOA assertions; the development set's review of model false positives has no decision), the
+    accessions from proteins/<split>, the term names from the shipped ontology."""
+    import gzip
     import pyarrow.parquet as pq
     name = {"test": "test", "dev": "development"}[split]
     accessions = {r["protein_id"]: r["accessions"] for r in
-                  pq.read_table(os.path.join(ARGS.release, "benchmark", f"{name}.parquet"),
+                  pq.read_table(os.path.join(ARGS.release, "proteins", f"{name}.parquet"),
                                 columns=["protein_id", "accessions"]).to_pylist()}
+    names, term = {}, None
+    with gzip.open(os.path.join(ARGS.release, "ontology", "go-basic.obo.gz"), "rt", encoding="utf-8") as handle:
+        for line in handle:
+            if line.startswith("id: "):
+                term = line[4:].strip()
+            elif line.startswith("name: ") and term:
+                names.setdefault(term, line[6:].strip())
+            elif line.startswith("["):
+                term = None
     out = []
-    for r in pq.read_table(os.path.join(ARGS.release, "benchmark_reviews", f"{name}.parquet")).to_pylist():
+    for r in pq.read_table(os.path.join(ARGS.release, "annotations", f"{name}.parquet")).to_pylist():
+        if r["decision"] is None:
+            continue
         out.append({"assertion_id": f"{r['protein_id']}:{r['go_id']}", "go_id": r["go_id"], "decision": r["decision"],
                     "review_support_type": r["support_type"],
-                    "pro_review": {"go_name": r["go_name"], "accessions": list(accessions[r["protein_id"]]),
+                    "pro_review": {"go_name": names[r["go_id"]], "accessions": list(accessions[r["protein_id"]]),
                                    "sources": [{"url": u} for u in r["source_urls"] or []]}})
     return out
-
 
 def stage_extract():
     decisions, cites, notes = [], [], collections.Counter()

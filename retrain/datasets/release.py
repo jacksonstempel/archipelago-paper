@@ -2,15 +2,16 @@
 
     python -m retrain.datasets.release [--data DIR]
 
-Reads, under <data root>/release/:
-  ontology/go-basic.obo.gz                     the GO release of every label
-  go_terms/go_terms.parquet                    the 8,739 output terms; `column` is the output column
-  training/train.parquet                       ArchipelaGO: protein_id, accessions, sequence, part (hq | selected),
-                                               selection_rank, go_terms (propagated labels)
-  training_annotations/train.parquet           asserted annotations: protein_id, go_id, evidence_class, evidence, source,
-                                               assigned_by
-  benchmark/{development,test}.parquet         protein_id, accessions, sequence, cluster, go_terms
-  benchmark_annotations/{development,test}.parquet
+Reads, under <data root>/release/ (dataset v2.0):
+  ontology/go-basic.obo.gz                       the GO release of every label
+  go_terms/go_terms.parquet                      the 8,739 output terms; `column` is the output column
+  proteins/{train,development,test}.parquet      protein_id, accessions, sequence, part (hq | selected), selection_rank,
+                                                 cluster, go_terms (propagated labels) with their evidence level
+  annotations/{train,development,test}.parquet   asserted annotations: protein_id, go_id, level, source, evidence,
+                                                 assigned_by, and the review's decision
+
+The labels of the development and test datasets are the reviewed ones (every level but review_rejected), and their
+annotations.tsv the rows behind them (the reviewed GOA assertions that were not accepted are left out).
 
 Writes datasets/ontology (go-basic.obo, vocabulary.json), datasets/hq (the HQ rows of ArchipelaGO, which come first),
 datasets/archipelago (columns part, selection_rank), datasets/development and datasets/test (column cluster). In
@@ -48,9 +49,11 @@ def labels_from_terms(term_lists, ontology):
 
 
 def annotations(table, wanted):
-    """Annotation rows (seq_id, go_id, evidence, source) of the proteins in `wanted`."""
+    """Annotation rows (seq_id, go_id, evidence, source) of the proteins in `wanted`, without the rejected reviews."""
     out = []
     for r in table.to_pylist():
+        if r['level'] == 'review_rejected':
+            continue
         if r['protein_id'] not in wanted:
             raise ValueError(f"annotation of a protein outside its table: {r['protein_id']}")
         out.append((r['protein_id'], r['go_id'], r['evidence'], source_name(r)))
@@ -107,7 +110,7 @@ def main():
 
 def build(root, release, ontology):
     """The four datasets of the release, under <root>/datasets/."""
-    training = pq.read_table(release / 'training' / 'train.parquet').to_pydict()
+    training = pq.read_table(release / 'proteins' / 'train.parquet').to_pydict()
     ids = training['protein_id']
     parts = training['part']
     n_hq = parts.count('hq')
@@ -116,7 +119,7 @@ def build(root, release, ontology):
     ranks = training['selection_rank']
     if ranks[n_hq:] != list(range(1, len(ids) - n_hq + 1)):
         raise ValueError('training table: selected proteins are not in ranking order')
-    rows = annotations(pq.read_table(release / 'training_annotations' / 'train.parquet'), set(ids))
+    rows = annotations(pq.read_table(release / 'annotations' / 'train.parquet'), set(ids))
     labels = checked_labels('archipelago', ids, training['go_terms'], rows, ontology)
     hq_ids = set(ids[:n_hq])
     write_dataset(root, 'hq', ids[:n_hq], training['accessions'][:n_hq], training['sequence'][:n_hq],
@@ -125,9 +128,10 @@ def build(root, release, ontology):
                   columns=dict(part=parts, selection_rank=['' if r is None else r for r in ranks]))
 
     for split in ('development', 'test'):
-        table = pq.read_table(release / 'benchmark' / f'{split}.parquet').to_pydict()
-        rows = annotations(pq.read_table(release / 'benchmark_annotations' / f'{split}.parquet'), set(table['protein_id']))
-        labels = checked_labels(split, table['protein_id'], table['go_terms'], rows, ontology)
+        table = pq.read_table(release / 'proteins' / f'{split}.parquet').to_pydict()
+        rows = annotations(pq.read_table(release / 'annotations' / f'{split}.parquet'), set(table['protein_id']))
+        reviewed = [[t for t, e in zip(ts, es) if e != 'review_rejected'] for ts, es in zip(table['go_terms'], table['evidence'])]
+        labels = checked_labels(split, table['protein_id'], reviewed, rows, ontology)
         write_dataset(root, split, table['protein_id'], table['accessions'], table['sequence'], rows, labels, ontology,
                       columns=dict(cluster=table['cluster']))
 
